@@ -79,85 +79,85 @@ async function create_charts() {
                 fill: false,
                 yAxisID: 'B',
                 hidden: true
-            }
-            ],
+            }],
             spanGaps: false
         },
-        options:
-            {
-                responsive: true,
-                title: {
-                    display: false,
-                    text:
-                        'history test'
+        options: {
+            responsive: true,
+            title: {
+                display: false,
+                text: 'history test'
+            },
+            elements: {
+                line: {
+                    tension: 0
                 },
-                elements: {
-                    line: {
-                        tension: 0
-                    },
-                    point: {
-                        radius: 2
+                point: {
+                    radius: 2
 
-                    }
-                },
-                scales: {
-                    xAxes: [
-                        {
-                            type: 'time',
-                            time: {
-                                displayFormats: {
-                                    second: 'h:mm:ss a'
-                                }
-                            }
-                        }
-                    ],
-                    yAxes: [
-                        {
-                            id: 'A',
-                            position: 'left'
-                        },
-                        {
-                            id: 'B',
-                            type: 'linear',
-                            position: 'right',
-                            ticks: {
-                                max: 100,
-                                min: 0
-                            }
-                        },
-                    ]
-                },
-                pan: {
-                    enabled: true,
-                    mode: "x",
-                    rangeMin: {
-                        x: null
-                    },
-                    rangeMax: {
-                        x: null
-                    }
-                },
-                zoom: {
-                    enabled: true,
-                    drag: false,
-                    mode: "x",
-                    // limits: {
-                    //     max: 10,
-                    //     min: 0.5
-                    // }
                 }
             },
+            scales: {
+                xAxes: [{
+                    type: 'time',
+                    time: {
+                        displayFormats: {
+                            second: 'h:mm:ss a'
+                        }
+                    }
+                }],
+                yAxes: [{
+                        id: 'A',
+                        position: 'left'
+                    },
+                    {
+                        id: 'B',
+                        type: 'linear',
+                        position: 'right',
+                        ticks: {
+                            max: 100,
+                            min: 0
+                        }
+                    },
+                ]
+            },
+            pan: {
+                enabled: true,
+                mode: "x",
+                rangeMin: {
+                    x: null
+                },
+                rangeMax: {
+                    x: null
+                }
+            },
+            zoom: {
+                enabled: true,
+                drag: false,
+                mode: "x",
+                // limits: {
+                //     max: 10,
+                //     min: 0.5
+                // }
+            }
+        },
         plugins: [{
             beforeUpdate: function (chart, options) {
+                console.log('before update!!')
                 filterData(chart);
-                 console.log('before update!!')
+            },
+            afterUpdate: function (chart, options) {
+                console.log('after update!!')
+                console.log(chart.data.datasets)
             }
         }]
 
     });
 
     // Create a Sankey diagram
-    google.charts.load('current', {'packages': ['sankey']});
+    google.charts.load('current', {
+        'packages': ['sankey']
+    });
     await google.charts.setOnLoadCallback();
 
     let data = new google.visualization.DataTable();
@@ -183,7 +183,10 @@ async function create_charts() {
     let charging_history_sankey = new google.visualization.Sankey(document.getElementById('sankey_basic'));
     charging_history_sankey.draw(data, options);
 
-    return {'charging_history_chart': charging_history_chart, 'charging_history_sankey': charging_history_sankey}
+    return {
+        'charging_history_chart': charging_history_chart,
+        'charging_history_sankey': charging_history_sankey
+    }
 
 }
 
@@ -214,9 +217,7 @@ function update_charts(chart_obj, data_obj, sankey_data_obj) {
             chart_obj.charging_history_chart.options.elements.point.radius = 0;
             chart_obj.charging_history_chart.options.elements.point.hitRadius = 7;
             chart_obj.charging_history_chart.options.elements.point.hoverRadius = 7;
-        }
-
-        else {
+        } else {
             chart_obj.charging_history_chart.options.elements.point.radius = 3;
             chart_obj.charging_history_chart.options.elements.point.hitRadius = 1;
             chart_obj.charging_history_chart.options.elements.point.hoverRadius = 4;
@@ -335,8 +336,7 @@ async function start_charging_history_page(user) {
                             data_obj['time'].forEach(function (value, key, time_array) {
                                 time_array[key] = moment(time_array[key], "HH:mm:ss")
                             });
-                        }
-                        else {
+                        } else {
                             data_obj['time'].forEach(function (value, key, time_array) {
                                 time_array[key] = moment(time_array[key], "YYYY-MM-DD HH:mm:ss.SSSSSS")
                             });
@@ -356,7 +356,10 @@ async function start_charging_history_page(user) {
                     }
                 };
 
-                data = JSON.stringify({"idToken": idToken, 'date': selected_charging_session});
+                data = JSON.stringify({
+                    "idToken": idToken,
+                    'date': selected_charging_session
+                });
 
                 xhr.send(data);
                 console.log('sent!')
@@ -391,9 +394,7 @@ function checkIfLoggedIn() {
         if (user) {
             // Start our code for the page
             start_charging_history_page(user);
-        }
-
-        else {
+        } else {
             //... or go to login
             window.location.replace("/delta_dashboard/login")
         }
@@ -425,35 +426,63 @@ Date.prototype.yyyymmdd = function () {
 
 function filterData(chart) {
     let datasets = chart.data.datasets;
-    // Todo: need to fix this up. This will run multiple times before an update
-    if (!chart.data.origDatasetsData) {
-        chart.data.origDatasetsData = [];
-        for (let i in datasets) {
-            console.log(i)
-            chart.data.origDatasetsData.push(datasets[i].data);
+    console.log(chart.data.origDatasetsData)
+
+    // First check if we have a dataset that has some stuff in it
+    if (datasets[0].data.length !== 0) {
+        // Now check if our original dataset is undefined and that it does not exist
+        if (!chart.data.origDatasetsData) {
+            chart.data.origDatasetsData = [];
+            chart.data.origDatasetsLabels = [];
+            for (let i in datasets) {
+                chart.data.origDatasetsData.push(datasets[i].data);
+            }
+            chart.data.origDatasetsLabels = chart.data.labels
         }
     }
-    let originalDatasetsData = chart.data.origDatasetsData;
 
+    // else if (chart.data.origDatasetsData[0].length !== datasets[0].data.length){
+    //     chart.data.origDatasetsData = [];
+    //     chart.data.origDatasetsLabels = [];
+    //     for (let i in datasets) {
+    //         console.log(i)
+    //         chart.data.origDatasetsData.push(datasets[i].data);
+    //     }
+    //     chart.data.origDatasetsLabels = chart.data.labels
+    // }
+
+    // Define our original dataset
+    let originalDatasetsData = chart.data.origDatasetsData;
+    let originalDatasetsLabels = chart.data.origDatasetsLabels;
+
+    console.log('Original data:')
     console.log(originalDatasetsData)
+    console.log('Original labels:')
+    console.log(originalDatasetsLabels)
 
     let chartOptions = chart.options.scales.xAxes[0];
     let startX = chartOptions.time.min;
     let endX = chartOptions.time.max;
+    if (startX && typeof startX === 'object')
+        startX = startX._d.getTime();
+    if (endX && typeof endX === 'object')
+        endX = endX._d.getTime();
+    console.log('start and end are:')
     console.log(startX);
     console.log(endX);
 
     let startIndex = 0;
     let endIndex = 0;
     if (startX !== undefined) {
-        // Convert our moment objects to Unix ms
         let converted_labels = [];
-        for (let a = 0; a < chart.data.labels.length; a++) {
-            converted_labels.push(chart.data.labels[a].valueOf())
-        }
 
         for (let i = 0; i < datasets.length; i++) {
             let originalData = originalDatasetsData[i];
+            // Convert our moment objects to Unix ms
+            converted_labels = [];
+            for (let a = 0; a < originalDatasetsLabels.length; a++) {
+                converted_labels.push(originalDatasetsLabels[a].valueOf())
+            }
 
             if (!originalData.length)
                 continue;
@@ -493,10 +522,8 @@ function filterData(chart) {
 
 }
 
-//Todo: now we need to reduce time
-// returns a reduced version of the data array, averaging x and y values
 function reduce(data, maxCount, data_type) {
-    console.log(data)
+    // console.log(data)
     if (data.length <= maxCount)
         return data;
     let blockSize = data.length / maxCount;
@@ -517,8 +544,7 @@ function average(chunk, data_type) {
         }
 
         return sum / chunk.length
-    }
-    else if (data_type === "labels") {
+    } else if (data_type === "labels") {
         for (let i = 0; i < chunk.length; i++) {
             sum += chunk[i];
         }
@@ -528,4 +554,3 @@ function average(chunk, data_type) {
     }
 
 }
-
