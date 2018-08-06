@@ -1,7 +1,7 @@
 function drawSankeyChart(sankey_data_obj, charging_history_sankey) {
     // drawSankeyChart will be a function that draws a Sankey Diagram from all of the available history data
     console.log('im in drawsankey');
-    console.log(sankey_data_obj)
+    console.log(sankey_data_obj);
 
     let data = new google.visualization.DataTable();
     data.addColumn('string', 'From');
@@ -190,15 +190,6 @@ async function create_charts() {
 }
 
 function update_charts(chart_obj, data_obj, sankey_data_obj) {
-    // Todo: put an optional downfilter
-
-    // chart_obj.charging_history_chart.plugins = [{
-    //     afterUpdate: function (chart, options) {
-    //         console.log(chart);
-    //         console.log(options);
-    //         console.log('before update!!')
-    //     }
-    // }]
 
     if (chart_obj.hasOwnProperty('charging_history_chart')) {
         console.log('updating charts');
