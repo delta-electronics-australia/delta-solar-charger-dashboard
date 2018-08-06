@@ -222,7 +222,9 @@ function update_charts(chart_obj, data_obj, sankey_data_obj) {
             chart_obj.charging_history_chart.options.elements.point.hitRadius = 1;
             chart_obj.charging_history_chart.options.elements.point.hoverRadius = 4;
         }
-
+        
+        chart_obj.charging_history_chart.data.origDatasetsData = undefined;
+        chart_obj.charging_history_chart.data.origDatasetsLabels = undefined;
         chart_obj.charging_history_chart.resetZoom();
         chart_obj.charging_history_chart.update();
 
@@ -441,16 +443,6 @@ function filterData(chart) {
         }
     }
 
-    // else if (chart.data.origDatasetsData[0].length !== datasets[0].data.length){
-    //     chart.data.origDatasetsData = [];
-    //     chart.data.origDatasetsLabels = [];
-    //     for (let i in datasets) {
-    //         console.log(i)
-    //         chart.data.origDatasetsData.push(datasets[i].data);
-    //     }
-    //     chart.data.origDatasetsLabels = chart.data.labels
-    // }
-
     // Define our original dataset
     let originalDatasetsData = chart.data.origDatasetsData;
     let originalDatasetsLabels = chart.data.origDatasetsLabels;
@@ -513,11 +505,9 @@ function filterData(chart) {
 
             console.log(startIndex)
             console.log(endIndex)
-            datasets[i].data = reduce(originalData.slice(startIndex, endIndex + 1), 800, 'data');
-            // console.log(datasets[i].data = reduce(originalData.slice(startIndex, endIndex + 1), 800, 'data'));
+            datasets[i].data = reduce(originalData.slice(startIndex, endIndex + 1), 1000, 'data');
         }
-        chart.data.labels = reduce(converted_labels.slice(startIndex, endIndex + 1), 800, 'labels');
-        // console.log(reduce(converted_labels.slice(startIndex, endIndex + 1), 800, 'labels'));
+        chart.data.labels = reduce(converted_labels.slice(startIndex, endIndex + 1), 1000, 'labels');
     }
 
 }
