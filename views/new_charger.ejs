@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        #loading_id {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            margin: auto;
+        }
+    </style>
+    <!--Import Google Icon Font-->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!--Import materialize.css-->
+    <link type="text/css" rel="stylesheet" href="../delta_dashboard/public/css/materialize.css"
+          media="screen,projection"/>
+    <!--Let browser know website is optimized for mobile-->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+    <script src="../delta_dashboard/public/js/jquery-3.3.1.js"></script>
+    <script src="../delta_dashboard/public/js/moment.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/4.9.0/firebase.js"></script>
+    <script>
+        // Initialize Firebase
+        var config = {
+            apiKey: "AIzaSyCaxTOBofd7qrnbas5gGsZcuvy_zNSi_ik",
+            authDomain: "smart-charging-app.firebaseapp.com",
+            databaseURL: "https://smart-charging-app.firebaseio.com",
+            projectId: "smart-charging-app",
+            storageBucket: "",
+            messagingSenderId: "896921007938"
+        };
+        firebase.initializeApp(config);
+    </script>
+
+</head>
+
+<% include ../partials/nav.ejs %>
+
+<body>
+<div class="container">
+    <h1 class="center-align">Add a New Charger</h1>
+    <div class="row">
+        <div class=""></div>
+    </div>
+    <div class="row">
+        <form class="col s12" id="charger_reg_form">
+            <div class="row">
+                <div class="input-field col s6 push-s3">
+                    <input id="charger_id" type="text" class="validate">
+                    <label for="charger_id">Charger ID</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="input-field col s6 push-s3">
+                    <input id="email" type="email" class="validate">
+                    <label for="email">Email</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="input-field col s6 push-s3">
+                    <input id="password" type="password" class="validate">
+                    <label for="password">Password</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="btn col s2 push-s5" id="register_charger_btn" onclick="register_charger()">Register</div>
+            </div>
+        </form>
+    </div>
+</div>
+<script type="text/javascript" src="../delta_dashboard/public/js/materialize.min.js"></script>
+<script type="application/javascript" src="../delta_dashboard/public/js/new_charger.js"></script>
+
+
+</body>
+
+</html>

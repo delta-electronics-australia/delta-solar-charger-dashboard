@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        #loading_id {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            margin: auto;
+        }
+
+        .tab a.active {
+            color: rgb(252, 234, 37) !important;
+            background-color: #FFFFFF !important;
+        }
+
+        .tabs .tab a:hover {
+            background-color: #FFFFFF !important;
+            color: #64b4f6 !important;
+        }
+
+        .tabs .tab a {
+            color: #64b4f6 !important;
+        }
+
+        .tabs .indicator {
+            background-color: #64b4f6 !important;
+        }
+    </style>
+
+    <!--Let browser know website is optimized for mobile-->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+    <script src="../delta_dashboard/public/js/jquery-3.3.1.js"></script>
+    <script src="../delta_dashboard/public/js/moment.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/4.9.0/firebase.js"></script>
+    <script>
+        // Initialize Firebase
+        let config = {
+            apiKey: "AIzaSyCaxTOBofd7qrnbas5gGsZcuvy_zNSi_ik",
+            authDomain: "smart-charging-app.firebaseapp.com",
+            databaseURL: "https://smart-charging-app.firebaseio.com",
+            projectId: "smart-charging-app",
+            storageBucket: "",
+            messagingSenderId: "896921007938"
+        };
+        firebase.initializeApp(config);
+    </script>
+    <script src="../delta_dashboard/public/bower_components/chart.js/dist/Chart.min.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script src="../delta_dashboard/public/bower_components/chartjs-plugin-zoom/chartjs-plugin-zoom.js"></script>
+    <script src="../delta_dashboard/public/js/hammer.min.js"></script>
+
+</head>
+
+<% include ../partials/nav.ejs %>
+
+<body>
+<div class="container">
+    <h1 class="center-align">Archive</h1>
+
+    <div id="master_row">
+        <div class="row">
+            <div class="col s6 offset-s3">
+
+                <p class=center-align>
+                    <a class="waves-effect waves-light btn" onclick="request_data(this.id)"
+                       id="all_data_request_button">Download All Data</a>
+                </p>
+
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="row">
+            <div class="col s2 push-l5 pull-l5">
+
+                <div class="input-field">
+                    <input id="date_input" type="text" class="datepicker">
+                    <label for="date_input">Select a Date</label>
+                </div>
+
+            </div>
+
+            <div class="col s12" id="preloader">
+                <div class="preloader-wrapper big active" id="loading_id">
+                    <div class="spinner-layer spinner-blue-only">
+                        <div class="circle-clipper left">
+                            <div class="circle"></div>
+                        </div>
+                        <div class="gap-patch">
+                            <div class="circle"></div>
+                        </div>
+                        <div class="circle-clipper right">
+                            <div class="circle"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col s12" id="chart_tabs">
+                <ul class="tabs center-align">
+                    <li class="tab col s4">
+                        <a href="#history_chart_tab" class="active">Line Chart</a>
+                    </li>
+                    <li class="tab col s4">
+                        <a href="#sankey_tab">Sankey Diagram</a>
+                    </li>
+                    <li class="tab col s4">
+                        <a href="#download_tab">Download Day's Data</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row" id="history_chart_tab">
+        <div class="col s12">
+            <canvas id="history_chart" width="400" height="200"></canvas>
+        </div>
+        <div class="row" id="reset_zoom_button_div">
+            <p class="center-align">
+                <a class="waves-effect waves-light btn " id="reset_zoom_button">Reset Zoom</a>
+            </p>
+        </div>
+    </div>
+    <div class="row" id="sankey_tab">
+        <div class="col s12">
+            <div id="sankey_basic" style="width: 800px; height: 500px;"></div>
+        </div>
+    </div>
+    <div class="row" id="download_tab">
+        <div class="col s6 offset-s3" id="data_request_button_div">
+            <p class="center-align">
+                <a class="waves-effect waves-light btn" onclick="request_data(this.id)" id="data_request_button">Download
+                    This Day's Data</a>
+            </p>
+        </div>
+    </div>
+
+</div>
+<script type="text/javascript" src="../delta_dashboard/public/js/materialize.min.js"></script>
+<script type="application/javascript" src="../delta_dashboard/public/js/archive.js"></script>
+
+
+</body>
+
+</html>

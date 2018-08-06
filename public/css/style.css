@@ -1,0 +1,38 @@
+body {
+    background: white;
+    font-family: Verdana;
+    color: black
+}
+
+h1 {
+    font-size: 48px;
+    text-transform: uppercase;
+    text-align: center
+}
+
+h2 {
+    text-transform: uppercase;
+    text-align: left;
+    display: inline-block
+}
+
+p {
+    font-size: 16px;
+    text-align: center
+}
+
+ul {
+    margin: 0;
+    padding: 0 0 0 15px
+}
+
+li {
+    margin: 10px;
+    padding: 0 0 0 15px
+}
+
+.column {
+    float: left;
+    margin: 0 20px 0 0;
+    /*text-align: center;*/
+}

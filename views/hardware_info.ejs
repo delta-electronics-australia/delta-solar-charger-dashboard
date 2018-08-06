@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        #loading_id {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            margin: auto;
+        }
+        .dot {
+            height: 20px;
+            width: 20px;
+            /*background-color: #ff0000;*/
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+    </style>
+
+    <!--Let browser know website is optimized for mobile-->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+    <script src="../delta_dashboard/public/js/jquery-3.3.1.js"></script>
+    <script src="../delta_dashboard/public/js/moment.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/4.9.0/firebase.js"></script>
+    <script>
+        // Initialize Firebase
+        let config = {
+            apiKey: "AIzaSyCaxTOBofd7qrnbas5gGsZcuvy_zNSi_ik",
+            authDomain: "smart-charging-app.firebaseapp.com",
+            databaseURL: "https://smart-charging-app.firebaseio.com",
+            projectId: "smart-charging-app",
+            storageBucket: "",
+            messagingSenderId: "896921007938"
+        };
+        firebase.initializeApp(config);
+    </script>
+    <script src="../delta_dashboard/public/bower_components/chart.js/dist/Chart.min.js"></script>
+
+</head>
+
+<% include ../partials/nav.ejs %>
+
+<body>
+<div class="container">
+    <h1 class="center-align">Hardware Info</h1>
+    <div class="row" id="master_row">
+        <div class="col s12">
+            <ul class="collapsible">
+                <li>
+                    <div class="collapsible-header"><b>Inverter Information</b></div>
+                    <div class="collapsible-body">
+                        <div class="row" id="inverter_info_row">
+
+                        </div>
+                        <span>
+                            <a class="waves-effect waves-light btn">Check for FW updates</a>
+                        </span>
+                    </div>
+                </li>
+                <li>
+                    <div class="collapsible-header"><b>EV Charger Information</b></div>
+                    <div class="collapsible-body">
+                        <div class="row" id="evc_info_row">
+
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript" src="../delta_dashboard/public/js/materialize.min.js"></script>
+<script type="application/javascript" src="../delta_dashboard/public/js/hardware_info.js"></script>
+
+</body>
+
+</html>
