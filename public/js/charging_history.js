@@ -107,9 +107,9 @@ async function create_charts() {
                     }
                 }],
                 yAxes: [{
-                        id: 'A',
-                        position: 'left'
-                    },
+                    id: 'A',
+                    position: 'left'
+                },
                     {
                         id: 'B',
                         type: 'linear',
@@ -143,11 +143,10 @@ async function create_charts() {
         },
         plugins: [{
             beforeUpdate: function (chart, options) {
-                console.log('before update!!')
                 filterData(chart);
             },
             afterUpdate: function (chart, options) {
-                console.log('after update!!')
+                console.log('after update!!');
                 console.log(chart.data.datasets)
             }
         }]
@@ -222,7 +221,7 @@ function update_charts(chart_obj, data_obj, sankey_data_obj) {
             chart_obj.charging_history_chart.options.elements.point.hitRadius = 1;
             chart_obj.charging_history_chart.options.elements.point.hoverRadius = 4;
         }
-        
+
         chart_obj.charging_history_chart.data.origDatasetsData = undefined;
         chart_obj.charging_history_chart.data.origDatasetsLabels = undefined;
         chart_obj.charging_history_chart.resetZoom();
@@ -427,31 +426,34 @@ Date.prototype.yyyymmdd = function () {
 };
 
 function filterData(chart) {
+    // Datasets is the array of data arrays that we currently have in the chart object
     let datasets = chart.data.datasets;
-    console.log(chart.data.origDatasetsData)
 
     // First check if we have a dataset that has some stuff in it
     if (datasets[0].data.length !== 0) {
-        // Now check if our original dataset is undefined and that it does not exist
+        // Now check if our backup original dataset is not defined.
         if (!chart.data.origDatasetsData) {
+            // If it is not defined, then we need to define it by pushing our data sets (datasets) into it
             chart.data.origDatasetsData = [];
             chart.data.origDatasetsLabels = [];
             for (let i in datasets) {
                 chart.data.origDatasetsData.push(datasets[i].data);
             }
+            // We also need to push our original labels into this backup array
             chart.data.origDatasetsLabels = chart.data.labels
         }
     }
 
-    // Define our original dataset
+    // Define our original datasets and labels as a separate variable
     let originalDatasetsData = chart.data.origDatasetsData;
     let originalDatasetsLabels = chart.data.origDatasetsLabels;
 
-    console.log('Original data:')
-    console.log(originalDatasetsData)
-    console.log('Original labels:')
-    console.log(originalDatasetsLabels)
+    // console.log('Original data:');
+    // console.log(originalDatasetsData);
+    // console.log('Original labels:');
+    // console.log(originalDatasetsLabels);
 
+    // Go into the chart options and find the min and max time of the x axis
     let chartOptions = chart.options.scales.xAxes[0];
     let startX = chartOptions.time.min;
     let endX = chartOptions.time.max;
@@ -459,18 +461,22 @@ function filterData(chart) {
         startX = startX._d.getTime();
     if (endX && typeof endX === 'object')
         endX = endX._d.getTime();
-    console.log('start and end are:')
-    console.log(startX);
-    console.log(endX);
+
+    // console.log('start and end are:');
+    // console.log(startX);
+    // console.log(endX);
 
     let startIndex = 0;
     let endIndex = 0;
     if (startX !== undefined) {
         let converted_labels = [];
 
+        // Now loop through all of the arrays in our datasets array of arrays
         for (let i = 0; i < datasets.length; i++) {
+            // Define a loop variable for our original data
             let originalData = originalDatasetsData[i];
-            // Convert our moment objects to Unix ms
+
+            // Convert our moment objects to Unix ms for comparison
             converted_labels = [];
             for (let a = 0; a < originalDatasetsLabels.length; a++) {
                 converted_labels.push(originalDatasetsLabels[a].valueOf())
@@ -488,6 +494,7 @@ function filterData(chart) {
                 time: null
             };
 
+            // Now run our algorithm to find the start and end index that our graph is currently showing
             for (let j = 0; j < originalData.length; j++) {
                 let time = converted_labels[j];
 
@@ -500,11 +507,14 @@ function filterData(chart) {
                     lastElement.time = time;
                 }
             }
+            // Define them in the following variables
             startIndex = firstElement.index <= lastElement.index ? firstElement.index : lastElement.index;
             endIndex = firstElement.index >= lastElement.index ? firstElement.index : lastElement.index;
 
-            console.log(startIndex)
-            console.log(endIndex)
+            // console.log(startIndex)
+            // console.log(endIndex)
+
+            // Now that we have our start and end index, we can cut our data set using those indices and compress the rest
             datasets[i].data = reduce(originalData.slice(startIndex, endIndex + 1), 1000, 'data');
         }
         chart.data.labels = reduce(converted_labels.slice(startIndex, endIndex + 1), 1000, 'labels');
@@ -513,12 +523,15 @@ function filterData(chart) {
 }
 
 function reduce(data, maxCount, data_type) {
-    // console.log(data)
+
+    // If we have less data than the max count then we can just not touch the data
     if (data.length <= maxCount)
         return data;
+
     let blockSize = data.length / maxCount;
     let reduced = [];
 
+    // Now run through the cut data and for each chunk, we take the average and push it back into 'reduced'
     for (let i = 0; i < data.length;) {
         let chunk = data.slice(i, (i += blockSize) + 1);
         reduced.push(average(chunk, data_type));
@@ -527,20 +540,22 @@ function reduce(data, maxCount, data_type) {
 }
 
 function average(chunk, data_type) {
+
+    // Sum up the chunk that we have and divide by the chunk length - taking the average of the chunk
     let sum = 0;
     if (data_type === "data") {
         for (let i = 0; i < chunk.length; i++) {
             sum += chunk[i];
         }
-
         return sum / chunk.length
-    } else if (data_type === "labels") {
+
+    }
+    // But if we have time labels as our data input then we have to round the value to the nearliest Unix MS
+    else if (data_type === "labels") {
         for (let i = 0; i < chunk.length; i++) {
             sum += chunk[i];
         }
 
         return moment(Math.round(sum / chunk.length))
-
     }
-
 }
