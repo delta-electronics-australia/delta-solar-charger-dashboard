@@ -313,7 +313,7 @@ function create_charts(data_obj, needed_charts) {
                         xAxes: [
                             {
                                 ticks: {
-                                    display: false,
+                                    display: true,
                                     fontColor: '#ffffff',
                                     source: 'auto'
                                 },
@@ -334,8 +334,8 @@ function create_charts(data_obj, needed_charts) {
                             {
                                 scaleLabel: {
                                     display: true,
-                                    labelString: 'kWh',
-                                    color: '#ffffff'
+                                    labelString: 'Solar Generated (kWh)',
+                                    fontColor: '#ffffff'
                                 },
                                 ticks: {
                                     fontColor: "#ffffff"
@@ -609,14 +609,13 @@ function start_master_listener(user) {
     });
 
     // Now we must update our history row of charts
-    // First grab the last 30 values
+    // First grab the last 30 dates for our inverter history analytics
     let solar_history_data = [];
     let solar_history_dates = [];
     let inverter_history_analytics_ref = db.ref(`users/${user.uid}/analytics/inverter_history_analytics`);
-    inverter_history_analytics_ref.limitToLast(30).once("value", function (snapshot) {
+    inverter_history_analytics_ref.limitToLast(20).once("value", function (snapshot) {
         let snapshot_obj = snapshot.val();
 
-        // solar_history_dates = Object.keys(snapshot_obj);
         for (let index in Object.keys(snapshot_obj)) {
             solar_history_dates.push(moment(Object.keys(snapshot_obj)[index], 'YYYY-MM-DD'))
         }
@@ -625,10 +624,16 @@ function start_master_listener(user) {
                 solar_history_data.push(snapshot_obj[date]['dctp'])
             }
         }
-    }).then(async function () {
+    }).then(function () {
         console.log(solar_history_dates);
         console.log(solar_history_data);
         create_charts({'labels': solar_history_dates, 'data': solar_history_data}, 'analytics_charts')
+
+        inverter_history_analytics_ref.limitToLast(1).on("value", function(snapshot){
+            console.log(snapshot.val())
+            console.log(solar_history_dates[solar_history_dates.length - 1].format('YYYY-MM-DD'))
+            
+        })
     });
 
     // Now grab all of the historical values for today
