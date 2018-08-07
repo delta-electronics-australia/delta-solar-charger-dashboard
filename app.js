@@ -8,6 +8,9 @@ let csv = require("fast-csv");
 let archiver = require('archiver');
 let admin = require("firebase-admin");
 let moment = require('moment');
+let chokidar = require('chokidar');
+
+const analytics = require('./analytics.js');
 
 let serviceAccount = require(__dirname + "/firebase.json");
 
@@ -535,7 +538,15 @@ server.listen(process.env.PORT, function () {
     console.log('listening on *:3000');
 });
 
+let file_watcher = chokidar.watch('./logs/');
+
+file_watcher.on('change', function(path){
+    analytics.update_inverter_analytics(path, db)
+})
+
+
 // Code that looks in all of the folders and calculates the analytics
+// analytics.calculate_inverter_analytics(db);
 
 // setInterval(function(){
 //     console.log('interval!')
