@@ -29,9 +29,9 @@ function generate_date() {
     date = yyyy + '-' + mm + '-' + dd;
 }
 
-function create_charts(data_obj, initialize_charging_chart) {
+function create_charts(data_obj, needed_charts) {
 
-    if (initialize_charging_chart) {
+    if (needed_charts === "ev_charging_chart") {
         let ev_charging_chart = new Chart(document.getElementById("ev_charging_chart"), {
             type: 'line',
             data: {
@@ -124,7 +124,7 @@ function create_charts(data_obj, initialize_charging_chart) {
 
         return {'ev_charging_chart': ev_charging_chart}
     }
-    else {
+    else if (needed_charts === "live_charts") {
         let utility_chart = new Chart(document.getElementById("utility_chart"), {
             type: 'line',
             data: {
@@ -214,11 +214,6 @@ function create_charts(data_obj, initialize_charging_chart) {
                     scales: {
                         xAxes: [
                             {
-                                // ticks: {
-                                //     callback: function (tickValue, index, ticks) {
-                                //         return moment(tickValue, 'hhmmss').format('HH:mm:ss')
-                                //     }
-                                // }
                                 type: 'time',
                                 time: {
                                     displayFormats: {
@@ -272,7 +267,89 @@ function create_charts(data_obj, initialize_charging_chart) {
         });
 
         return {'utility_chart': utility_chart, 'dcp': dcp, 'btp_chart': btp_chart}
+    }
 
+    else if (needed_charts === "analytics_charts") {
+        // document.getElementById("solar_history_bar").height = 200;
+        let solar_history_bar = new Chart(document.getElementById("solar_history_bar"), {
+            type: 'bar',
+            data: {
+                // labels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                labels: data_obj['labels'],
+                datasets: [
+                    {
+                        type: 'line',
+                        // data: [0, 1, 4, 9, 16, 25, 36, 25, 1, 8, 64],
+                        data: data_obj['data'],
+                        borderColor: "#ff1e19",
+                        backgroundColor: '#ff1e19',
+                        fill: false
+                    }, {
+                        // data: [0, 1, 4, 9, 16, 25, 36, 25, 1, 8, 64],
+                        data: data_obj['data'],
+                        label: "Solar Power",
+                        borderColor: "#ffc107",
+                        backgroundColor: '#ffc107',
+                        fill: false
+                    }
+                ]
+            },
+            options:
+                {
+                    title: {
+                        display: false,
+                        text:
+                            'Solar Generation History'
+                    },
+                    legend: {
+                        display: false
+                    },
+                    elements: {
+                        line: {
+                            tension: 0.3
+                        }
+                    },
+                    scales: {
+                        xAxes: [
+                            {
+                                ticks: {
+                                    display: false,
+                                    fontColor: '#ffffff',
+                                    source: 'auto'
+                                },
+                                gridLines: {
+                                    color: '#635e63'
+                                },
+                                type: 'time',
+                                distribution: 'series',
+                                time: {
+                                    displayFormats: {
+                                        day: 'MMM D'
+                                        // minute: 'h:mm a'
+                                    }
+                                }
+                            }
+                        ],
+                        yAxes: [
+                            {
+                                scaleLabel: {
+                                    display: true,
+                                    labelString: 'kWh',
+                                    color: '#ffffff'
+                                },
+                                ticks: {
+                                    fontColor: "#ffffff"
+                                },
+                                gridLines: {
+                                    color: '#635e63'
+                                }
+                            }
+                        ]
+                    },
+                    maintainAspectRatio: false,
+                    responsive: true
+                }
+        });
     }
 
 }
@@ -386,7 +463,7 @@ function start_master_listener(user) {
         'ac2p': 0,
         'ac2v': 0,
         'ac2c': 0
-    }
+    };
 
 
     // Get the current charging mode from Firebase and intialize our charging mode input box
@@ -404,39 +481,27 @@ function start_master_listener(user) {
         })
     });
 
-    let media_options = {
+    // Define the first row of sliders
+    let first_row_slider_options = {
         height: 150,
         interval: 30000
     };
-    let media_elem = document.querySelector('.slider');
-    M.Slider.init(media_elem, media_options);
+    let media_elem = document.getElementById('solar_slider');
+    M.Slider.init(media_elem, first_row_slider_options);
     let media_elem1 = document.getElementById('utility_slider');
-    M.Slider.init(media_elem1, media_options);
+    M.Slider.init(media_elem1, first_row_slider_options);
     let media_elem2 = document.getElementById('bt_slider');
-    M.Slider.init(media_elem2, media_options);
+    M.Slider.init(media_elem2, first_row_slider_options);
 
-    // let slider = document.getElementById('test-slider');
-    // noUiSlider.create(slider, {
-    //     start: [0],
-    //     behaviour: 'snap',
-    //     connect: 'lower',
-    //     step: 1,
-    //     orientation: 'horizontal', // 'horizontal' or 'vertical'
-    //     range: {
-    //         'min': 0,
-    //         'max': 3,
-    //     },
-    //     // pips: {
-    //     //     mode: 'values',
-    //     //     values: [0, 1, 2, 3],
-    //     //     // density: 1,
-    //     //     stepped: true
-    //     // }
-    //     format: wNumb({
-    //         decimals: 0
-    //     })
-    // });
-
+    // Define the second row of sliders
+    let second_row_slider_options = {
+        height: 250,
+        interval: 30000
+    };
+    let media_elem3 = document.getElementById('solar_history_slider');
+    M.Slider.init(media_elem3, second_row_slider_options);
+    let media_elem4 = document.getElementById('charge_history_slider');
+    M.Slider.init(media_elem4, second_row_slider_options);
 
     // Start a listener for the EV charging STATUS Todo: this URL will change when we migrate charging status into ID
     let charging_ref = db.ref("users/" + user.uid + "/evc_inputs/charging/");
@@ -450,7 +515,7 @@ function start_master_listener(user) {
     // FIRST LOAD FLAG is for the ev charging chart. The value will depend on whether or not there is a charging session
     // active when we first load the page
     let FIRST_LOAD_FLAG = null;
-    charging_chart_obj = create_charts(charging_data_obj.evc_charging, true);
+    charging_chart_obj = create_charts(charging_data_obj.evc_charging, 'ev_charging_chart');
 
     charging_ref.once('value', function (snapshot) {
         // First we change the _isCharging variable for the whole webpage
@@ -543,6 +608,28 @@ function start_master_listener(user) {
         });
     });
 
+    // Now we must update our history row of charts
+    // First grab the last 30 values
+    let solar_history_data = [];
+    let solar_history_dates = [];
+    let inverter_history_analytics_ref = db.ref(`users/${user.uid}/analytics/inverter_history_analytics`);
+    inverter_history_analytics_ref.limitToLast(30).once("value", function (snapshot) {
+        let snapshot_obj = snapshot.val();
+
+        // solar_history_dates = Object.keys(snapshot_obj);
+        for (let index in Object.keys(snapshot_obj)) {
+            solar_history_dates.push(moment(Object.keys(snapshot_obj)[index], 'YYYY-MM-DD'))
+        }
+        for (let date in snapshot_obj) {
+            if (snapshot_obj.hasOwnProperty(date)) {
+                solar_history_data.push(snapshot_obj[date]['dctp'])
+            }
+        }
+    }).then(async function () {
+        console.log(solar_history_dates);
+        console.log(solar_history_data);
+        create_charts({'labels': solar_history_dates, 'data': solar_history_data}, 'analytics_charts')
+    });
 
     // Now grab all of the historical values for today
     let history_ref = db.ref("users/" + user.uid + "/history/" + date);
@@ -600,7 +687,7 @@ function start_master_listener(user) {
         document.getElementById("loading_id").style.visibility = 'hidden';
 
         // Now create the charts
-        let chart_obj = create_charts(data_obj, false);
+        let chart_obj = create_charts(data_obj, 'live_charts');
 
         // Start listening to any NEW ADDITIONS and only grab the newest addition - THEN push to chart/tables
         history_ref.orderByKey().limitToLast(1).on("child_added", function (snapshot) {
@@ -717,6 +804,7 @@ function start_master_listener(user) {
         });
 
     });
+
 
 }
 

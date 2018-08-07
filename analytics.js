@@ -38,7 +38,9 @@ function calculate_inverter_analytics(db) {
                     }
                 })
                 .on("end", function () {
-                    console.log(`Finished analysing ${file}. dctp: ${inverter_analytics_obj.dctp}, ac2tp: ${inverter_analytics_obj.ac2tp}`)
+                    inverter_analytics_obj.dctp = (inverter_analytics_obj.dctp / 1000).toFixed(2);
+                    inverter_analytics_obj.ac2tp = (inverter_analytics_obj.ac2tp / 1000).toFixed(2);
+                    console.log(`Finished analysing ${file}. dctp: ${inverter_analytics_obj.dctp}, ac2tp: ${inverter_analytics_obj.ac2tp}`);
                     db.ref(`users/${uid}/analytics/inverter_history_analytics/${file.split('.')[0]}/`).update(inverter_analytics_obj)
                 })
         })

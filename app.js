@@ -542,7 +542,7 @@ let file_watcher = chokidar.watch('./logs/');
 
 file_watcher.on('change', function(path){
     analytics.update_inverter_analytics(path, db)
-})
+});
 
 
 // Code that looks in all of the folders and calculates the analytics

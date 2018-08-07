@@ -18,6 +18,15 @@
             bottom: 0;
             margin: auto;
         }
+
+        .top_row_card {
+            height: 200px;
+        }
+
+        .second_row_card {
+            height: 300px;
+        }
+
     </style>
     <!--&lt;!&ndash;Import Google Icon Font&ndash;&gt;-->
     <!--<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">-->
@@ -77,9 +86,10 @@
     <script type="application/javascript" src="../delta_dashboard/public/js/firebaseTransfer.js"></script>
 
 
+    <!------------------------------------------- TOP ROW----------------------------------------------------------->
     <div class="col s12 m6 l3">
-        <div class="card blue-grey darken-1 hoverable">
-            <div class="slider blue-grey darken-1">
+        <div class="card blue-grey darken-1 hoverable top_row_card" id="card_test">
+            <div class="slider blue-grey darken-1" id="solar_slider">
                 <ul class="slides blue-grey darken-1">
                     <li>
                         <div class="card-content white-text">
@@ -93,7 +103,7 @@
     </div>
 
     <div class="col s12 m6 l3">
-        <div class="card blue-grey darken-1 hoverable">
+        <div class="card blue-grey darken-1 hoverable top_row_card">
             <div class="slider blue-grey darken-1" id="utility_slider">
                 <ul class="slides blue-grey darken-1">
                     <li>
@@ -114,7 +124,7 @@
     </div>
 
     <div class="col s12 m6 l3">
-        <div class="card blue-grey darken-1 hoverable">
+        <div class="card blue-grey darken-1 hoverable top_row_card">
             <div class="slider blue-grey darken-1" id="bt_slider">
                 <ul class="slides blue-grey darken-1">
                     <li>
@@ -141,7 +151,7 @@
     </div>
 
     <div class="col s12 m6 l3">
-        <div class="card blue-grey darken-1 hoverable">
+        <div class="card blue-grey darken-1 hoverable top_row_card" id="card_test1">
             <div class="card-content white-text">
                 <span class="card-title center-align">Charging Mode</span>
                 <p class="center-align">Your current charging mode is</p>
@@ -157,7 +167,75 @@
             </div>
         </div>
     </div>
+    <!------------------------------------------- TOP ROW----------------------------------------------------------->
+    <!-------------------------------------------------------------------------------------------------------------->
+    <!------------------------------------------- SECOND ROW-------------------------------------------------------->
+    <div class="col s12 m6 l4">
+        <div class="card blue-grey darken-1 hoverable second_row_card">
+            <div class="slider blue-grey darken-1" id="solar_history_slider">
+                <ul class="slides blue-grey darken-1">
+                    <li>
+                        <div class="card-content white-text">
+                            <span class="card-title center-align">Solar Generation History</span>
+                            <div style="height:190px">
+                                <canvas id="solar_history_bar"></canvas>
+                            </div>
+                            <!--<canvas id="solar_history_bar"></canvas>-->
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
 
+    <div class="col s12 m6 l5">
+        <div class="card blue-grey darken-1 hoverable second_row_card">
+            <div class="slider blue-grey darken-1" id="charge_history_slider">
+                <ul class="slides blue-grey darken-1">
+                    <li>
+                        <div class="card-content white-text">
+                            <span class="card-title center-align">Last EV Charging Session</span>
+                            <h4 class="center-align" id="">Line Chart</h4>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="card-content white-text">
+                            <span class="card-title center-align">Last EV Charging Session</span>
+                            <h4 class="center-align" id="">Pie Chart</h4>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="card-content white-text">
+                            <span class="card-title center-align">EV Charging History</span>
+                            <h4 class="center-align" id="">Bar Chart</h4>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="col s12 m6 l3">
+        <div class="card blue-grey darken-1 hoverable second_row_card">
+            <div class="card-content white-text">
+                <span class="card-title center-align">Battery Buffering Usage</span>
+                <p class="center-align">How aggressive should the battery buffer be? The more aggressive, the less the
+                    battery is used.</p>
+                <div class="input-field white-text center-align">
+                    <select id="battery_buffer_select" class="center-align">
+                        <option value="" disabled selected>Choose your option</option>
+                        <option value="buffer_aggressive">Aggressive</option>
+                        <option value="buffer_moderate">Moderate</option>
+                        <option value="buffer_conservative">Conservative</option>
+                        <option value="buffer_ultraconservative">Ultra Conservative</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!------------------------------------------- SECOND ROW-------------------------------------------------------->
+    <!-------------------------------------------------------------------------------------------------------------->
+    <!------------------------------------------- THIRD ROW--------------------------------------------------------->
     <div class="col s12 m4 l4">
         <div class="card amber lighten-3 z-depth-2 hoverable">
             <div class="card-content amber lighten-2">
@@ -187,6 +265,7 @@
             </div>
         </div>
     </div>
+
     <div class="col s12 m4 l4">
         <div class="card cyan lighten-3 z-depth-2 hoverable">
             <div class="card-content cyan lighten-2">
@@ -215,6 +294,7 @@
             </div>
         </div>
     </div>
+
     <div class="col s12 m4 l4">
         <div class="card green lighten-3 z-depth-2 hoverable">
             <div class="card-content green lighten-2">
@@ -244,6 +324,8 @@
             </div>
         </div>
     </div>
+    <!------------------------------------------- THIRD ROW--------------------------------------------------------->
+    <!-------------------------------------------------------------------------------------------------------------->
 
     <div class="col s12 m8 l8">
         <div class="card green lighten-2 z-depth-2 hoverable">
@@ -279,13 +361,13 @@
     </div>
 
     <!--<div class="col s12 m6 l3">-->
-        <!--<div class="card blue-grey darken-1 hoverable">-->
-            <!--<div class="card-content white-text">-->
-                <!--<span class="card-title center-align">Buffer Aggressiveness</span>-->
-                <!--&lt;!&ndash;<div id="test-slider"></div>&ndash;&gt;-->
+    <!--<div class="card blue-grey darken-1 hoverable">-->
+    <!--<div class="card-content white-text">-->
+    <!--<span class="card-title center-align">Buffer Aggressiveness</span>-->
+    <!--&lt;!&ndash;<div id="test-slider"></div>&ndash;&gt;-->
 
-            <!--</div>-->
-        <!--</div>-->
+    <!--</div>-->
+    <!--</div>-->
     <!--</div>-->
 
 </div>
