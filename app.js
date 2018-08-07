@@ -11,9 +11,9 @@ let moment = require('moment');
 
 let serviceAccount = require(__dirname + "/firebase.json");
 
+// Write all of the output logs into a file
 let access = fs.createWriteStream('C:\\Delta_AU_Services\\EVCS_portal\\output.log');
 process.stdout.write = process.stderr.write = access.write.bind(access);
-
 process.on('uncaughtException', function (err) {
     console.error((err && err.stack) ? err.stack : err);
 });
@@ -23,12 +23,14 @@ admin.initializeApp({
     databaseURL: "https://smart-charging-app.firebaseio.com"
 });
 
+// Define our Firebase database object
 let db = admin.database();
 
 app.set('view engine', 'ejs');
 
 // app.use(favicon('public/favicon.ico'));
 
+// Define our ejs routes
 app.get('/delta_dashboard/', function (req, res) {
     res.render('index')
 });
@@ -49,14 +51,10 @@ app.get('/delta_dashboard/hardware_info', function (req, res) {
     res.render('hardware_info')
 });
 
-app.get('/chart', function (req, res) {
-    res.render('chart_test')
-});
-
 app.use('/delta_dashboard/public', express.static(__dirname + '/public'));
-
 app.use(express.json());
 
+// Define our POST requests
 app.post('/delta_dashboard/archive_request', function (req, res) {
     function chunk(str, n) {
         // The chunk method takes in a string and returns an array of strings
@@ -536,6 +534,12 @@ app.post('/delta_dashboard/charging_history_request', function (req, res) {
 server.listen(process.env.PORT, function () {
     console.log('listening on *:3000');
 });
+
+// Code that looks in all of the folders and calculates the analytics
+
+// setInterval(function(){
+//     console.log('interval!')
+// }, 1000);
 
 function calculate_sankey_values(analytics_obj) {
     // This function takes an object with values about the power and returns arrays for google charts

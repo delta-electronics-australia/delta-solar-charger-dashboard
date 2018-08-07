@@ -101,10 +101,10 @@ function create_charts() {
                             id: 'B',
                             type: 'linear',
                             position: 'right',
-                            ticks: {
-                                max: 100,
-                                min: 0
-                            }
+                            // ticks: {
+                            //     max: 50,
+                            //     min: 0
+                            // }
                         },
                     ]
                 },
