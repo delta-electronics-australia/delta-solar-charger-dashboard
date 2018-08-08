@@ -113,8 +113,12 @@ function create_charts() {
                 pan: {
                     enabled: true,
                     mode: "x",
-                    // speed: 10,
-                    // threshold: 10
+                    rangeMin: {
+                        x: null
+                    },
+                    rangeMax: {
+                        x: null
+                    }
                 },
                 zoom: {
                     enabled: true,
@@ -126,15 +130,15 @@ function create_charts() {
                     // }
                 }
             },
-        // plugins: [{
-        //     beforeUpdate: function (chart, options) {
-        //         filterData(chart);
-        //     },
-        //     afterUpdate: function (chart, options) {
-        //         console.log('after update!!');
-        //         console.log(chart.data.datasets)
-        //     }
-        // }]
+        plugins: [{
+            beforeUpdate: function (chart, options) {
+                filterData(chart);
+            },
+            afterUpdate: function (chart, options) {
+                console.log('after update!!');
+                console.log(chart.data.datasets)
+            }
+        }]
     });
 
     google.charts.load('current', {'packages': ['sankey']});

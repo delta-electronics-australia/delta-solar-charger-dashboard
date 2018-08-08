@@ -536,7 +536,7 @@ function create_charts(data_obj, needed_charts) {
                         position: 'left',
                         scaleLabel: {
                             display: true,
-                            labelString: 'Solar Generated (kWh)',
+                            labelString: 'Energy (kWh)',
                             fontColor: '#ffffff'
                         },
                         ticks: {
@@ -745,7 +745,7 @@ function start_master_listener(user) {
 
     // Define the second row of sliders
     let second_row_slider_options = {
-        height: 250,
+        height: 275,
         interval: 30000
     };
     let media_elem3 = document.getElementById('solar_history_slider');
