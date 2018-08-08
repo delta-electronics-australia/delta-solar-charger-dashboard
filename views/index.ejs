@@ -180,7 +180,6 @@
                             <div style="height:190px">
                                 <canvas id="solar_history_bar"></canvas>
                             </div>
-                            <!--<canvas id="solar_history_bar"></canvas>-->
                         </div>
                     </li>
                 </ul>
@@ -194,20 +193,24 @@
                 <ul class="slides blue-grey darken-1">
                     <li>
                         <div class="card-content white-text">
-                            <span class="card-title center-align">Last EV Charging Session</span>
-                            <h4 class="center-align" id="">Line Chart</h4>
+                            <span class="card-title center-align" id="last_ev_charging_session_title"></span>
+                            <div style="height:190px">
+                                <canvas id="last_ev_charge_session_line"></canvas>
+                            </div>
                         </div>
                     </li>
-                    <li>
-                        <div class="card-content white-text">
-                            <span class="card-title center-align">Last EV Charging Session</span>
-                            <h4 class="center-align" id="">Pie Chart</h4>
-                        </div>
-                    </li>
+                    <!--<li>-->
+                        <!--<div class="card-content white-text">-->
+                            <!--<span class="card-title center-align">Last EV Charging Session</span>-->
+                            <!--<h4 class="center-align" id="">Pie Chart</h4>-->
+                        <!--</div>-->
+                    <!--</li>-->
                     <li>
                         <div class="card-content white-text">
                             <span class="card-title center-align">EV Charging History</span>
-                            <h4 class="center-align" id="">Bar Chart</h4>
+                            <div style="height:190px">
+                                <canvas id="charging_history_bar"></canvas>
+                            </div>
                         </div>
                     </li>
                 </ul>
@@ -230,6 +233,7 @@
                         <option value="buffer_ultraconservative">Ultra Conservative</option>
                     </select>
                 </div>
+                <p class="center-align"><strong>Note: This mode will only work during Standalone: PV with Battery Backup mode</strong></p>
             </div>
         </div>
     </div>

@@ -119,7 +119,16 @@ function create_charts(data_obj, needed_charts) {
                             },
                         ]
                     }
-                }
+                },
+            plugins: [{
+                beforeUpdate: function (chart, options) {
+                    filterData(chart);
+                },
+                // afterUpdate: function (chart, options) {
+                //     console.log('after update!!');
+                //     console.log(chart.data.datasets)
+                // }
+            }]
         });
 
         return {'ev_charging_chart': ev_charging_chart}
@@ -269,87 +278,291 @@ function create_charts(data_obj, needed_charts) {
         return {'utility_chart': utility_chart, 'dcp': dcp, 'btp_chart': btp_chart}
     }
 
-    else if (needed_charts === "analytics_charts") {
+    else if (needed_charts === "analytics_bar_charts") {
         // document.getElementById("solar_history_bar").height = 200;
-        let solar_history_bar = new Chart(document.getElementById("solar_history_bar"), {
-            type: 'bar',
-            data: {
-                // labels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-                labels: data_obj['labels'],
-                datasets: [
-                    {
-                        type: 'line',
-                        // data: [0, 1, 4, 9, 16, 25, 36, 25, 1, 8, 64],
-                        data: data_obj['data'],
-                        borderColor: "#ff1e19",
-                        backgroundColor: '#ff1e19',
-                        fill: false
-                    }, {
-                        // data: [0, 1, 4, 9, 16, 25, 36, 25, 1, 8, 64],
-                        data: data_obj['data'],
-                        label: "Solar Power",
-                        borderColor: "#ffc107",
-                        backgroundColor: '#ffc107',
-                        fill: false
-                    }
-                ]
-            },
-            options:
-                {
-                    title: {
-                        display: false,
-                        text:
-                            'Solar Generation History'
-                    },
-                    legend: {
-                        display: false
-                    },
-                    elements: {
-                        line: {
-                            tension: 0.3
+        return {
+            'solar_history_bar_chart': new Chart(document.getElementById("solar_history_bar"), {
+                type: 'bar',
+                data: {
+                    // labels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                    labels: data_obj['labels'],
+                    datasets: [
+                        {
+                            type: 'line',
+                            // data: [0, 1, 4, 9, 16, 25, 36, 25, 1, 8, 64],
+                            data: data_obj['solar_data'],
+                            borderColor: "#ff1e19",
+                            backgroundColor: '#ff1e19',
+                            fill: false
+                        }, {
+                            // data: [0, 1, 4, 9, 16, 25, 36, 25, 1, 8, 64],
+                            data: data_obj['solar_data'],
+                            label: "Solar Power",
+                            borderColor: "#ffc107",
+                            backgroundColor: '#ffc107',
+                            fill: false
                         }
-                    },
-                    scales: {
-                        xAxes: [
-                            {
+                    ]
+                },
+                options:
+                    {
+                        title: {
+                            display: false,
+                            text:
+                                'Solar Generation History'
+                        },
+                        legend: {
+                            display: false,
+
+                        },
+                        elements: {
+                            line: {
+                                tension: 0.3
+                            }
+                        },
+                        scales: {
+                            xAxes: [{
+                                type: 'time',
                                 ticks: {
                                     display: true,
                                     fontColor: '#ffffff',
                                     source: 'auto'
                                 },
                                 gridLines: {
-                                    color: '#635e63'
+                                    color: '#a19ca1'
                                 },
-                                type: 'time',
                                 distribution: 'series',
                                 time: {
                                     displayFormats: {
                                         day: 'MMM D'
-                                        // minute: 'h:mm a'
                                     }
                                 }
                             }
-                        ],
-                        yAxes: [
-                            {
-                                scaleLabel: {
-                                    display: true,
-                                    labelString: 'Solar Generated (kWh)',
-                                    fontColor: '#ffffff'
-                                },
-                                ticks: {
-                                    fontColor: "#ffffff"
-                                },
-                                gridLines: {
-                                    color: '#635e63'
+                            ],
+                            yAxes: [
+                                {
+                                    scaleLabel: {
+                                        display: true,
+                                        labelString: 'Solar Generated (kWh)',
+                                        fontColor: '#ffffff'
+                                    },
+                                    ticks: {
+                                        fontColor: "#ffffff"
+                                    },
+                                    gridLines: {
+                                        color: '#a19ca1'
+                                    }
+                                }
+                            ]
+                        },
+                        tooltips: {
+                            enabled: true,
+                            callbacks: {
+                                label: function (tooltipItems, data) {
+                                    return tooltipItems.yLabel + ' kWh'
                                 }
                             }
-                        ]
-                    },
-                    maintainAspectRatio: false,
-                    responsive: true
+                        },
+                        maintainAspectRatio: false,
+                        responsive: true
+                    }
+            }),
+
+            'charging_history_bar_chart': new Chart(document.getElementById("charging_history_bar"), {
+                type: 'bar',
+                data: {
+                    // labels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                    labels: data_obj['labels'],
+                    datasets: [
+                        {
+                            type: 'line',
+                            // data: [0, 1, 4, 9, 16, 25, 36, 25, 1, 8, 64],
+                            data: data_obj['charging_data'],
+                            borderColor: "#000000",
+                            backgroundColor: '#000000',
+                            fill: false
+                        }, {
+                            // data: [0, 1, 4, 9, 16, 25, 36, 25, 1, 8, 64],
+                            data: data_obj['charging_data'],
+                            label: "EV Charging Power",
+                            borderColor: "#ff1e19",
+                            backgroundColor: '#ff1e19',
+                            fill: false
+                        }
+                    ]
+                },
+                options:
+                    {
+                        title: {
+                            display: false,
+                            text:
+                                'EV Charging History'
+                        },
+                        legend: {
+                            display: false
+                        },
+                        elements: {
+                            line: {
+                                tension: 0.3
+                            }
+                        },
+                        scales: {
+                            xAxes: [
+                                {
+                                    ticks: {
+                                        display: true,
+                                        fontColor: '#ffffff',
+                                        source: 'auto'
+                                    },
+                                    gridLines: {
+                                        color: '#635e63'
+                                    },
+                                    type: 'time',
+                                    distribution: 'series',
+                                    time: {
+                                        displayFormats: {
+                                            day: 'MMM D'
+                                            // minute: 'h:mm a'
+                                        }
+                                    }
+                                }
+                            ],
+                            yAxes: [
+                                {
+                                    scaleLabel: {
+                                        display: true,
+                                        labelString: 'Energy Consumed (kWh)',
+                                        fontColor: '#ffffff'
+                                    },
+                                    ticks: {
+                                        fontColor: "#ffffff"
+                                    },
+                                    gridLines: {
+                                        color: '#635e63'
+                                    }
+                                }
+                            ]
+                        },
+                        tooltips: {
+                            enabled: true,
+                            callbacks: {
+                                label: function (tooltipItems, data) {
+                                    return tooltipItems.yLabel + ' kWh'
+                                }
+                            }
+                        },
+
+                        maintainAspectRatio: false,
+                        responsive: true
+                    }
+            })
+        }
+
+    }
+
+    else if (needed_charts === "last_ev_charge_line_chart") {
+        return new Chart(document.getElementById("last_ev_charge_session_line"), {
+            type: 'line',
+            data: {
+                labels: data_obj.time,
+                datasets: [{
+                    data: data_obj.dcp,
+                    label: "Solar",
+                    borderColor: "#ffcc00",
+                    fill: false,
+                    yAxisID: 'A'
+                }, {
+                    data: data_obj.utility_p,
+                    label: "Grid",
+                    borderColor: "#6f95ff",
+                    fill: false,
+                    yAxisID: 'A',
+                    hidden: false
+                }, {
+                    data: data_obj.ac2p,
+                    label: "EV Charger",
+                    borderColor: "#ff3300",
+                    fill: false,
+                    yAxisID: 'A',
+                    hidden: false
+                }, {
+                    data: data_obj.btp,
+                    label: "Battery",
+                    borderColor: "#33cc33",
+                    fill: false,
+                    yAxisID: 'A',
+                    hidden: false
                 }
-        });
+                ],
+                spanGaps: false
+            },
+            options: {
+                maintainAspectRatio: false,
+                responsive: true,
+                title: {
+                    display: false,
+                    text: 'history test'
+                },
+                elements: {
+                    line: {
+                        tension: 0
+                    },
+                    point: {
+                        radius: 0,
+                        hitRadius: 5,
+                        hoverRadius: 5
+                    }
+                },
+                scales: {
+                    xAxes: [{
+                        type: 'time',
+                        distribution: 'series',
+                        time: {
+                            displayFormats: {
+                                second: 'h:mm:ss a'
+                            },
+                        },
+                        gridLines: {
+                            color: '#a19ca1'
+                        },
+                        ticks: {
+                            display: true,
+                            fontColor: '#ffffff',
+                            source: 'auto'
+                        },
+                    }],
+                    yAxes: [{
+                        id: 'A',
+                        position: 'left',
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Solar Generated (kWh)',
+                            fontColor: '#ffffff'
+                        },
+                        ticks: {
+                            fontColor: "#ffffff"
+                        },
+                        gridLines: {
+                            color: '#a19ca1'
+                        },
+                    }]
+                },
+                tooltips: {
+                    enabled: true,
+                    callbacks: {
+                        label: function (tooltipItems, data) {
+                            return tooltipItems.yLabel + ' kWh'
+                        }
+                    }
+                },
+                legend: {
+                    labels: {
+                        fontColor: '#ffffff'
+                    }
+                }
+
+            },
+        })
     }
 
 }
@@ -419,6 +632,31 @@ function update_charts(chart_obj, data_obj) {
         chart_obj.ev_charging_chart.update();
     }
 
+    if (chart_obj.hasOwnProperty('solar_history_bar_chart')) {
+        chart_obj.solar_history_bar_chart.data.labels = data_obj.labels;
+        chart_obj.solar_history_bar_chart.data.datasets[0].data = data_obj.solar_data;
+        chart_obj.solar_history_bar_chart.data.datasets[1].data = data_obj.solar_data;
+
+        chart_obj.solar_history_bar_chart.update()
+    }
+
+    if (chart_obj.hasOwnProperty('charging_history_bar_chart')) {
+        chart_obj.charging_history_bar_chart.data.labels = data_obj.labels;
+        chart_obj.charging_history_bar_chart.data.datasets[0].data = data_obj.charging_data;
+        chart_obj.charging_history_bar_chart.data.datasets[1].data = data_obj.charging_data;
+
+        chart_obj.charging_history_bar_chart.update()
+    }
+
+    if (chart_obj.hasOwnProperty('last_ev_charge_line_chart')) {
+        chart_obj.last_ev_charge_line_chart.data.labels = data_obj.time;
+        chart_obj.last_ev_charge_line_chart.data.datasets[0].data = data_obj.dcp;
+        chart_obj.last_ev_charge_line_chart.data.datasets[1].data = data_obj.utility_p;
+        chart_obj.last_ev_charge_line_chart.data.datasets[2].data = data_obj.ac2p;
+        chart_obj.last_ev_charge_line_chart.data.datasets[3].data = data_obj.btp;
+
+        chart_obj.last_ev_charge_line_chart.update()
+    }
 }
 
 function start_master_listener(user) {
@@ -469,7 +707,7 @@ function start_master_listener(user) {
     // Get the current charging mode from Firebase and intialize our charging mode input box
     db.ref("users/" + user.uid + "/evc_inputs/charging_mode").on('value', function (snapshot) {
         $('#chargemode_select').val(snapshot.val());
-        let modeselect_elem = document.querySelector('select');
+        let modeselect_elem = document.getElementById('chargemode_select');
         let modeselect_instance = M.FormSelect.init(modeselect_elem);
     });
 
@@ -479,6 +717,18 @@ function start_master_listener(user) {
         db.ref("users/" + user.uid + "/evc_inputs").update({
             charging_mode: $(this).val()
         })
+    });
+
+    // Todo: need to implement the EVCS bac
+    let battery_buffer_select_elem = document.getElementById('battery_buffer_select');
+    let battery_buffer_select_instance = M.FormSelect.init(battery_buffer_select_elem);
+
+    // Listen for a select in the battery buffer dropdown box
+    $('#battery_buffer_select').on('change', function () {
+        // Send the new mode to Firebase to be picked up by our Analyse process
+        // db.ref("users/" + user.uid + "/evc_inputs").update({
+        //     charging_mode: $(this).val()
+        // })
     });
 
     // Define the first row of sliders
@@ -503,6 +753,8 @@ function start_master_listener(user) {
     let media_elem4 = document.getElementById('charge_history_slider');
     M.Slider.init(media_elem4, second_row_slider_options);
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////// EV CHARGING GRAPH ////////////////////////////////////////////////////////////////
     // Start a listener for the EV charging STATUS Todo: this URL will change when we migrate charging status into ID
     let charging_ref = db.ref("users/" + user.uid + "/evc_inputs/charging/");
 
@@ -582,7 +834,6 @@ function start_master_listener(user) {
                             FIRST_LOAD_FLAG = false;
                             update_charts(charging_chart_obj, charging_data_obj);
                             update_tables(charging_table_data_obj, 'evc_table')
-
                         }
                     }
                 });
@@ -607,35 +858,137 @@ function start_master_listener(user) {
             }
         });
     });
-
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////// ANALYTICS BAR CHARTS /////////////////////////////////////////////////////
     // Now we must update our history row of charts
-    // First grab the last 30 dates for our inverter history analytics
+    // First grab the last 20 dates for our inverter history analytics with this we can figure out the solar history and charging history
     let solar_history_data = [];
-    let solar_history_dates = [];
-    let inverter_history_analytics_ref = db.ref(`users/${user.uid}/analytics/inverter_history_analytics`);
-    inverter_history_analytics_ref.limitToLast(20).once("value", function (snapshot) {
-        let snapshot_obj = snapshot.val();
+    let analytics_dates = [];
+    let analytics_charts_obj = null;
 
+    let charging_history_data = [];
+
+    let inverter_history_analytics_ref = db.ref(`users/${user.uid}/analytics/inverter_history_analytics`);
+    inverter_history_analytics_ref.limitToLast(20).on("value", function (snapshot) {
+        // Clear all of our data and label variables
+        solar_history_data = [];
+        analytics_dates = [];
+        charging_history_data = [];
+
+        let snapshot_obj = snapshot.val();
+        // Loop through index of snapshot_obj and convert all of the keys (YYYY-MM-DD) to MomentJS objects and push into array
         for (let index in Object.keys(snapshot_obj)) {
-            solar_history_dates.push(moment(Object.keys(snapshot_obj)[index], 'YYYY-MM-DD'))
+            analytics_dates.push(moment(Object.keys(snapshot_obj)[index], 'YYYY-MM-DD'));
         }
+        // Now loop through all of the data in snapshot_obj and push all the data to solar_history_data
         for (let date in snapshot_obj) {
             if (snapshot_obj.hasOwnProperty(date)) {
-                solar_history_data.push(snapshot_obj[date]['dctp'])
+                solar_history_data.push(snapshot_obj[date]['dctp']);
+                charging_history_data.push(snapshot_obj[date]['ac2tp'])
             }
         }
-    }).then(function () {
-        console.log(solar_history_dates);
-        console.log(solar_history_data);
-        create_charts({'labels': solar_history_dates, 'data': solar_history_data}, 'analytics_charts')
 
-        inverter_history_analytics_ref.limitToLast(1).on("value", function(snapshot){
-            console.log(snapshot.val())
-            console.log(solar_history_dates[solar_history_dates.length - 1].format('YYYY-MM-DD'))
-            
-        })
+        // If we do not have a bar chart object, then we should create it
+        if (analytics_charts_obj === null) {
+            analytics_charts_obj = create_charts({
+                'labels': analytics_dates,
+                'solar_data': solar_history_data,
+                'charging_data': charging_history_data
+            }, 'analytics_bar_charts')
+        }
+        // If we already have an object, then we should update the bar charts
+        else {
+            update_charts({
+                'solar_history_bar_chart': analytics_charts_obj['solar_history_bar_chart'],
+                'charging_history_bar_chart': analytics_charts_obj['charging_history_bar_chart']
+            }, {
+                'labels': analytics_dates,
+                'solar_data': solar_history_data,
+                'charging_data': charging_history_data
+            })
+        }
+
+
     });
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Now let's get the last charging session
+    let large_charge_session_data_obj;
+    let last_ev_charge_line_chart;
+    let latest_date_string;
+    let url = "/delta_dashboard/last_charge_session_request";
+    let xhr = new XMLHttpRequest();
+    xhr.open("POST", url, true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.onload = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            large_charge_session_data_obj = JSON.parse(xhr.response)['data_obj'];
 
+            // Convert all of the time values into moment objects (depending on the format)
+            large_charge_session_data_obj['time'].forEach(function (value, key, time_array) {
+                time_array[key] = moment(time_array[key])
+            });
+
+            // Modify the card title with the date and time of the last charging session
+            latest_date_string = JSON.parse(xhr.response)['date_string'];
+            document.getElementById('last_ev_charging_session_title').innerHTML = `Last EV Charging Session: ${latest_date_string}`;
+            last_ev_charge_line_chart = create_charts(large_charge_session_data_obj, 'last_ev_charge_line_chart');
+        }
+    };
+
+    data = JSON.stringify({
+        'latest_date': 'first_grab',
+        'uid': user.uid
+    });
+    xhr.send(data);
+
+    // After we have gotten
+    let get_last_charge_session_interval = setInterval(function () {
+        // let large_charge_session_data_obj;
+        // let last_ev_charge_line_chart;
+        let url = "/delta_dashboard/last_charge_session_request";
+        let xhr = new XMLHttpRequest();
+        xhr.open("POST", url, true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.onload = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                if (JSON.parse(xhr.response)['new_data']) {
+                    large_charge_session_data_obj = JSON.parse(xhr.response)['data_obj'];
+
+                    // Convert all of the time values into moment objects (depending on the format)
+                    large_charge_session_data_obj['time'].forEach(function (value, key, time_array) {
+                        time_array[key] = moment(time_array[key])
+                    });
+
+                    // Modify the card title with the date and time of the last charging session
+                    document.getElementById('last_ev_charging_session_title').innerHTML = `Last EV Charging Session: ${JSON.parse(xhr.response)['date_string']}`
+                    update_charts({'last_ev_charge_line_chart': last_ev_charge_line_chart}, large_charge_session_data_obj);
+                }
+
+                // If there is no new data
+                else {
+                    console.log('no new data')
+                }
+            }
+        };
+
+        let data = JSON.stringify({
+            'latest_date': latest_date_string,
+            'uid': user.uid
+        });
+
+        xhr.send(data);
+    }, 60000);
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////// LIVE INVERTER AND BATTERY GRAPHS ///////////////////////////////////////////////////
     // Now grab all of the historical values for today
     let history_ref = db.ref("users/" + user.uid + "/history/" + date);
     history_ref.orderByKey().limitToLast(70).once("value", function (snapshot) {
@@ -802,7 +1155,7 @@ function start_master_listener(user) {
 
             document.getElementById("dctp_card").innerText = payload['dcp_t'].toFixed(2) + "kWh";
             document.getElementById("utility_p_export_card").innerText = payload['utility_p_export_t'].toFixed(2) + "kWh";
-            document.getElementById("utility_p_import_card").innerText = payload['utility_p_import_t'].toFixed(2) + "kWh";
+            document.getElementById("utility_p_import_card").innerText = -1 * payload['utility_p_import_t'].toFixed(2) + "kWh";
             document.getElementById("bt_consumed_card").innerText = payload['btp_consumed_t'].toFixed(2) + "kWh";
             document.getElementById("bt_charged_card").innerText = -1 * (payload['btp_charged_t'].toFixed(2)) + "kWh";
 
@@ -810,7 +1163,8 @@ function start_master_listener(user) {
 
     });
 
-
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 }
 
 
@@ -833,7 +1187,6 @@ function checkIfLoggedIn() {
         if (user) {
             // This will update our global date variable
             generate_date();
-
 
             // Start the main js script
             start_master_listener(user);
@@ -888,6 +1241,131 @@ function update_tables(data_obj, purpose) {
     }
 
 
+}
+
+function filterData(chart) {
+    // Datasets is the array of data arrays that we currently have in the chart object
+    let datasets = chart.data.datasets;
+
+    // First check if we have a dataset that has some stuff in it
+    if (datasets[0].data.length !== 0) {
+        // Now check if our backup original dataset is not defined.
+        if (!chart.data.origDatasetsData) {
+            // If it is not defined, then we need to define it by pushing our data sets (datasets) into it
+            chart.data.origDatasetsData = [];
+            chart.data.origDatasetsLabels = [];
+            for (let i in datasets) {
+                if (datasets.hasOwnProperty(i)) {
+                    chart.data.origDatasetsData.push(datasets[i].data);
+                }
+            }
+            // We also need to push our original labels into this backup array
+            chart.data.origDatasetsLabels = chart.data.labels
+        }
+    }
+
+    // Define our original datasets and labels as a separate variable
+    let originalDatasetsData = chart.data.origDatasetsData;
+    let originalDatasetsLabels = chart.data.origDatasetsLabels;
+
+    // Go into the chart options and find the min and max time of the x axis
+    let chartOptions = chart.options.scales.xAxes[0];
+    let startX = chartOptions.time.min;
+    let endX = chartOptions.time.max;
+    if (startX && typeof startX === 'object')
+        startX = startX._d.getTime();
+    if (endX && typeof endX === 'object')
+        endX = endX._d.getTime();
+
+    let startIndex = 0;
+    let endIndex = 0;
+    if (startX !== undefined || originalDatasetsData !== undefined) {
+        let converted_labels = [];
+
+        // Now loop through all of the arrays in our datasets array of arrays
+        for (let i = 0; i < datasets.length; i++) {
+            // Define a loop variable for our original data
+            let originalData = originalDatasetsData[i];
+
+            // Convert our moment objects to Unix ms for comparison
+            converted_labels = [];
+            for (let a = 0; a < originalDatasetsLabels.length; a++) {
+                converted_labels.push(originalDatasetsLabels[a].valueOf())
+            }
+
+            if (!originalData.length)
+                continue;
+
+            let firstElement = {
+                index: 0,
+                time: null
+            };
+            let lastElement = {
+                index: originalData.length - 1,
+                time: null
+            };
+
+            // Now run our algorithm to find the start and end index that our graph is currently showing
+            for (let j = 0; j < originalData.length; j++) {
+                let time = converted_labels[j];
+
+                if (time >= startX && (firstElement.time === null || time < firstElement.time)) {
+                    firstElement.index = j;
+                    firstElement.time = time;
+                }
+                if (time <= endX && (lastElement.time === null || time > lastElement.time)) {
+                    lastElement.index = j;
+                    lastElement.time = time;
+                }
+            }
+            // Define them in the following variables
+            startIndex = firstElement.index <= lastElement.index ? firstElement.index : lastElement.index;
+            endIndex = firstElement.index >= lastElement.index ? firstElement.index : lastElement.index;
+
+            // Now that we have our start and end index, we can cut our data set using those indices and compress the rest
+            datasets[i].data = reduce(originalData.slice(startIndex, endIndex + 1), 1000, 'data');
+        }
+        chart.data.labels = reduce(converted_labels.slice(startIndex, endIndex + 1), 1000, 'labels');
+    }
+
+}
+
+function reduce(data, maxCount, data_type) {
+
+    // If we have less data than the max count then we can just not touch the data
+    if (data.length <= maxCount)
+        return data;
+
+    let blockSize = data.length / maxCount;
+    let reduced = [];
+
+    // Now run through the cut data and for each chunk, we take the average and push it back into 'reduced'
+    for (let i = 0; i < data.length;) {
+        let chunk = data.slice(i, (i += blockSize) + 1);
+        reduced.push(average(chunk, data_type));
+    }
+    return reduced;
+}
+
+function average(chunk, data_type) {
+
+    // Sum up the chunk that we have and divide by the chunk length - taking the average of the chunk
+    let sum = 0;
+    if (data_type === "data") {
+        for (let i = 0; i < chunk.length; i++) {
+            sum += chunk[i];
+        }
+        return sum / chunk.length
+
+    }
+    // But if we have time labels as our data input then we have to round the value to the nearliest Unix MS
+    else if (data_type === "labels") {
+        for (let i = 0; i < chunk.length; i++) {
+            sum += chunk[i];
+        }
+
+        return moment(Math.round(sum / chunk.length))
+    }
 }
 
 checkIfLoggedIn();

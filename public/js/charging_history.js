@@ -428,7 +428,9 @@ function filterData(chart) {
             chart.data.origDatasetsData = [];
             chart.data.origDatasetsLabels = [];
             for (let i in datasets) {
-                chart.data.origDatasetsData.push(datasets[i].data);
+                if (datasets.hasOwnProperty(i)) {
+                    chart.data.origDatasetsData.push(datasets[i].data);
+                }
             }
             // We also need to push our original labels into this backup array
             chart.data.origDatasetsLabels = chart.data.labels
@@ -459,7 +461,7 @@ function filterData(chart) {
 
     let startIndex = 0;
     let endIndex = 0;
-    if (startX !== undefined) {
+    if (startX !== undefined || originalDatasetsData !== undefined) {
         let converted_labels = [];
 
         // Now loop through all of the arrays in our datasets array of arrays

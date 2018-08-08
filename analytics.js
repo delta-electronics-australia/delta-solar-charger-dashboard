@@ -1,5 +1,6 @@
 let fs = require('fs');
 let csv = require("fast-csv");
+let moment = require('moment');
 
 function calculate_inverter_analytics(db) {
     console.log('We are going to start calculating inverter analytics!');
@@ -79,6 +80,8 @@ function update_inverter_analytics(path, db) {
                 }
             })
             .on("end", function () {
+                inverter_analytics_obj.dctp = (inverter_analytics_obj.dctp / 1000).toFixed(2);
+                inverter_analytics_obj.ac2tp = (inverter_analytics_obj.ac2tp / 1000).toFixed(2);
                 console.log(`Finished analysing ${file}. dctp: ${inverter_analytics_obj.dctp}, ac2tp: ${inverter_analytics_obj.ac2tp}`)
                 db.ref(`users/${uid}/analytics/inverter_history_analytics/${file.split('.')[0]}/`).update(inverter_analytics_obj)
             })
@@ -86,7 +89,45 @@ function update_inverter_analytics(path, db) {
 
 }
 
+function reduce_data(data, maxPoints, data_type) {
+    // If we have less data than the max count then we can just not touch the data
+    if (data.length <= maxPoints)
+        return data;
+
+    let blockSize = data.length / maxPoints;
+    let reduced = [];
+
+    // Now run through the cut data and for each chunk, we take the average and push it back into 'reduced'
+    for (let i = 0; i < data.length;) {
+        let chunk = data.slice(i, (i += blockSize) + 1);
+        reduced.push(average(chunk, data_type));
+    }
+    return reduced;
+}
+
+function average(chunk, data_type) {
+
+    // Sum up the chunk that we have and divide by the chunk length - taking the average of the chunk
+    let sum = 0;
+    if (data_type === "data") {
+        for (let i = 0; i < chunk.length; i++) {
+            sum += chunk[i];
+        }
+        return (sum / chunk.length).toFixed(2)
+
+    }
+    // But if we have time labels as our data input then we have to round the value to the nearliest Unix MS
+    else if (data_type === "labels") {
+        for (let i = 0; i < chunk.length; i++) {
+            sum += chunk[i];
+        }
+
+        return Math.round(sum / chunk.length)
+    }
+}
+
 module.exports = {
     'calculate_inverter_analytics': calculate_inverter_analytics,
-    'update_inverter_analytics': update_inverter_analytics
+    'update_inverter_analytics': update_inverter_analytics,
+    'reduce_data': reduce_data
 }

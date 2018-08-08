@@ -515,7 +515,6 @@ app.post('/delta_dashboard/charging_history_request', function (req, res) {
                         data_obj.bt_module1_max_temp.push(Number(data[19]));
                         data_obj.bt_module1_min_temp.push(Number(data[20]));
                     }
-
                     counter = 0
                 }
                 counter++
@@ -534,23 +533,98 @@ app.post('/delta_dashboard/charging_history_request', function (req, res) {
     })
 });
 
+app.post('/delta_dashboard/last_charge_session_request', function (req, res) {
+    let uid = req.body.uid;
+    let received_date_string = req.body.latest_date;
+
+    let charge_list = fs.readdirSync(`./logs/${uid}/charging_logs`);
+    let selected_charging_session = charge_list[charge_list.length - 1];
+
+    if (received_date_string === undefined || received_date_string === moment(selected_charging_session.split(".")[0], 'YYYY-MM-DD hhmm').format('MMMM Do, h:mm a')) {
+        res.json({
+            'new_data': false
+        })
+    }
+
+    else {
+        let data_obj = {
+            'utility_p': [],
+            'dcp': [],
+            'btp': [],
+            'ac2p': [],
+            'time': []
+        };
+        let temp_data_obj = {
+            'utility_p': [],
+            'dcp': [],
+            'btp': [],
+            'ac2p': [],
+            'time': []
+        };
+        let time_unix = [];
+        let date_string = "";
+
+        // First read the appropriate csv file
+        fs.createReadStream(`C:\\Delta_AU_Services\\EVCS_portal\\logs\\${uid}\\charging_logs\\${selected_charging_session}`)
+            .pipe(csv())
+            .on("data", function (data) {
+
+                if (!isNaN(Number(data[7]) + Number(data[10]))) {
+                    temp_data_obj.time.push(data[0]);
+                    temp_data_obj.ac2p.push(Number(data[4]));
+                    temp_data_obj.dcp.push(Number(data[7]) + Number(data[10]));
+                    temp_data_obj.btp.push(Number(data[13]));
+                    temp_data_obj.utility_p.push(Number(data[17]));
+                }
+            })
+            .on("end", function () {
+                console.log("Done with last charging session request");
+
+                for (let key in temp_data_obj) {
+                    // If our data is time...
+                    if (key === 'time') {
+                        temp_data_obj['time'].forEach(function (value, key, time_array) {
+                            time_array[key] = moment(time_array[key], "YYYY-MM-DD HH:mm:ss.SSSSSS")
+                        });
+
+                        // First convert all of it to Unix ms
+                        for (let a = 0; a < temp_data_obj.time.length; a++) {
+                            time_unix.push(temp_data_obj.time[a].valueOf())
+                        }
+
+                        // Then we reduce it
+                        data_obj.time = analytics.reduce_data(time_unix, 200, 'labels');
+
+                    }
+                    // If our data is just normal data then we just reduce it
+                    else {
+                        data_obj[key] = analytics.reduce_data(temp_data_obj[key], 200, 'data')
+                        // console.log(analytics.reduce_data(temp_data_obj[key], 500, 'data'))
+                    }
+                }
+
+                date_string = moment(selected_charging_session.split(".")[0], 'YYYY-MM-DD hhmm').format('MMMM Do, h:mm a');
+                res.json({
+                    new_data: true,
+                    data_obj: data_obj,
+                    date_string: date_string
+                })
+            });
+    }
+});
+
+
 server.listen(process.env.PORT, function () {
     console.log('listening on *:3000');
 });
 
 let file_watcher = chokidar.watch('./logs/');
 
-file_watcher.on('change', function(path){
+file_watcher.on('change', function (path) {
     analytics.update_inverter_analytics(path, db)
 });
 
-
-// Code that looks in all of the folders and calculates the analytics
 // analytics.calculate_inverter_analytics(db);
-
-// setInterval(function(){
-//     console.log('interval!')
-// }, 1000);
 
 function calculate_sankey_values(analytics_obj) {
     // This function takes an object with values about the power and returns arrays for google charts
