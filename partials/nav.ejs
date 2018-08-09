@@ -1,0 +1,78 @@
+<head>
+
+    <!--Let browser know website is optimized for mobile-->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <style>
+        #logo {
+            width: 7%;
+            height: 7%;
+            /*margin: auto;*/
+            padding-left: 10px;
+            /*display: inline-block;*/
+        }
+
+        #imgWrapper {
+            /*max-width: 0px;*/
+            display: inline-block;
+        }
+    </style>
+
+    <!--Import Google Icon Font-->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!--Import materialize.css-->
+    <link type="text/css" rel="stylesheet" href="../delta_dashboard/public/css/materialize.css"
+          media="screen,projection"/>
+
+</head>
+
+<ul id="user_dropdown" class="dropdown-content">
+    <li><a href="#">Profile</a></li>
+    <li><a href="#" onclick="signOut()">Signout</a></li>
+</ul>
+<ul id="archive_dropdown" class="dropdown-content">
+    <li><a href="/delta_dashboard/history">Inverter History</a></li>
+    <li><a href="/delta_dashboard/charging_history">Previous Charging Sessions</a></li>
+</ul>
+
+<nav>
+    <!--<a class="brand-logo"><img class="responsive-img" id="logo" src="../delta_dashboard/public/img/delta_logo.png"></a>-->
+
+    <div class="nav-wrapper blue lighten-2">
+        <!--<div id="imgWrapper" class="brand-logo left">-->
+        <!--</div>-->
+        <!--<a class="brand-logo left"><img class="responsive-img" id="logo" src="../delta_dashboard/public/img/delta_logo.png"></a>-->
+        <a href="#" class="brand-logo">Logo</a>
+        <ul id="nav-mobile" class="right hide-on-med-and-down">
+            <li><a href="/delta_dashboard">Dashboard</a></li>
+            <li><a class="archive_dropdown_trigger" href="#!" data-target="archive_dropdown">Archive</a>
+            <li><a href="/delta_dashboard/hardware_info">Hardware Info</a></li>
+            <li><a class="user_dropdown_trigger" href="#!" id="displayName" data-target="user_dropdown"></a>
+            </li>
+        </ul>
+        <!--<img src="../delta_dashboard/public/img/delta_logo.png" id="logo">-->
+
+
+    </div>
+</nav>
+
+<script>
+    firebase.auth().onAuthStateChanged(function (user) {
+        let archive_dropdown_elems = document.querySelectorAll('.archive_dropdown_trigger');
+        let archive_dropdown_instances = M.Dropdown.init(archive_dropdown_elems, {
+            coverTrigger: false,
+            constrainWidth: false,
+            hover: true,
+            outDuration: 150
+        });
+        let user_dropdown_elems = document.querySelectorAll('.user_dropdown_trigger');
+        let user_dropdown_instances = M.Dropdown.init(user_dropdown_elems, {
+            coverTrigger: false,
+            hover: true,
+            outDuration: 150
+
+        });
+        // Get the user's displayname and put it in the nav bar
+        document.getElementById("displayName").innerHTML = "<b>" + user.displayName + "</b>"
+    });
+
+</script>

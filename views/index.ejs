@@ -27,6 +27,10 @@
             height: 325px;
         }
 
+        /*#title_wrapper {*/
+            /*height: 200px;*/
+        /*}*/
+
     </style>
 
     <script src="../delta_dashboard/public/js/jquery-3.3.1.js"></script>
@@ -59,7 +63,9 @@
 
 <body>
 <!--<div class="container">-->
-<h1 class="center-align">Delta Solar Charging Station</h1>
+<div id="title_wrapper">
+    <h1 class="center-align" id="title">Delta Solar Charging Station</h1>
+</div>
 
 <div class="preloader-wrapper big active" id="loading_id">
     <div class="spinner-layer spinner-blue-only">
@@ -194,10 +200,10 @@
                         </div>
                     </li>
                     <!--<li>-->
-                        <!--<div class="card-content white-text">-->
-                            <!--<span class="card-title center-align">Last EV Charging Session</span>-->
-                            <!--<h4 class="center-align" id="">Pie Chart</h4>-->
-                        <!--</div>-->
+                    <!--<div class="card-content white-text">-->
+                    <!--<span class="card-title center-align">Last EV Charging Session</span>-->
+                    <!--<h4 class="center-align" id="">Pie Chart</h4>-->
+                    <!--</div>-->
                     <!--</li>-->
                     <li>
                         <div class="card-content white-text">
@@ -227,7 +233,8 @@
                         <option value="buffer_ultraconservative">Ultra Conservative</option>
                     </select>
                 </div>
-                <p class="center-align"><strong>Note: This mode will only work during Standalone: PV with Battery Backup mode</strong></p>
+                <p class="center-align"><strong>Note: This mode will only work during Standalone: PV with Battery Backup
+                        mode</strong></p>
             </div>
         </div>
     </div>

@@ -572,7 +572,7 @@ function update_charts(chart_obj, data_obj) {
         chart_obj.utility_chart.data.labels = data_obj.time;
         chart_obj.utility_chart.data.datasets[0].data = data_obj.utility_p;
         chart_obj.utility_chart.data.datasets[1].data = data_obj.utility_c;
-        if (data_obj.utility_p.length > 50) {
+        if (data_obj.utility_p.length > 35) {
             chart_obj.utility_chart.options.elements.point.radius = 0;
             chart_obj.utility_chart.options.elements.point.hitRadius = 7;
             chart_obj.utility_chart.options.elements.point.hoverRadius = 7;
@@ -752,6 +752,16 @@ function start_master_listener(user) {
     M.Slider.init(media_elem3, second_row_slider_options);
     let media_elem4 = document.getElementById('charge_history_slider');
     M.Slider.init(media_elem4, second_row_slider_options);
+
+
+    // let push_pin_elems = document.getElementById('title');
+    // // console.log(push_pin_elems)
+    // let push_pin_instances = M.Pushpin.init(push_pin_elems, {
+    //     top: 64,
+    //     offset: 0
+    // });
+    // console.log(push_pin_instances)
+    // $('#title-pushpin').pushpin();
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////// EV CHARGING GRAPH ////////////////////////////////////////////////////////////////

@@ -135,8 +135,9 @@ function create_charts() {
                 filterData(chart);
             },
             afterUpdate: function (chart, options) {
-                console.log('after update!!');
-                console.log(chart.data.datasets)
+                // console.log('after update!!');
+                // console.log(chart.data.datasets)
+                // console.log(chart.data.labels)
             }
         }]
     });
