@@ -273,7 +273,7 @@ async function start_charging_history_page(user) {
 
     // Point to our charging history keys
     let charging_history_key_ref = db.ref(`users/${user.uid}/charging_history_keys/`);
-    charging_history_key_ref.orderByKey().once("value", function (snapshot) {
+    charging_history_key_ref.orderByKey().once("value", async function (snapshot) {
         if (snapshot.val() !== null) {
             let charging_session_keys = Object.keys(snapshot.val());
 
@@ -282,11 +282,24 @@ async function start_charging_history_page(user) {
             document.getElementById('master_row').style.visibility = 'visible';
             ///////////////////////////////////////////////////////////////////////////////////////////
 
+            // Need to check if we are currently charging:
+            // let _isCharging = false;
+            let charging_ref = db.ref("users/" + user.uid + "/evc_inputs/charging/");
+            let _isCharging = await charging_ref.once('value');
+            _isCharging = _isCharging.val();
+
             // Convert yyyy-mm-ddThhmm to yyyy-mm-dd hh:mm, append to our drop down list
             let options = "";
             let display_value = "";
             $.each(charging_session_keys, function (i, val) {
                 display_value = (val.slice(0, 13) + ":" + val.slice(13)).replace("T", " ");
+
+                if (_isCharging && val === charging_session_keys[charging_session_keys.length - 1]){
+                    console.log('We have reached the one that should be disabled...');
+                    console.log(val);
+                    console.log(options + "<option value='" + val + "' ' + disabled'>" + display_value + "</option>")
+                }
+
                 options = options + "<option value='" + val + "'>" + display_value + "</option>";
             });
 

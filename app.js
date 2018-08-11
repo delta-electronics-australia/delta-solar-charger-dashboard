@@ -101,7 +101,7 @@ app.post('/delta_dashboard/archive_request', function (req, res) {
             fs.createReadStream(`C:\\Delta_AU_Services\\EVCS_portal\\logs\\${uid}\\inverter_logs\\${selected_date}.csv`)
                 .pipe(csv())
                 .on("data", function (data) {
-                    if (counter === 10) {
+                    if (counter === 2) {
                         data_obj.time.push(data[0]);
                         data_obj.ac2p.push(Number(data[4]));
                         data_obj.dcp.push(Number(data[7]) + Number(data[10]));
@@ -497,7 +497,7 @@ app.post('/delta_dashboard/charging_history_request', function (req, res) {
                     analytics_obj.utility_p = analytics_obj.utility_p + (utility_p / 3600);
                 }
 
-                if (counter === 4) {
+                if (counter === 2) {
                     data_obj.time.push(data[0]);
 
                     data_obj.ac2p.push(ac2p);
@@ -578,7 +578,6 @@ app.post('/delta_dashboard/last_charge_session_request', function (req, res) {
                 }
             })
             .on("end", function () {
-                console.log("Done with last charging session request");
 
                 for (let key in temp_data_obj) {
                     // If our data is time...

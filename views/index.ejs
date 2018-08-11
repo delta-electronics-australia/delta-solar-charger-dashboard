@@ -3,8 +3,18 @@
 
 <head>
     <style>
-        #utility_title,
-        #dc_title,
+        #master_row {
+            opacity: 0;
+            -webkit-transition: opacity 0.7s ease-in;
+            -moz-transition: opacity 0.7s ease-in;
+            -o-transition: opacity 0.7s ease-in;
+            transition: opacity 0.7s ease-in;
+        }
+
+        #master_row.load{
+            opacity: 1;
+        }
+
         #btp_title {
             font-size: 24px;
             font-weight: 500;
@@ -27,9 +37,41 @@
             height: 325px;
         }
 
-        /*#title_wrapper {*/
-            /*height: 200px;*/
-        /*}*/
+        /*   Class for when element is pinned */
+        .pinned {
+            position: fixed !important;
+            z-index: 10;
+        }
+
+        /* Default style of the title */
+        #title {
+            margin: 0;
+            width: 100%;
+            padding: 20px;
+        }
+
+        #title_wrapper {
+            height: 100px;
+        }
+
+        /* Style of the title when unpinned */
+        .title_unpinned {
+            background-color: white;
+            color: black;
+            font-size: 4.2rem;
+            padding: 20px;
+            margin: 0;
+        }
+
+        /* Style of the title when pinned */
+        .title_pinned {
+            background-color: rgba(100, 181, 246, 0.85);
+            color: white;
+            font-size: 3rem;
+            padding: 15px
+
+        }
+
 
     </style>
 
@@ -54,7 +96,7 @@
         };
         firebase.initializeApp(config);
     </script>
-    
+
     <script src="../delta_dashboard/public/bower_components/chart.js/dist/Chart.min.js"></script>
 
 </head>
@@ -64,7 +106,7 @@
 <body>
 <!--<div class="container">-->
 <div id="title_wrapper">
-    <h1 class="center-align" id="title">Delta Solar Charging Station</h1>
+    <h1 class="center-align title_pushpin" id="title">Delta Solar Charging Station</h1>
 </div>
 
 <div class="preloader-wrapper big active" id="loading_id">
