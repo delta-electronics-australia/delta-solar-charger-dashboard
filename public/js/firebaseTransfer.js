@@ -74,57 +74,51 @@ function create_charts(data_obj, needed_charts) {
                     yAxisID: 'B',
                     hidden: false
 
-                }
-                ]
+                }]
             },
-            options:
-                {
-                    title: {
-                        display: false,
-                        text:
-                            'EV Charging'
+            options: {
+                title: {
+                    display: false,
+                    text: 'EV Charging'
+                },
+                elements: {
+                    line: {
+                        tension: 0
                     },
-                    elements: {
-                        line: {
-                            tension: 0
-                        },
-                        point: {
-                            radius: 0,
-                            hitRadius: 5,
-                            hoverRadius: 5
-                        }
-                    },
-                    hover: {
-                        animationDuration: 0
-                    },
-                    scales: {
-                        xAxes: [
-                            {
-                                type: 'time',
-                                time: {
-                                    displayFormats: {
-                                        second: 'h:mm:ss a'
-                                    }
-                                }
-                            }
-                        ],
-                        yAxes: [
-                            {
-                                id: 'A',
-                                position: 'left'
-                            },
-                            {
-                                id: 'B',
-                                type: 'linear',
-                                position: 'right',
-                                ticks: {
-                                    max: 100,
-                                    min: 0
-                                }
-                            },
-                        ]
+                    point: {
+                        radius: 0,
+                        hitRadius: 5,
+                        hoverRadius: 5
                     }
                 },
+                hover: {
+                    animationDuration: 0
+                },
+                scales: {
+                    xAxes: [{
+                        type: 'time',
+                        time: {
+                            displayFormats: {
+                                second: 'h:mm:ss a'
+                            }
+                        }
+                    }],
+                    yAxes: [{
+                            id: 'A',
+                            position: 'left'
+                        },
+                        {
+                            id: 'B',
+                            type: 'linear',
+                            position: 'right',
+                            ticks: {
+                                max: 100,
+                                min: 0
+                            }
+                        },
+                    ]
+                }
+            },
             plugins: [{
                 beforeUpdate: function (chart, options) {
                     filterData(chart);
@@ -136,10 +130,10 @@ function create_charts(data_obj, needed_charts) {
             }]
         });
 
-        return {'ev_charging_chart': ev_charging_chart}
-    }
-
-    else if (needed_charts === "live_charts") {
+        return {
+            'ev_charging_chart': ev_charging_chart
+        }
+    } else if (needed_charts === "live_charts") {
         let utility_chart = new Chart(document.getElementById("utility_chart"), {
             type: 'line',
             data: {
@@ -156,50 +150,44 @@ function create_charts(data_obj, needed_charts) {
                     borderColor: "#00897b",
                     fill: false,
                     yAxisID: 'B'
-                }
-                ]
+                }]
             },
-            options:
-                {
-                    title: {
-                        display: false,
-                        text:
-                            'Grid Export/Import'
-                    },
-                    elements: {
-                        line: {
-                            tension: 0.3
-                        }
-                    },
-                    scales: {
-                        xAxes: [
-                            {
-                                // ticks: {
-                                //     callback: function (tickValue, index, ticks) {
-                                //         return moment(tickValue, 'hhmmss').format('HH:mm:ss')
-                                //     }
-                                // }
-                                type: 'time',
-                                time: {
-                                    displayFormats: {
-                                        second: 'h:mm:ss a'
-                                        // minute: 'h:mm a'
-                                    }
-                                }
-                            }
-                        ],
-                        yAxes: [
-                            {
-                                id: 'A',
-                                position: 'left'
-                            },
-                            {
-                                id: 'B',
-                                position: 'right'
-                            },
-                        ]
+            options: {
+                title: {
+                    display: false,
+                    text: 'Grid Export/Import'
+                },
+                elements: {
+                    line: {
+                        tension: 0.3
                     }
+                },
+                scales: {
+                    xAxes: [{
+                        // ticks: {
+                        //     callback: function (tickValue, index, ticks) {
+                        //         return moment(tickValue, 'hhmmss').format('HH:mm:ss')
+                        //     }
+                        // }
+                        type: 'time',
+                        time: {
+                            displayFormats: {
+                                second: 'h:mm:ss a'
+                                // minute: 'h:mm a'
+                            }
+                        }
+                    }],
+                    yAxes: [{
+                            id: 'A',
+                            position: 'left'
+                        },
+                        {
+                            id: 'B',
+                            position: 'right'
+                        },
+                    ]
                 }
+            }
         });
 
         let dcp = new Chart(document.getElementById("dcp"), {
@@ -211,35 +199,30 @@ function create_charts(data_obj, needed_charts) {
                     label: "Solar Power (W)",
                     borderColor: "#ffc107",
                     fill: false
-                }
-                ]
+                }]
             },
-            options:
-                {
-                    title: {
-                        display: false,
-                        text:
-                            'Solar Power'
-                    },
-                    elements: {
-                        line: {
-                            tension: 0.3
-                        }
-                    },
-                    scales: {
-                        xAxes: [
-                            {
-                                type: 'time',
-                                time: {
-                                    displayFormats: {
-                                        second: 'h:mm:ss a'
-                                        // minute: 'h:mm a'
-                                    }
-                                }
-                            }
-                        ]
+            options: {
+                title: {
+                    display: false,
+                    text: 'Solar Power'
+                },
+                elements: {
+                    line: {
+                        tension: 0.3
                     }
+                },
+                scales: {
+                    xAxes: [{
+                        type: 'time',
+                        time: {
+                            displayFormats: {
+                                second: 'h:mm:ss a'
+                                // minute: 'h:mm a'
+                            }
+                        }
+                    }]
                 }
+            }
         });
 
         let btp_chart = new Chart(document.getElementById("btp_chart"), {
@@ -258,63 +241,58 @@ function create_charts(data_obj, needed_charts) {
                     borderColor: "#6600cc",
                     fill: false,
                     yAxisID: 'B'
-                }
-                ]
+                }]
             },
-            options:
-                {
-                    title: {
-                        display: false,
-                        text:
-                            'Battery Power'
-                    },
-                    elements: {
-                        line: {
-                            tension: 0.3
-                        }
-                    },
-                    scales: {
-                        xAxes: [
-                            {
-                                type: 'time',
-                                time: {
-                                    displayFormats: {
-                                        second: 'h:mm:ss a'
-                                    }
-                                }
-                            }
-                        ],
-                        yAxes: [
-                            {
-                                id: 'A',
-                                position: 'left'
-                            },
-                            {
-                                id: 'B',
-                                type: 'linear',
-                                position: 'right',
-                                ticks: {
-                                    max: 50,
-                                    min: 0
-                                }
-                            },
-                        ]
+            options: {
+                title: {
+                    display: false,
+                    text: 'Battery Power'
+                },
+                elements: {
+                    line: {
+                        tension: 0.3
                     }
+                },
+                scales: {
+                    xAxes: [{
+                        type: 'time',
+                        time: {
+                            displayFormats: {
+                                second: 'h:mm:ss a'
+                            }
+                        }
+                    }],
+                    yAxes: [{
+                            id: 'A',
+                            position: 'left'
+                        },
+                        {
+                            id: 'B',
+                            type: 'linear',
+                            position: 'right',
+                            ticks: {
+                                max: 50,
+                                min: 0
+                            }
+                        },
+                    ]
                 }
+            }
         });
 
-        return {'utility_chart': utility_chart, 'dcp': dcp, 'btp_chart': btp_chart}
-    }
-
-    else if (needed_charts === "analytics_bar_charts") {
+        return {
+            'utility_chart': utility_chart,
+            'dcp': dcp,
+            'btp_chart': btp_chart
+        }
+    } else if (needed_charts === "analytics_bar_charts") {
 
         // This code generates our colour array. Important point is that the last element is green
         let colour_array = [];
         for (let i = 0; i < data_obj['solar_data'].length; i++) {
             if (i === data_obj['solar_data'].length - 1) {
                 colour_array.push('#36b41e')
-            }
-            else {
+            } else {
                 colour_array.push('#ffc107')
             }
         }
@@ -323,85 +301,78 @@ function create_charts(data_obj, needed_charts) {
             type: 'bar',
             data: {
                 labels: data_obj['labels'],
-                datasets: [
-                    {
-                        type: 'line',
-                        data: data_obj['solar_data'],
-                        borderColor: "#ff1e19",
-                        backgroundColor: '#ff1e19',
-                        fill: false
-                    }, {
-                        data: data_obj['solar_data'],
-                        label: "Solar Power",
-                        borderColor: "#ffc107",
-                        // backgroundColor: '#ffc107',
-                        backgroundColor: colour_array,
-                        fill: false
-                    },
-                ]
+                datasets: [{
+                    type: 'line',
+                    data: data_obj['solar_data'],
+                    borderColor: "#ff1e19",
+                    backgroundColor: '#ff1e19',
+                    fill: false
+                }, {
+                    data: data_obj['solar_data'],
+                    label: "Solar Power",
+                    borderColor: "#ffc107",
+                    // backgroundColor: '#ffc107',
+                    backgroundColor: colour_array,
+                    fill: false
+                }, ]
             },
-            options:
-                {
-                    title: {
-                        display: false,
-                        text:
-                            'Solar Generation History'
-                    },
-                    legend: {
-                        display: false,
+            options: {
+                title: {
+                    display: false,
+                    text: 'Solar Generation History'
+                },
+                legend: {
+                    display: false,
 
-                    },
-                    elements: {
-                        line: {
-                            tension: 0.3
-                        }
-                    },
-                    scales: {
-                        xAxes: [{
-                            type: 'time',
-                            ticks: {
-                                display: true,
-                                fontColor: '#ffffff',
-                                source: 'auto',
-                            },
-                            gridLines: {
-                                color: '#a19ca1'
-                            },
-                            distribution: 'series',
-                            time: {
-                                displayFormats: {
-                                    day: 'MMM D'
-                                }
+                },
+                elements: {
+                    line: {
+                        tension: 0.3
+                    }
+                },
+                scales: {
+                    xAxes: [{
+                        type: 'time',
+                        ticks: {
+                            display: true,
+                            fontColor: '#ffffff',
+                            source: 'auto',
+                        },
+                        gridLines: {
+                            color: '#a19ca1'
+                        },
+                        distribution: 'series',
+                        time: {
+                            displayFormats: {
+                                day: 'MMM D'
                             }
                         }
-                        ],
-                        yAxes: [
-                            {
-                                scaleLabel: {
-                                    display: true,
-                                    labelString: 'Solar Generated (kWh)',
-                                    fontColor: '#ffffff'
-                                },
-                                ticks: {
-                                    fontColor: "#ffffff"
-                                },
-                                gridLines: {
-                                    color: '#a19ca1'
-                                }
-                            }
-                        ]
-                    },
-                    tooltips: {
-                        enabled: true,
-                        callbacks: {
-                            label: function (tooltipItems, data) {
-                                return tooltipItems.yLabel + ' kWh'
-                            }
+                    }],
+                    yAxes: [{
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Solar Generated (kWh)',
+                            fontColor: '#ffffff'
+                        },
+                        ticks: {
+                            fontColor: "#ffffff"
+                        },
+                        gridLines: {
+                            color: '#a19ca1'
                         }
-                    },
-                    maintainAspectRatio: false,
-                    responsive: true
-                }
+                    }]
+                },
+                tooltips: {
+                    enabled: true,
+                    callbacks: {
+                        label: function (tooltipItems, data) {
+                            return tooltipItems.yLabel + ' kWh'
+                        }
+                    }
+                },
+                maintainAspectRatio: false,
+                responsive: true
+            }
         });
 
         return {
@@ -412,94 +383,84 @@ function create_charts(data_obj, needed_charts) {
                 data: {
                     // labels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
                     labels: data_obj['labels'],
-                    datasets: [
-                        {
-                            type: 'line',
-                            // data: [0, 1, 4, 9, 16, 25, 36, 25, 1, 8, 64],
-                            data: data_obj['charging_data'],
-                            borderColor: "#000000",
-                            backgroundColor: '#000000',
-                            fill: false
-                        }, {
-                            // data: [0, 1, 4, 9, 16, 25, 36, 25, 1, 8, 64],
-                            data: data_obj['charging_data'],
-                            label: "EV Charging Power",
-                            borderColor: "#ff1e19",
-                            backgroundColor: '#ff1e19',
-                            fill: false
-                        }
-                    ]
+                    datasets: [{
+                        type: 'line',
+                        // data: [0, 1, 4, 9, 16, 25, 36, 25, 1, 8, 64],
+                        data: data_obj['charging_data'],
+                        borderColor: "#000000",
+                        backgroundColor: '#000000',
+                        fill: false
+                    }, {
+                        // data: [0, 1, 4, 9, 16, 25, 36, 25, 1, 8, 64],
+                        data: data_obj['charging_data'],
+                        label: "EV Charging Power",
+                        borderColor: "#ff1e19",
+                        backgroundColor: '#ff1e19',
+                        fill: false
+                    }]
                 },
-                options:
-                    {
-                        title: {
-                            display: false,
-                            text:
-                                'EV Charging History'
-                        },
-                        legend: {
-                            display: false
-                        },
-                        elements: {
-                            line: {
-                                tension: 0.3
-                            }
-                        },
-                        scales: {
-                            xAxes: [
-                                {
-                                    ticks: {
-                                        display: true,
-                                        fontColor: '#ffffff',
-                                        source: 'auto'
-                                    },
-                                    gridLines: {
-                                        color: '#635e63'
-                                    },
-                                    type: 'time',
-                                    distribution: 'series',
-                                    time: {
-                                        displayFormats: {
-                                            day: 'MMM D'
-                                            // minute: 'h:mm a'
-                                        }
-                                    }
-                                }
-                            ],
-                            yAxes: [
-                                {
-                                    scaleLabel: {
-                                        display: true,
-                                        labelString: 'Energy Consumed (kWh)',
-                                        fontColor: '#ffffff'
-                                    },
-                                    ticks: {
-                                        fontColor: "#ffffff"
-                                    },
-                                    gridLines: {
-                                        color: '#635e63'
-                                    }
-                                }
-                            ]
-                        },
-                        tooltips: {
-                            enabled: true,
-                            callbacks: {
-                                label: function (tooltipItems, data) {
-                                    return tooltipItems.yLabel + ' kWh'
+                options: {
+                    title: {
+                        display: false,
+                        text: 'EV Charging History'
+                    },
+                    legend: {
+                        display: false
+                    },
+                    elements: {
+                        line: {
+                            tension: 0.3
+                        }
+                    },
+                    scales: {
+                        xAxes: [{
+                            ticks: {
+                                display: true,
+                                fontColor: '#ffffff',
+                                source: 'auto'
+                            },
+                            gridLines: {
+                                color: '#635e63'
+                            },
+                            type: 'time',
+                            distribution: 'series',
+                            time: {
+                                displayFormats: {
+                                    day: 'MMM D'
+                                    // minute: 'h:mm a'
                                 }
                             }
-                        },
+                        }],
+                        yAxes: [{
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Energy Consumed (kWh)',
+                                fontColor: '#ffffff'
+                            },
+                            ticks: {
+                                fontColor: "#ffffff"
+                            },
+                            gridLines: {
+                                color: '#635e63'
+                            }
+                        }]
+                    },
+                    tooltips: {
+                        enabled: true,
+                        callbacks: {
+                            label: function (tooltipItems, data) {
+                                return tooltipItems.yLabel + ' kWh'
+                            }
+                        }
+                    },
 
-                        maintainAspectRatio: false,
-                        responsive: true
-                    }
+                    maintainAspectRatio: false,
+                    responsive: true
+                }
             })
         }
 
-    }
-
-    else if (needed_charts === "last_ev_charge_line_chart") {
+    } else if (needed_charts === "last_ev_charge_line_chart") {
         return new Chart(document.getElementById("last_ev_charge_session_line"), {
             type: 'line',
             data: {
@@ -531,8 +492,7 @@ function create_charts(data_obj, needed_charts) {
                     fill: false,
                     yAxisID: 'A',
                     hidden: false
-                }
-                ],
+                }],
                 spanGaps: false
             },
             options: {
@@ -748,7 +708,15 @@ function start_master_listener(user) {
     };
 
     let charging_data_obj = {
-        'evc_charging': [[], [], [], [], [], [], []],
+        'evc_charging': [
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            []
+        ],
         'latest_timestamp': ""
     };
 
@@ -774,16 +742,19 @@ function start_master_listener(user) {
         })
     });
 
-    // Todo: need to implement the EVCS bac
-    let battery_buffer_select_elem = document.getElementById('battery_buffer_select');
-    let battery_buffer_select_instance = M.FormSelect.init(battery_buffer_select_elem);
+    // Get the current charging mode from Firebase and intialize our charging mode input box
+    db.ref("users/" + user.uid + "/evc_inputs/buffer_aggro_mode").on('value', function (snapshot) {
+        $('#battery_buffer_select').val(snapshot.val());
+        let battery_buffer_select_elem = document.getElementById('battery_buffer_select');
+        let battery_buffer_select_instance = M.FormSelect.init(battery_buffer_select_elem);
+    });
 
     // Listen for a select in the battery buffer dropdown box
     $('#battery_buffer_select').on('change', function () {
-        // Send the new mode to Firebase to be picked up by our Analyse process
-        // db.ref("users/" + user.uid + "/evc_inputs").update({
-        //     charging_mode: $(this).val()
-        // })
+        // Send the new buffer aggressiveness mode to Firebase to be picked up by our Analyse process
+        db.ref("users/" + user.uid + "/evc_inputs").update({
+            buffer_aggro_mode: $(this).val()
+        })
     });
 
     // Define the first row of sliders
@@ -921,9 +892,7 @@ function start_master_listener(user) {
                 document.getElementById('evc_table').style.visibility = 'initial';
                 document.getElementById('evc_status').innerHTML = "EV is Charging <i class=\"material-icons\">battery_charging_full\n</i>\n";
                 document.getElementById('evc_status_body').innerText = "";
-            }
-
-            else {
+            } else {
                 // Clear the array if we are not charging anymore
                 for (let i = 0, length = charging_data_obj.evc_charging.length; i < length; i++) {
                     charging_data_obj.evc_charging[i].length = 0
@@ -1054,7 +1023,9 @@ function start_master_listener(user) {
 
                     // Modify the card title with the date and time of the last charging session
                     document.getElementById('last_ev_charging_session_title').innerHTML = `Last EV Charging Session: ${JSON.parse(xhr.response)['date_string']}`
-                    update_charts({'last_ev_charge_line_chart': last_ev_charge_line_chart}, large_charge_session_data_obj);
+                    update_charts({
+                        'last_ev_charge_line_chart': last_ev_charge_line_chart
+                    }, large_charge_session_data_obj);
                 }
 
                 // If there is no new data
@@ -1080,55 +1051,54 @@ function start_master_listener(user) {
     // Now grab all of the historical values for today
     let history_ref = db.ref("users/" + user.uid + "/history/" + date);
     history_ref.orderByKey().limitToLast(70).once("value", function (snapshot) {
-            let data = snapshot.val();
+        let data = snapshot.val();
 
-            // Grab the whole history Todo: we aren't grabbing all of the values in data_obj so keep that in mind!!
-            for (let key in data) {
-                if (data.hasOwnProperty(key)) {
-                    data_obj.utility_p.push(data[key]['utility_p']);
-                    data_obj.utility_c.push(data[key]['utility_c']);
-                    data_obj.ac2p.push(data[key]['ac2p']);
-                    data_obj.dcp.push(data[key]['dc1p'] + data[key]['dc2p']);
-                    data_obj.dc1v.push(data[key].dc1v);
-                    data_obj.dc1c.push(data[key].dc1c);
-                    data_obj.dc1p.push(data[key].dc1p);
-                    data_obj.dc2v.push(data[key].dc2v);
-                    data_obj.dc2c.push(data[key].dc2c);
-                    data_obj.dc2p.push(data[key].dc2p);
-                    data_obj.btp.push(data[key]['btp']);
-                    data_obj.btv.push(data[key].btv);
-                    data_obj.btc.push(data[key].btc);
-                    data_obj.btsoc.push(data[key].btsoc);
-                    data_obj.bt_module_temp.push(data[key].bt_module1_temp_max);
+        // Grab the whole history Todo: we aren't grabbing all of the values in data_obj so keep that in mind!!
+        for (let key in data) {
+            if (data.hasOwnProperty(key)) {
+                data_obj.utility_p.push(data[key]['utility_p']);
+                data_obj.utility_c.push(data[key]['utility_c']);
+                data_obj.ac2p.push(data[key]['ac2p']);
+                data_obj.dcp.push(data[key]['dc1p'] + data[key]['dc2p']);
+                data_obj.dc1v.push(data[key].dc1v);
+                data_obj.dc1c.push(data[key].dc1c);
+                data_obj.dc1p.push(data[key].dc1p);
+                data_obj.dc2v.push(data[key].dc2v);
+                data_obj.dc2c.push(data[key].dc2c);
+                data_obj.dc2p.push(data[key].dc2p);
+                data_obj.btp.push(data[key]['btp']);
+                data_obj.btv.push(data[key].btv);
+                data_obj.btc.push(data[key].btc);
+                data_obj.btsoc.push(data[key].btsoc);
+                data_obj.bt_module_temp.push(data[key].bt_module1_temp_max);
 
-                    data_obj.time.push(data[key]['time']);
-                }
+                data_obj.time.push(data[key]['time']);
             }
-            // Cut it so that we only have the amount we want
-            data_obj.utility_p = data_obj.utility_p.slice(chart_properties['utility_p']['length'] * -1);
-            data_obj.utility_c = data_obj.utility_c.slice(chart_properties['utility_p']['length'] * -1);
-            data_obj.ac2p = data_obj.ac2p.slice(chart_properties['utility_p']['length'] * -1);
-            data_obj.dcp = data_obj.dcp.slice(chart_properties['dcp']['length'] * -1);
-            data_obj.dc1v = data_obj.dc1v.slice(chart_properties['dcp']['length'] * -1);
-            data_obj.dc1c = data_obj.dc1c.slice(chart_properties['dcp']['length'] * -1);
-            data_obj.dc1p = data_obj.dc1p.slice(chart_properties['dcp']['length'] * -1);
-            data_obj.dc2v = data_obj.dc2v.slice(chart_properties['dcp']['length'] * -1);
-            data_obj.dc2c = data_obj.dc2c.slice(chart_properties['dcp']['length'] * -1);
-            data_obj.dc2p = data_obj.dc2p.slice(chart_properties['dcp']['length'] * -1);
-            data_obj.btp = data_obj.btp.slice(chart_properties['btp']['length'] * -1);
-            data_obj.btv = data_obj.btv.slice(chart_properties['btp']['length'] * -1);
-            data_obj.btc = data_obj.btc.slice(chart_properties['btp']['length'] * -1);
-            data_obj.btsoc = data_obj.btsoc.slice(chart_properties['btp']['length'] * -1);
-            data_obj.bt_module_temp = data_obj.bt_module_temp.slice(chart_properties['btp']['length'] * -1);
-
-            data_obj.time = data_obj.time.slice(chart_properties['dcp']['length'] * -1);
-
-            data_obj.time.forEach(function (value, key, time_array) {
-                time_array[key] = moment(time_array[key], 'hhmmss');
-            });
-
         }
-    ).then(function () {
+        // Cut it so that we only have the amount we want
+        data_obj.utility_p = data_obj.utility_p.slice(chart_properties['utility_p']['length'] * -1);
+        data_obj.utility_c = data_obj.utility_c.slice(chart_properties['utility_p']['length'] * -1);
+        data_obj.ac2p = data_obj.ac2p.slice(chart_properties['utility_p']['length'] * -1);
+        data_obj.dcp = data_obj.dcp.slice(chart_properties['dcp']['length'] * -1);
+        data_obj.dc1v = data_obj.dc1v.slice(chart_properties['dcp']['length'] * -1);
+        data_obj.dc1c = data_obj.dc1c.slice(chart_properties['dcp']['length'] * -1);
+        data_obj.dc1p = data_obj.dc1p.slice(chart_properties['dcp']['length'] * -1);
+        data_obj.dc2v = data_obj.dc2v.slice(chart_properties['dcp']['length'] * -1);
+        data_obj.dc2c = data_obj.dc2c.slice(chart_properties['dcp']['length'] * -1);
+        data_obj.dc2p = data_obj.dc2p.slice(chart_properties['dcp']['length'] * -1);
+        data_obj.btp = data_obj.btp.slice(chart_properties['btp']['length'] * -1);
+        data_obj.btv = data_obj.btv.slice(chart_properties['btp']['length'] * -1);
+        data_obj.btc = data_obj.btc.slice(chart_properties['btp']['length'] * -1);
+        data_obj.btsoc = data_obj.btsoc.slice(chart_properties['btp']['length'] * -1);
+        data_obj.bt_module_temp = data_obj.bt_module_temp.slice(chart_properties['btp']['length'] * -1);
+
+        data_obj.time = data_obj.time.slice(chart_properties['dcp']['length'] * -1);
+
+        data_obj.time.forEach(function (value, key, time_array) {
+            time_array[key] = moment(time_array[key], 'hhmmss');
+        });
+
+    }).then(function () {
         document.getElementById("master_row").style.visibility = 'initial';
         document.getElementById("loading_id").style.visibility = 'hidden';
 
@@ -1208,9 +1178,7 @@ function start_master_listener(user) {
                     data_obj.time.shift();
                     data_obj.time.push(moment(new_data.time, 'hhmmss'));
 
-                }
-
-                else {
+                } else {
                     data_obj.utility_p.push(new_data.utility_p);
                     data_obj.utility_c.push(new_data.utility_c);
                     data_obj.ac2p.push(new_data.ac2p);
@@ -1245,12 +1213,12 @@ function start_master_listener(user) {
 
             document.getElementById("dctp_card").innerText = payload['dcp_t'].toFixed(2) + "kWh";
 
-            update_charts({'solar_history_bar_chart_today_update': analytics_charts_obj['solar_history_bar_chart']},
-                {
-                    label: moment(),
-                    data: payload['dcp_t'].toFixed(2)
-                }
-            );
+            update_charts({
+                'solar_history_bar_chart_today_update': analytics_charts_obj['solar_history_bar_chart']
+            }, {
+                label: moment(),
+                data: payload['dcp_t'].toFixed(2)
+            });
 
             document.getElementById("utility_p_export_card").innerText = payload['utility_p_export_t'].toFixed(2) + "kWh";
             document.getElementById("utility_p_import_card").innerText = -1 * payload['utility_p_import_t'].toFixed(2) + "kWh";
@@ -1288,9 +1256,7 @@ function checkIfLoggedIn() {
 
             // Start the main js script
             start_master_listener(user);
-        }
-
-        else {
+        } else {
             window.location.replace("/delta_dashboard/login")
         }
     });
@@ -1308,8 +1274,7 @@ function update_tables(data_obj, purpose) {
         evc_output += "<tr><td>" + "AC2 Current" + "</td><td>" + data_obj.ac2c + "A" + "</td>";
 
         document.getElementById("evc_table_body").innerHTML = evc_output;
-    }
-    else {
+    } else {
         let ac1_output = "";
         let dcp_output = "";
         let btp_output = "";
