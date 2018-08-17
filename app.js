@@ -145,7 +145,7 @@ app.post('/delta_dashboard/archive_request', function (req, res) {
             let snapshot = await history_ref.orderByKey().once("value");
             let data = snapshot.val();
 
-            let csvwriter = fs.createWriteStream(`C:\\Delta_AU_Services\\EVCS_portal\\logs\\${uid}\\inverter_logs\\${selected_date}.csv`);
+            let csvwriter = fs.createWriteStream(`C:\\Delta_AU_Services\\EVCS_portal\\logs\\${uid}\\temp_logs\\${selected_date}.csv`);
 
             // This listener waits until the writing is finished, then sends that file out
             csvwriter.on('finish', () => {
@@ -194,7 +194,7 @@ app.post('/delta_dashboard/archive_request', function (req, res) {
                         dc2v: data[key]['dc2v'],
                         dc2c: data[key]['dc2c'],
 
-                        dctp: data[key]['dctp'],
+                        // dctp: data[key]['dctp'],
 
                         btp: data[key]['btp'],
                         btv: data[key]['btv'],
@@ -251,7 +251,7 @@ app.post('/delta_dashboard/download_data', function (req, res) {
                 let history_key_snapshot = await history_keys_ref.orderByKey().once("value");
                 history_key_snapshot = history_key_snapshot.val();
                 let available_dates = Object.keys(history_key_snapshot);
-                console.log(history_key_snapshot);
+                // console.log(history_key_snapshot);
 
                 // If the selected_date is an individual day...
                 if (selected_date !== 'all') {
@@ -261,64 +261,66 @@ app.post('/delta_dashboard/download_data', function (req, res) {
                         // The only exception is if the selected_date is today. Then we need to look into Firebase for the latest data
                         if (selected_date === available_dates[available_dates.length - 1]) {
                             console.log('User has selected today');
-                            // If the selected day is today, then we need to grab data from Firebase history
-                            let history_ref = db.ref("users/" + uid + "/history/" + selected_date);
-                            let writer = csvWriter();
-
-                            // Grab today's data
-                            let snapshot = await history_ref.orderByKey().once("value");
-                            let data = snapshot.val();
-
-                            let csvwriter = fs.createWriteStream(`C:\\Delta_AU_Services\\EVCS_portal\\logs\\${uid}\\inverter_logs\\${selected_date}.csv`);
-
-                            // This listener waits until the writing is finished, then sends that file out
-                            csvwriter.on('finish', () => {
-                                res.download(`C:\\Delta_AU_Services\\EVCS_portal\\logs\\${uid}\\inverter_logs\\${selected_date}.csv`);
-                                console.log('file sent out!')
-                            });
-
-                            // Go through each 2 second entry and write a new line in the csv file
-                            writer.pipe(csvwriter);
-                            for (let key in data) {
-                                if (data.hasOwnProperty(key)) {
-                                    writer.write({
-                                        time: chunk(data[key]['time'], 2).join(':'),
-
-                                        ac1p: data[key]['ac1p'],
-                                        ac1v: data[key]['ac1v'],
-                                        ac1c: data[key]['ac1c'],
-
-                                        ac2p: data[key]['ac2p'],
-                                        ac2v: data[key]['ac2v'],
-                                        ac2c: data[key]['ac2c'],
-
-                                        dc1p: data[key]['dc1p'],
-                                        dc1v: data[key]['dc1v'],
-                                        dc1c: data[key]['dc1c'],
-
-                                        dc2p: data[key]['dc2p'],
-                                        dc2v: data[key]['dc2v'],
-                                        dc2c: data[key]['dc2c'],
-
-                                        dctp: data[key]['dctp'],
-
-                                        btp: data[key]['btp'],
-                                        btv: data[key]['btv'],
-                                        btc: data[key]['btc'],
-
-                                        btsoc: data[key]['btsoc'],
-
-                                        utility_p: data[key]['utility_p'],
-                                        utility_c: data[key]['utility_c'],
-
-                                        ac1_freq: data[key]['ac1_freq']
-
-                                    })
-                                }
-                            }
-
-                            // Tell the program that writing to csv file has ended
-                            writer.end('This is the end of writing\n');
+                            res.download(`C:\\Delta_AU_Services\\EVCS_portal\\logs\\${uid}\\temp_logs\\${selected_date}.csv`);
+                            //
+                            // // If the selected day is today, then we need to grab data from Firebase history
+                            // let history_ref = db.ref("users/" + uid + "/history/" + selected_date);
+                            // let writer = csvWriter();
+                            //
+                            // // Grab today's data
+                            // let snapshot = await history_ref.orderByKey().once("value");
+                            // let data = snapshot.val();
+                            //
+                            // let csvwriter = fs.createWriteStream(`C:\\Delta_AU_Services\\EVCS_portal\\logs\\${uid}\\temp_logs\\${selected_date}.csv`);
+                            //
+                            // // This listener waits until the writing is finished, then sends that file out
+                            // csvwriter.on('finish', () => {
+                            //     res.download(`C:\\Delta_AU_Services\\EVCS_portal\\logs\\${uid}\\temp_logs\\${selected_date}.csv`);
+                            //     console.log('file sent out!')
+                            // });
+                            //
+                            // // Go through each 2 second entry and write a new line in the csv file
+                            // writer.pipe(csvwriter);
+                            // for (let key in data) {
+                            //     if (data.hasOwnProperty(key)) {
+                            //         writer.write({
+                            //             time: chunk(data[key]['time'], 2).join(':'),
+                            //
+                            //             ac1p: data[key]['ac1p'],
+                            //             ac1v: data[key]['ac1v'],
+                            //             ac1c: data[key]['ac1c'],
+                            //
+                            //             ac2p: data[key]['ac2p'],
+                            //             ac2v: data[key]['ac2v'],
+                            //             ac2c: data[key]['ac2c'],
+                            //
+                            //             dc1p: data[key]['dc1p'],
+                            //             dc1v: data[key]['dc1v'],
+                            //             dc1c: data[key]['dc1c'],
+                            //
+                            //             dc2p: data[key]['dc2p'],
+                            //             dc2v: data[key]['dc2v'],
+                            //             dc2c: data[key]['dc2c'],
+                            //
+                            //             dctp: data[key]['dctp'],
+                            //
+                            //             btp: data[key]['btp'],
+                            //             btv: data[key]['btv'],
+                            //             btc: data[key]['btc'],
+                            //
+                            //             btsoc: data[key]['btsoc'],
+                            //
+                            //             utility_p: data[key]['utility_p'],
+                            //             utility_c: data[key]['utility_c'],
+                            //
+                            //             ac1_freq: data[key]['ac1_freq']
+                            //
+                            //         })
+                            //     }
+                            // }
+                            //
+                            // // Tell the program that writing to csv file has ended
+                            // writer.end('This is the end of writing\n');
 
                         }
 

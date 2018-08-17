@@ -3,13 +3,19 @@
 
 <head>
     <style>
-        #loading_id {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+        #preloader_wrapper_wrapper {
+            /*position: absolute;*/
+            /*top: 0;*/
+            /*left: 0;*/
+            /*right: 0;*/
+            /*bottom: 0;*/
+            /*margin: auto;*/
+            width: 100%;
+            display: flex;
+        }
+        #loading_id{
             margin: auto;
+            text-align: center;
         }
 
         .tab a.active {
@@ -63,16 +69,16 @@
     <h1 class="center-align">Archive</h1>
 
     <div id="master_row">
-        <div class="row">
-            <div class="col s6 offset-s3">
+        <!--<div class="row">-->
+            <!--<div class="col s6 offset-s3">-->
 
-                <p class=center-align>
-                    <a class="waves-effect waves-light btn" onclick="request_data(this.id)"
-                       id="all_data_request_button">Download All Data</a>
-                </p>
+                <!--<p class=center-align>-->
+                    <!--<a class="waves-effect waves-light btn" onclick="request_data(this.id)"-->
+                       <!--id="all_data_request_button">Download All Data</a>-->
+                <!--</p>-->
 
-            </div>
-        </div>
+            <!--</div>-->
+        <!--</div>-->
 
         <div class="divider"></div>
 
@@ -87,16 +93,18 @@
             </div>
 
             <div class="col s12" id="preloader">
-                <div class="preloader-wrapper big active" id="loading_id">
-                    <div class="spinner-layer spinner-blue-only">
-                        <div class="circle-clipper left">
-                            <div class="circle"></div>
-                        </div>
-                        <div class="gap-patch">
-                            <div class="circle"></div>
-                        </div>
-                        <div class="circle-clipper right">
-                            <div class="circle"></div>
+                <div id="preloader_wrapper_wrapper">
+                    <div class="preloader-wrapper big active" id="loading_id">
+                        <div class="spinner-layer spinner-blue-only">
+                            <div class="circle-clipper left">
+                                <div class="circle"></div>
+                            </div>
+                            <div class="gap-patch">
+                                <div class="circle"></div>
+                            </div>
+                            <div class="circle-clipper right">
+                                <div class="circle"></div>
+                            </div>
                         </div>
                     </div>
                 </div>

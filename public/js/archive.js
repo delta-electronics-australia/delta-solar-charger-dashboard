@@ -169,6 +169,7 @@ function update_charts(chart_obj, data_obj) {
         document.getElementById('chart_tabs').style.visibility = 'visible';
         document.getElementById('history_chart_tab').style.visibility = 'visible';
         document.getElementById('sankey_tab').style.visibility = 'visible';
+        document.getElementById('download_tab').style.visibility = 'visible';
         document.getElementById('reset_zoom_button_div').style.visibility = 'visible';
 
         chart_obj.history_chart.data.origDatasetsData = undefined;
@@ -245,9 +246,10 @@ async function date_chosen(selected_date, chart_obj, db, user) {
     // This function is called once the user has chosen a date from the datepicker
     // We want to hide all of our charts and reveal our preloader
     document.getElementById('preloader').style.display = 'block';
-    document.getElementById('chart_tabs').style.display = 'hidden';
+    document.getElementById('chart_tabs').style.visibility = 'hidden';
     document.getElementById('history_chart_tab').style.visibility = 'hidden';
     document.getElementById('sankey_tab').style.visibility = 'hidden';
+    document.getElementById('download_tab').style.visibility = 'hidden';
     document.getElementById('reset_zoom_button_div').style.visibility = 'hidden';
 
     // document.getElementById('data_request_button_div').style.display = 'block';
@@ -374,7 +376,7 @@ function request_data(clicked_id) {
     console.log(clicked_id);
 
     $('#data_request_button').removeClass("waves-effect waves-light").addClass('disabled');
-    $('#all_data_request_button').removeClass("waves-effect waves-light").addClass('disabled');
+    // $('#all_data_request_button').removeClass("waves-effect waves-light").addClass('disabled');
 
 
     // Check the uid of the user pressing the button
@@ -391,7 +393,7 @@ function request_data(clicked_id) {
                 M.toast({html: 'Successfully retrieved data'});
 
                 $('#data_request_button').removeClass('disabled').addClass('waves-effect waves-light');
-                $('#all_data_request_button').removeClass('disabled').addClass('waves-effect waves-light');
+                // $('#all_data_request_button').removeClass('disabled').addClass('waves-effect waves-light');
 
                 let a = document.createElement('a');
                 a.href = window.URL.createObjectURL(xhr.response);
@@ -435,6 +437,7 @@ function checkIfLoggedIn() {
     document.getElementById('chart_tabs').style.visibility = 'hidden';
     document.getElementById('history_chart_tab').style.visibility = 'hidden';
     document.getElementById('sankey_tab').style.visibility = 'hidden';
+    document.getElementById('download_tab').style.visibility = 'hidden';
     document.getElementById('reset_zoom_button_div').style.visibility = 'hidden';
 
     // document.getElementById('data_request_button_div').style.display = 'none';
