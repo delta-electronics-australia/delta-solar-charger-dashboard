@@ -3,7 +3,7 @@ function update_ev_charger_information(data_obj) {
     let charger_number = 1;
     for (let key in data_obj) {
         if (data_obj.hasOwnProperty(key)) {
-            console.log(key);
+            // console.log(key);
             evc_info_row.append(`<div class="col s12">
             <h5><span class="dot" style="background-color: ${data_obj[key]['alive'] ? '#33cc33': '#ff0000'}"></span> Charger ${charger_number} - ${key}${data_obj[key]['primary_charger'] ? " - Primary Charger": 'sup'}</h5></div>`);
 
@@ -33,6 +33,15 @@ function update_ev_charger_information(data_obj) {
 async function start_hardware_info_page(user) {
     let db = firebase.database();
 
+    let elems = document.querySelectorAll('.modal');
+    let instances = M.Modal.init(elems, {
+        dismissible: false,
+        // endingTop: '50%'
+    });
+
+    let charger_select = $('#charger_select');
+
+
     // Todo: In the future we need to change this for
     // Get the list of EV chargers that we have connected to this E5
     let ev_charger_keys = db.ref(`users/${user.uid}/ev_chargers`);
@@ -44,7 +53,7 @@ async function start_hardware_info_page(user) {
     primary_charger = primary_charger.val();
 
     let data_obj = {};
-
+    let charger_select_html = "";
     for (let i = 0; i < ev_chargers.length; i++) {
         console.log(ev_chargers[i]);
 
@@ -60,6 +69,11 @@ async function start_hardware_info_page(user) {
                 firmwareVersion: "Version Unknown",
                 "imsi": ""
             }
+        }
+        else {
+            // If we have details on the charger then we can append
+            // Todo: append when online only
+            charger_select_html = charger_select_html + "<option value='" + ev_chargers[i] + "'>" + ev_chargers[i] + "</option>"
         }
 
         let temp_evc_alive = await db.ref(`users/${user.uid}/evc_inputs/${ev_chargers[i]}/alive`).once("value");
@@ -80,6 +94,12 @@ async function start_hardware_info_page(user) {
 
     }
     console.log(data_obj);
+
+    // Append the html for our charge select html and initialize the drop down in the modal
+    charger_select.append(charger_select_html);
+    let chargerselect_elem = document.getElementById('charger_select');
+    let chargerselect_instance = M.FormSelect.init(chargerselect_elem);
+
     update_ev_charger_information(data_obj)
 
 }

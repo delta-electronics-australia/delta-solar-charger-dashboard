@@ -65,9 +65,30 @@
                 <li>
                     <div class="collapsible-header"><b>EV Charger Information</b></div>
                     <div class="collapsible-body">
-                        <div class="row" id="evc_info_row">
-
+                        <div class="row" id="evc_info_row"></div>
+                        <div class="row">
+                            <a class="waves-effect waves-light btn modal-trigger" href="#update_fw_modal">Update Firmware</a>
                         </div>
+                        <!-- Modal Structure -->
+                        <div id="update_fw_modal" class="modal">
+                            <div class="modal-content">
+                                <h4>Delta EV Charger Firmware Update Tool</h4>
+                                <h6>Please select the charger you want to update:</h6>
+                                <div class="input-field white-text center-align">
+                                    <select id="charger_select" class="center-align">
+                                        <option value="" disabled selected>Choose your Delta Charger</option>
+                                        <!--<option value="">Test: DCWB</option>-->
+                                        <!--<option value="">Test: ACMP</option>-->
+                                    </select>
+                                </div>
+                                <a class="waves-effect waves-light btn modal-trigger">Update</a>
+
+                            </div>
+                            <div class="modal-footer">
+                                <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+                            </div>
+                        </div>
+
                     </div>
                 </li>
             </ul>

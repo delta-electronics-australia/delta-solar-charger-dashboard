@@ -535,7 +535,7 @@ function create_charts(data_obj, needed_charts) {
                         position: 'left',
                         scaleLabel: {
                             display: true,
-                            labelString: 'Energy (kWh)',
+                            labelString: 'Power (kW)',
                             fontColor: '#ffffff'
                         },
                         ticks: {
