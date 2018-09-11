@@ -3,9 +3,9 @@ function update_ev_charger_information(data_obj) {
     let charger_number = 1;
     for (let key in data_obj) {
         if (data_obj.hasOwnProperty(key)) {
-            // console.log(key);
+
             evc_info_row.append(`<div class="col s12">
-            <h5><span class="dot" style="background-color: ${data_obj[key]['alive'] ? '#33cc33': '#ff0000'}"></span> Charger ${charger_number} - ${key}${data_obj[key]['primary_charger'] ? " - Primary Charger": 'sup'}</h5></div>`);
+            <h5><span class="dot" style="background-color: ${data_obj[key]['alive'] ? '#33cc33' : '#ff0000'}"></span> Charger ${charger_number} - ${key}${data_obj[key]['primary_charger'] ? " - Primary Charger" : ''}</h5></div>`);
 
             evc_info_row.append(`<div class="col s8">
             <table><thead><tr><th>Description</th><th>Value</th></tr></thead><tbody>
@@ -17,13 +17,21 @@ function update_ev_charger_information(data_obj) {
             </div>`);
 
             if (data_obj[key]['chargePointModel'].substring(0, 4) === 'EVPE') {
-            evc_info_row.append(`
+                evc_info_row.append(`
             <div class="col s4">
                 <img class="materialboxed center-align" width="225" src="../delta_dashboard/public/img/acminiplus.jpg">
             </div>`);
-                charger_number++
             }
+            else if (data_obj[key]['chargePointModel'].substring(0, 4) === 'EVDE') {
+                evc_info_row.append(`
+            <div class="col s4">
+                <img class="materialboxed center-align" width="225" src="../delta_dashboard/public/img/acminiplus.jpg">
+            </div>`);
+            }
+
         }
+        charger_number++
+
     }
 
     let inverter_info_row = $("inverter_info_row");
@@ -60,7 +68,7 @@ async function start_hardware_info_page(user) {
         let temp_evc_data = await db.ref(`users/${user.uid}/evc_inputs/${ev_chargers[i]}/charger_info`).once("value");
         temp_evc_data = temp_evc_data.val();
         // Just in case a boot notification has not come yet, we have an empty Object
-        if (temp_evc_data === null){
+        if (temp_evc_data === null) {
             temp_evc_data = {
                 chargeBoxSerialNumber: "",
                 chargePointModel: "Model Unknown",
@@ -71,9 +79,11 @@ async function start_hardware_info_page(user) {
             }
         }
         else {
-            // If we have details on the charger then we can append
-            // Todo: append when online only
-            charger_select_html = charger_select_html + "<option value='" + ev_chargers[i] + "'>" + ev_chargers[i] + "</option>"
+            // If we have details on the charger AND the charger is online then we can append
+            let alive_temp = await db.ref(`users/${user.uid}/evc_inputs/${ev_chargers[i]}/alive`).once("value");
+            if (alive_temp.val()) {
+                charger_select_html = charger_select_html + "<option value='" + ev_chargers[i] + "'>" + ev_chargers[i] + "</option>"
+            }
         }
 
         let temp_evc_alive = await db.ref(`users/${user.uid}/evc_inputs/${ev_chargers[i]}/alive`).once("value");
@@ -87,7 +97,7 @@ async function start_hardware_info_page(user) {
         data_obj[ev_chargers[i]]['alive'] = temp_evc_alive;
         data_obj[ev_chargers[i]]['primary_charger'] = temp_evc_primary_charger;
 
-        if (ev_chargers[i] === primary_charger){
+        if (ev_chargers[i] === primary_charger) {
             console.log(ev_chargers[i]);
             console.log('We found the primary charger');
         }
@@ -100,7 +110,87 @@ async function start_hardware_info_page(user) {
     let chargerselect_elem = document.getElementById('charger_select');
     let chargerselect_instance = M.FormSelect.init(chargerselect_elem);
 
-    update_ev_charger_information(data_obj)
+    // Update all of the tables and images
+    update_ev_charger_information(data_obj);
+
+    $("#confirm_update_fw_btn").click(function () {
+        // This function is called when the update firmware button is pressed
+        console.log("Pressed!!");
+        let selected_charger = $('#charger_select').val();
+
+        console.log(selected_charger)
+
+        let firmwareType = "";
+        // Todo: change this to model group specific, not model specific
+        if (data_obj[selected_charger].chargePointModel === 'EVPE3220MWN') {
+            console.log('We have chosen a ACMP!');
+            firmwareType = "ACMP"
+        }
+        else if (data_obj[selected_charger].chargePointModel === 'EVPE3220MWN') {
+            console.log('We have chosen a DCWB!');
+            // Todo: need more code here to select more options for the DCWB
+            firmwareType = "ACMP"
+        }
+
+        // Send the package that will enable the RemoteUpdate message in the backend
+        db.ref(`users/${user.uid}/evc_inputs/`).update({
+            update_firmware: {
+                'chargerID': selected_charger,
+                'firmwareType': firmwareType,
+                'set': true
+            }
+        });
+
+        // Define our modal body div
+        let modal_body = $('#modal_body');
+
+        // Empty it and append the initial loading title
+        modal_body.empty();
+        modal_body.append('<h6>We vibing</h6>');
+
+        // Start a listener for any FirmwareStatusNotification updates
+        db.ref(`users/${user.uid}/evc_inputs/temp_remote_fw_update_info/firmware_update_status`).on('value', function (snapshot) {
+            console.log(snapshot.val());
+            let fw_status = snapshot.val()
+            modal_body.empty();
+            modal_body.append(`<h6>${snapshot.val()}</h6>`)
+            if (fw_status === 'Downloading') {
+                modal_body.append(
+                    `<div class="progress">
+                        <div class="determinate" style="width: 10%"></div>
+                    </div>`
+                )
+            }
+            else if (fw_status === 'Downloaded') {
+                modal_body.append(
+                    `<div class="progress">
+                        <div class="determinate" style="width: 50%"></div>
+                    </div>`
+                )
+            }
+
+            else if (fw_status === 'Installing') {
+                modal_body.append(
+                    `<div class="progress">
+                        <div class="determinate" style="width: 70%"></div>
+                    </div>`
+                )
+            }
+
+            else if (fw_status === 'Installed') {
+                modal_body.append(
+                    `<div class="progress">
+                        <div class="determinate" style="width: 100%"></div>
+                    </div>`
+                )
+                setTimeout(function(){
+                    modal_body.empty();
+                    modal_body.append(`<h6>New firmware installed. Charger rebooting now...</h6>`)
+                }, 5000)
+            }
+
+        });
+    })
 
 }
 
