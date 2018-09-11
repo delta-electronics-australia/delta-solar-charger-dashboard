@@ -35,46 +35,18 @@ function create_charts(data_obj, needed_charts) {
         let ev_charging_chart = new Chart(document.getElementById("ev_charging_chart"), {
             type: 'line',
             data: {
-                labels: data_obj[0],
                 datasets: [{
-                    data: [],
+                    // data: [
+                    //     // {x: moment("2017-07-08T06:15:02-0600"), y: 23.375},
+                    //     // {x: moment("2017-07-08T06:20:02-0600"),y: 23.312},
+                    //     // {x: moment("2017-07-08T06:25:02-0600"),y: 23.312},
+                    //     // {x: moment("2017-07-08T06:30:02-0600"),y: 23.25}
+                    //   ],
+                    data: data_obj,
                     label: "Solar Power",
                     borderColor: "#ffc107",
                     fill: false
-                }, {
-                    data: [],
-                    label: "Battery Power",
-                    borderColor: "#43a047",
-                    fill: false
-                }, {
-                    data: [],
-                    label: "EV Charging Power",
-                    borderColor: "#f44336",
-                    fill: false
-                }, {
-                    data: [],
-                    label: "Grid Power",
-                    borderColor: "#3366ff",
-                    fill: false,
-                    yAxisID: 'A',
-                    hidden: false
-                }, {
-                    data: [],
-                    label: "Battery Max Temp",
-                    borderColor: "#6600cc",
-                    fill: false,
-                    yAxisID: 'B',
-                    hidden: false
-
-                }, {
-                    data: [],
-                    label: "Battery SOC",
-                    borderColor: "#ef2fac",
-                    fill: false,
-                    yAxisID: 'B',
-                    hidden: false
-
-                }]
+                },]
             },
             options: {
                 title: {
@@ -121,7 +93,8 @@ function create_charts(data_obj, needed_charts) {
             },
             plugins: [{
                 beforeUpdate: function (chart, options) {
-                    filterData(chart);
+                    // Todo: turn filter data back on
+                    // filterData(chart);
                 },
                 // afterUpdate: function (chart, options) {
                 //     console.log('after update!!');
@@ -726,95 +699,147 @@ function start_master_listener(user) {
     // Start a listener for the EV charging STATUS Todo: this URL will change when we migrate charging status into ID
     let charging_ref = db.ref("users/" + user.uid + "/evc_inputs/charging/");
 
-    // _isCharging is the universal variable for whether or not there is an active charging session
-    let _isCharging = false;
+    // _isCharging is the universal object that has charger IDs as keys and true/false for charging/not charging/plugged
+    let _isCharging_obj = false;
 
     // charging_chart_obj is the object of the ev charging chart
     let charging_chart_obj = null;
 
     // FIRST LOAD FLAG is for the ev charging chart. The value will depend on whether or not there is a charging session
     // active when we first load the page
-    let FIRST_LOAD_FLAG = null;
-    charging_chart_obj = create_charts(charging_data_obj.evc_charging, 'ev_charging_chart');
+    let FIRST_LOAD_FLAG_OBJ = {};
+    // charging_chart_obj = create_charts(charging_data_obj.evc_charging, 'ev_charging_chart');
 
     charging_ref.once('value', function (snapshot) {
         // First we change the _isCharging variable for the whole webpage
-        _isCharging = snapshot.val();
+        _isCharging_obj = snapshot.val();
 
-        // Our first load flag will also be isCharging. If it is true, then we need to run special code later
-        FIRST_LOAD_FLAG = _isCharging;
-
-    }).then(function () {
-        // Start a listener for our charging status
-        charging_ref.on('value', async function (snapshot) {
-            _isCharging = snapshot.val();
-            console.log("New value of _isCharging");
-            console.log(_isCharging);
-
-            if (_isCharging === true) {
-                // First we need to get the time of the latest charging session
-                let charging_history_keys_ref = db.ref(`users/${user.uid}/charging_history_keys/`);
-                let latest_charging_time = await charging_history_keys_ref.orderByKey().limitToLast(1).once("value");
-                latest_charging_time = Object.keys(latest_charging_time.val())[0];
-
-                console.log('We are charging! Lets start a listener');
-                console.log(latest_charging_time);
-
-                // Navigate to the node of the latest charge session
-                let charging_history_ref = db.ref(`users/${user.uid}/charging_history/${latest_charging_time}`);
-
-                // If there is already a charging session active before we loaded the page, we grab the latest timestamp
-                if (FIRST_LOAD_FLAG) {
-                    let latest_timestamp = await charging_history_ref.orderByKey().limitToLast(1).once("value");
-                    latest_timestamp = latest_timestamp.val();
-                    charging_data_obj['latest_timestamp'] = latest_timestamp[Object.keys(latest_timestamp)[0]]['time'];
-                }
-
-                // Now start a listener for the latest charging session since we know a charging session is happening
-                charging_history_ref.on("child_added", function (snapshot) {
-                    let new_data = snapshot.val();
-
-                    // Push all of the new data into the evc charging arrays
-                    charging_data_obj.evc_charging[0].push(moment(new_data['time'], 'hhmmss'));
-                    charging_data_obj.evc_charging[1].push(new_data['dctp']);
-                    charging_data_obj.evc_charging[2].push(new_data['btp']);
-                    charging_data_obj.evc_charging[3].push(new_data['ac2p']);
-                    charging_data_obj.evc_charging[4].push(new_data['utility_p']);
-                    charging_data_obj.evc_charging[5].push(new_data['bt_module1_temp_max']);
-                    charging_data_obj.evc_charging[6].push(new_data['btsoc']);
-
-                    charging_table_data_obj.ac2p = new_data['ac2p'];
-                    charging_table_data_obj.ac2v = new_data['ac2v'];
-                    charging_table_data_obj.ac2c = new_data['ac2c'];
-
-                    // If the first load flag is no longer raised, we can update our charts
-                    if (FIRST_LOAD_FLAG === false) {
-                        update_charts(charging_chart_obj, charging_data_obj);
-                        update_tables(charging_table_data_obj, 'evc_table');
-                    }
-
-                    // If the first load flag is raised, we have to check to see if the latest data coming in is the
-                    // has the latest timestamp on it. If so, then we can clear the flag and start updating charts
-                    if (FIRST_LOAD_FLAG === true) {
-                        // console.log(new_data['time'] + ' ' + charging_data_obj['latest_timestamp']);
-                        if (new_data['time'] === charging_data_obj['latest_timestamp']) {
-                            console.log('We have found the latest time, lets trigger our flag');
-                            FIRST_LOAD_FLAG = false;
-                            update_charts(charging_chart_obj, charging_data_obj);
-                            update_tables(charging_table_data_obj, 'evc_table')
-                        }
-                    }
-                });
-
-            } else {
-                // Clear the array if we are not charging anymore
-                for (let i = 0, length = charging_data_obj.evc_charging.length; i < length; i++) {
-                    charging_data_obj.evc_charging[i].length = 0
-                }
-                update_charts(charging_chart_obj, charging_data_obj);
-
+        for (let key in _isCharging_obj){
+            if (_isCharging_obj[key] === true){
+                FIRST_LOAD_FLAG_OBJ[key] = true
             }
-        });
+        }
+        // Our first load flag will also be isCharging. If it is true, then we need to run special code later
+        console.log(FIRST_LOAD_FLAG_OBJ)
+
+
+    }).then(async function () {
+        let test_obj = []
+        for (let chargerID in FIRST_LOAD_FLAG_OBJ){
+            let charging_history_keys_ref = db.ref(`users/${user.uid}/charging_history_keys/${chargerID}`);
+            let latest_charging_time = await charging_history_keys_ref.orderByKey().limitToLast(1).once("value");
+            latest_charging_time = Object.keys(latest_charging_time.val())
+            
+            let charging_history_ref = db.ref(`users/${user.uid}/charging_history/${chargerID}/${latest_charging_time}`);
+            let initial_array = await charging_history_ref.once("value")
+            initial_array = initial_array.val()
+            
+
+            for (let key in initial_array){
+                test_obj.push({x: moment(initial_array[key]['Time'], 'YYYY-MM-DD hh:mm:ss'), y: initial_array[key]['Power_Import']})
+            }
+            console.log(test_obj)
+            charging_chart_obj = create_charts(test_obj, 'ev_charging_chart');
+
+            charging_history_ref.limitToLast(1).on("child_added", function(snapshot){
+                console.log(snapshot.val())
+                new_array = snapshot.val()
+                test_obj.push({x: moment(new_array[key]['Time'], 'YYYY-MM-DD hh:mm:ss'), y: new_array[key]['Power_Import']})
+
+            })
+        }
+
+
+
+        charging_ref.on("value", async function(snapshot){
+            let _isCharging_obj = snapshot.val();
+            console.log('New value of _isCharging_obj');
+            console.log(_isCharging_obj)
+
+            for (let chargerID in _isCharging_obj){
+                if (_isCharging_obj[chargerID] === true & !(chargerID in FIRST_LOAD_FLAG_OBJ)){
+                    console.log('Found a key that was not in first load flag')
+                }
+                else if (_isCharging_obj[chargerID] === false){
+                    delete FIRST_LOAD_FLAG_OBJ[chargerID]
+                }
+            }
+        })
+        
+
+        let charging_history_keys_ref = db.ref(`users/${user.uid}/charging_history_keys/`);
+
+
+        // // Start a listener for our charging status
+        // charging_ref.on('value', async function (snapshot) {
+        //     _isCharging = snapshot.val();
+        //     console.log("New value of _isCharging");
+        //     console.log(_isCharging);
+
+        //     if (_isCharging === true) {
+        //         // First we need to get the time of the latest charging session
+        //         let charging_history_keys_ref = db.ref(`users/${user.uid}/charging_history_keys/`);
+        //         let latest_charging_time = await charging_history_keys_ref.orderByKey().limitToLast(1).once("value");
+        //         latest_charging_time = Object.keys(latest_charging_time.val())[0];
+
+        //         console.log('We are charging! Lets start a listener');
+        //         console.log(latest_charging_time);
+
+        //         // Navigate to the node of the latest charge session
+        //         let charging_history_ref = db.ref(`users/${user.uid}/charging_history/${latest_charging_time}`);
+
+        //         // If there is already a charging session active before we loaded the page, we grab the latest timestamp
+        //         if (FIRST_LOAD_FLAG) {
+        //             let latest_timestamp = await charging_history_ref.orderByKey().limitToLast(1).once("value");
+        //             latest_timestamp = latest_timestamp.val();
+        //             charging_data_obj['latest_timestamp'] = latest_timestamp[Object.keys(latest_timestamp)[0]]['time'];
+        //         }
+
+        //         // Now start a listener for the latest charging session since we know a charging session is happening
+        //         charging_history_ref.on("child_added", function (snapshot) {
+        //             let new_data = snapshot.val();
+
+        //             // Push all of the new data into the evc charging arrays
+        //             charging_data_obj.evc_charging[0].push(moment(new_data['time'], 'hhmmss'));
+        //             charging_data_obj.evc_charging[1].push(new_data['dctp']);
+        //             charging_data_obj.evc_charging[2].push(new_data['btp']);
+        //             charging_data_obj.evc_charging[3].push(new_data['ac2p']);
+        //             charging_data_obj.evc_charging[4].push(new_data['utility_p']);
+        //             charging_data_obj.evc_charging[5].push(new_data['bt_module1_temp_max']);
+        //             charging_data_obj.evc_charging[6].push(new_data['btsoc']);
+
+        //             charging_table_data_obj.ac2p = new_data['ac2p'];
+        //             charging_table_data_obj.ac2v = new_data['ac2v'];
+        //             charging_table_data_obj.ac2c = new_data['ac2c'];
+
+        //             // If the first load flag is no longer raised, we can update our charts
+        //             if (FIRST_LOAD_FLAG === false) {
+        //                 update_charts(charging_chart_obj, charging_data_obj);
+        //                 update_tables(charging_table_data_obj, 'evc_table');
+        //             }
+
+        //             // If the first load flag is raised, we have to check to see if the latest data coming in is the
+        //             // has the latest timestamp on it. If so, then we can clear the flag and start updating charts
+        //             if (FIRST_LOAD_FLAG === true) {
+        //                 // console.log(new_data['time'] + ' ' + charging_data_obj['latest_timestamp']);
+        //                 if (new_data['time'] === charging_data_obj['latest_timestamp']) {
+        //                     console.log('We have found the latest time, lets trigger our flag');
+        //                     FIRST_LOAD_FLAG = false;
+        //                     update_charts(charging_chart_obj, charging_data_obj);
+        //                     update_tables(charging_table_data_obj, 'evc_table')
+        //                 }
+        //             }
+        //         });
+
+        //     } else {
+        //         // Clear the array if we are not charging anymore
+        //         for (let i = 0, length = charging_data_obj.evc_charging.length; i < length; i++) {
+        //             charging_data_obj.evc_charging[i].length = 0
+        //         }
+        //         update_charts(charging_chart_obj, charging_data_obj);
+
+        //     }
+        // });
     });
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
