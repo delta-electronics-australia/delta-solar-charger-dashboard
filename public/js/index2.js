@@ -34,20 +34,21 @@ function create_charts(data_obj, needed_charts) {
     if (needed_charts === "ev_charging_chart") {
         let ev_charging_chart = new Chart(document.getElementById("ev_charging_chart"), {
             type: 'line',
-            data: {
-                datasets: [{
-                    // data: [
-                    //     // {x: moment("2017-07-08T06:15:02-0600"), y: 23.375},
-                    //     // {x: moment("2017-07-08T06:20:02-0600"),y: 23.312},
-                    //     // {x: moment("2017-07-08T06:25:02-0600"),y: 23.312},
-                    //     // {x: moment("2017-07-08T06:30:02-0600"),y: 23.25}
-                    //   ],
-                    data: data_obj,
-                    label: "Solar Power",
-                    borderColor: "#ffc107",
-                    fill: false
-                },]
-            },
+            data: data_obj,
+            // {
+            //     datasets: [{
+            //         // data: [
+            //         //     // {x: moment("2017-07-08T06:15:02-0600"), y: 23.375},
+            //         //     // {x: moment("2017-07-08T06:20:02-0600"),y: 23.312},
+            //         //     // {x: moment("2017-07-08T06:25:02-0600"),y: 23.312},
+            //         //     // {x: moment("2017-07-08T06:30:02-0600"),y: 23.25}
+            //         //   ],
+            //         data: data_obj,
+            //         label: "Solar Power",
+            //         borderColor: "#ffc107",
+            //         fill: false
+            //     }, ]
+            // },
             options: {
                 title: {
                     display: false,
@@ -76,9 +77,9 @@ function create_charts(data_obj, needed_charts) {
                         }
                     }],
                     yAxes: [{
-                        id: 'A',
-                        position: 'left'
-                    },
+                            id: 'A',
+                            position: 'left'
+                        },
                         {
                             id: 'B',
                             type: 'linear',
@@ -151,9 +152,9 @@ function create_charts(data_obj, needed_charts) {
                         }
                     }],
                     yAxes: [{
-                        id: 'A',
-                        position: 'left'
-                    },
+                            id: 'A',
+                            position: 'left'
+                        },
                         {
                             id: 'B',
                             position: 'right'
@@ -236,9 +237,9 @@ function create_charts(data_obj, needed_charts) {
                         }
                     }],
                     yAxes: [{
-                        id: 'A',
-                        position: 'left'
-                    },
+                            id: 'A',
+                            position: 'left'
+                        },
                         {
                             id: 'B',
                             type: 'linear',
@@ -287,7 +288,7 @@ function create_charts(data_obj, needed_charts) {
                     // backgroundColor: '#ffc107',
                     backgroundColor: colour_array,
                     fill: false
-                },]
+                }, ]
             },
             options: {
                 title: {
@@ -350,7 +351,7 @@ function create_charts(data_obj, needed_charts) {
 
         return {
             'solar_history_bar_chart': solar_history_bar,
-           }
+        }
 
     } else if (needed_charts === "last_ev_charge_line_chart") {
         return new Chart(document.getElementById("last_ev_charge_session_line"), {
@@ -566,6 +567,73 @@ function update_charts(chart_obj, data_obj) {
     }
 }
 
+async function start_charging_session_listeners(user, db, initial_charging_data_obj, isCharging_parent_node) {
+    let charger_list = Object.keys(isCharging_parent_node)
+    console.log(charger_list)
+
+    let test_obj = {}
+    for (let index in charger_list) {
+        let chargerID = charger_list[index]
+        db.ref(`users/${user.uid}/evc_inputs/charging/${chargerID}`).on('value', function (snapshot) {
+            console.log(chargerID)
+            let charging_value = snapshot.val();
+            if (charging_value === true) {
+                test_obj[chargerID] = true
+            } else if (charging_value === false) {
+                if (test_obj.hasOwnProperty(chargerID)) {
+                    delete test_obj[chargerID]
+                }
+            }
+            console.log(test_obj)
+
+        })
+    }
+    return true
+}
+
+async function grab_initial_charging_data(user, db, isCharging_parent_node) {
+    // charging_data_obj will be the object that defines ALL of our datasets
+    let charging_data_obj = {
+        datasets: []
+    }
+
+    // Loop through all of the chargerIDs that are registered
+    for (let chargerID in isCharging_parent_node) {
+        // Double check if the chargerID exists and chargerID is currently charging
+        if (isCharging_parent_node.hasOwnProperty(chargerID) && isCharging_parent_node[chargerID] === true) {
+
+            // Get the latest charging time for this chargerID
+            let latest_charging_time = await db.ref(`users/${user.uid}/charging_history_keys/${chargerID}`)
+                .orderByKey().limitToLast(1).once("value");
+            latest_charging_time = Object.keys(latest_charging_time.val());
+
+            // Now that we have the latest charging time, we need to get data from the charge session
+            let latest_charge_session_obj = await db.ref(`users/${user.uid}/charging_history/${chargerID}/${latest_charging_time}`)
+                .once("value")
+            latest_charge_session_obj = latest_charge_session_obj.val();
+
+            // Now push the data into a temporary array and then into the datasets structure
+            let temp_data_array = []
+            for (let key in latest_charge_session_obj) {
+                temp_data_array.push({
+                    x: moment(latest_charge_session_obj[key]['Time'], 'YYYY-MM-DD hh:mm:ss'),
+                    y: latest_charge_session_obj[key]['Power_Import']
+                })
+            }
+            charging_data_obj.datasets.push({
+                data: temp_data_array,
+                label: chargerID,
+                // Todo: make a color array to reference
+                borderColor: "#ff92d2",
+                fill: false
+            })
+
+            console.log(charging_data_obj)
+            return charging_data_obj
+        }
+    }
+}
+
 function start_master_listener(user) {
 
     // user.updateProfile({
@@ -597,19 +665,6 @@ function start_master_listener(user) {
         'btsoc': [],
         'bt_module_temp': [],
         'time': []
-    };
-
-    let charging_data_obj = {
-        'evc_charging': [
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            []
-        ],
-        'latest_timestamp': ""
     };
 
     let charging_table_data_obj = {
@@ -699,45 +754,22 @@ function start_master_listener(user) {
     // Charging_ref is the Firebase reference to the parent of all charging stautses
     let charging_ref = db.ref("users/" + user.uid + "/evc_inputs/charging/");
 
+    // isCharging_parent_node is an object whose KEYS are all of the registered chargers
+    let isCharging_parent_node = null
+
     // charging_chart_obj is the object of the ev charging chart
     let charging_chart_obj = null;
 
-    // Initial charging object is an object with all of the chargers and
-    let INITIAL_CHARGING_OBJ = {};
-
-    let charging_list = []
-    // charging_chart_obj = create_charts(charging_data_obj.evc_charging, 'ev_charging_chart');
-
     charging_ref.once('value', async function (snapshot) {
-        let isCharging_parent_node = snapshot.val();
+        isCharging_parent_node = snapshot.val();
+        let charging_data_obj = await grab_initial_charging_data(user, db, isCharging_parent_node)
+        let success = await start_charging_session_listeners(user, db, charging_data_obj, isCharging_parent_node)
+        console.log(success)
+        console.log('completed!')
+        charging_chart_obj = create_charts(charging_data_obj, 'ev_charging_chart');
 
-        // Loop through all of the chargerIDs in our charging list
-        for (let chargerID in isCharging_parent_node){
-            // Double check if the chargerID exists and chargerID is currently charging
-            if (isCharging_parent_node.hasOwnProperty(chargerID) && isCharging_parent_node[chargerID] === true){
-
-                INITIAL_CHARGING_OBJ[chargerID] = true;
-
-                // Get the latest charging time for this chargerID
-                let latest_charging_time = await db.ref(`users/${user.uid}/charging_history_keys/${chargerID}`)
-                    .orderByKey().limitToLast(1).once("value");
-                latest_charging_time = Object.keys(latest_charging_time.val());
-                console.log(latest_charging_time)
-
-                // Now that we have the latest charging time, we need to get data from the charge session
-                let latest_charge_session_obj = await db.ref(`users/${user.uid}/charging_history/${chargerID}/${latest_charging_time}`)
-                    .once("value")
-                latest_charge_session_obj = latest_charge_session_obj.val();
-                console.log(latest_charge_session_obj)
-                // Todo: append this to the charging data object
-                }
-            }
-
-        // Our first load flag will also be isCharging. If it is true, then we need to run special code later
-        console.log(INITIAL_CHARGING_OBJ)
-
-
-    }).then(async function () {
+    }).then(function () {
+        console.log('shoudl i be here...')
         // let test_obj = []
         // for (let chargerID in FIRST_LOAD_FLAG_OBJ){
         //     let charging_history_keys_ref = db.ref(`users/${user.uid}/charging_history_keys/${chargerID}`);
@@ -763,24 +795,7 @@ function start_master_listener(user) {
         //     })
         // }
 
-        let test_obj = {}
-        for (let index in charging_list){
-            let chargerID = charging_list[index]
-            db.ref(`users/${user.uid}/evc_inputs/charging/${chargerID}`).on('value', function(snapshot){
-                console.log(chargerID)
-                let charging_value = snapshot.val();
-                if (charging_value === true){
-                    test_obj[chargerID] = true
-                }
-                else if (charging_value === false) {
-                    if (test_obj.hasOwnProperty(chargerID)){
-                        delete test_obj[chargerID]
-                    }
-                }
-                console.log(test_obj)
 
-            })
-        }
 
         // charging_ref.on("child_changed", async function(snapshot){
         //     let _isCharging_obj = snapshot.val();
