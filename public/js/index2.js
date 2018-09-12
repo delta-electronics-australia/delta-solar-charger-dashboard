@@ -696,76 +696,99 @@ function start_master_listener(user) {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////// EV CHARGING GRAPH ////////////////////////////////////////////////////////////////
-    // Start a listener for the EV charging STATUS Todo: this URL will change when we migrate charging status into ID
+    // Charging_ref is the Firebase reference to the parent of all charging stautses
     let charging_ref = db.ref("users/" + user.uid + "/evc_inputs/charging/");
-
-    // _isCharging is the universal object that has charger IDs as keys and true/false for charging/not charging/plugged
-    let _isCharging_obj = false;
 
     // charging_chart_obj is the object of the ev charging chart
     let charging_chart_obj = null;
 
-    // FIRST LOAD FLAG is for the ev charging chart. The value will depend on whether or not there is a charging session
-    // active when we first load the page
-    let FIRST_LOAD_FLAG_OBJ = {};
+    // Initial charging object is an object with all of the chargers and
+    let INITIAL_CHARGING_OBJ = {};
+
+    let charging_list = []
     // charging_chart_obj = create_charts(charging_data_obj.evc_charging, 'ev_charging_chart');
 
-    charging_ref.once('value', function (snapshot) {
-        // First we change the _isCharging variable for the whole webpage
-        _isCharging_obj = snapshot.val();
+    charging_ref.once('value', async function (snapshot) {
+        let isCharging_parent_node = snapshot.val();
 
-        for (let key in _isCharging_obj){
-            if (_isCharging_obj[key] === true){
-                FIRST_LOAD_FLAG_OBJ[key] = true
+        // Loop through all of the chargerIDs in our charging list
+        for (let chargerID in isCharging_parent_node){
+            // Double check if the chargerID exists and chargerID is currently charging
+            if (isCharging_parent_node.hasOwnProperty(chargerID) && isCharging_parent_node[chargerID] === true){
+
+                INITIAL_CHARGING_OBJ[chargerID] = true;
+
+                // Get the latest charging time for this chargerID
+                let latest_charging_time = await db.ref(`users/${user.uid}/charging_history_keys/${chargerID}`)
+                    .orderByKey().limitToLast(1).once("value");
+                latest_charging_time = Object.keys(latest_charging_time.val());
+                console.log(latest_charging_time)
+
+                // Now that we have the latest charging time, we need to get data from the charge session
+                let latest_charge_session_obj = await db.ref(`users/${user.uid}/charging_history/${chargerID}/${latest_charging_time}`)
+                    .once("value")
+                latest_charge_session_obj = latest_charge_session_obj.val();
+                console.log(latest_charge_session_obj)
+                // Todo: append this to the charging data object
+                }
             }
-        }
+
         // Our first load flag will also be isCharging. If it is true, then we need to run special code later
-        console.log(FIRST_LOAD_FLAG_OBJ)
+        console.log(INITIAL_CHARGING_OBJ)
 
 
     }).then(async function () {
-        let test_obj = []
-        for (let chargerID in FIRST_LOAD_FLAG_OBJ){
-            let charging_history_keys_ref = db.ref(`users/${user.uid}/charging_history_keys/${chargerID}`);
-            let latest_charging_time = await charging_history_keys_ref.orderByKey().limitToLast(1).once("value");
-            latest_charging_time = Object.keys(latest_charging_time.val())
-            
-            let charging_history_ref = db.ref(`users/${user.uid}/charging_history/${chargerID}/${latest_charging_time}`);
-            let initial_array = await charging_history_ref.once("value")
-            initial_array = initial_array.val()
-            
+        // let test_obj = []
+        // for (let chargerID in FIRST_LOAD_FLAG_OBJ){
+        //     let charging_history_keys_ref = db.ref(`users/${user.uid}/charging_history_keys/${chargerID}`);
+        //     let latest_charging_time = await charging_history_keys_ref.orderByKey().limitToLast(1).once("value");
+        //     latest_charging_time = Object.keys(latest_charging_time.val())
+        //
+        //     let charging_history_ref = db.ref(`users/${user.uid}/charging_history/${chargerID}/${latest_charging_time}`);
+        //     let initial_array = await charging_history_ref.once("value")
+        //     initial_array = initial_array.val()
+        //
+        //
+        //     for (let key in initial_array){
+        //         test_obj.push({x: moment(initial_array[key]['Time'], 'YYYY-MM-DD hh:mm:ss'), y: initial_array[key]['Power_Import']})
+        //     }
+        //     console.log(test_obj)
+        //     charging_chart_obj = create_charts(test_obj, 'ev_charging_chart');
+        //
+        //     charging_history_ref.limitToLast(1).on("child_added", function(snapshot){
+        //         console.log(snapshot.val())
+        //         new_array = snapshot.val()
+        //         test_obj.push({x: moment(new_array[key]['Time'], 'YYYY-MM-DD hh:mm:ss'), y: new_array[key]['Power_Import']})
+        //
+        //     })
+        // }
 
-            for (let key in initial_array){
-                test_obj.push({x: moment(initial_array[key]['Time'], 'YYYY-MM-DD hh:mm:ss'), y: initial_array[key]['Power_Import']})
-            }
-            console.log(test_obj)
-            charging_chart_obj = create_charts(test_obj, 'ev_charging_chart');
-
-            charging_history_ref.limitToLast(1).on("child_added", function(snapshot){
-                console.log(snapshot.val())
-                new_array = snapshot.val()
-                test_obj.push({x: moment(new_array[key]['Time'], 'YYYY-MM-DD hh:mm:ss'), y: new_array[key]['Power_Import']})
+        let test_obj = {}
+        for (let index in charging_list){
+            let chargerID = charging_list[index]
+            db.ref(`users/${user.uid}/evc_inputs/charging/${chargerID}`).on('value', function(snapshot){
+                console.log(chargerID)
+                let charging_value = snapshot.val();
+                if (charging_value === true){
+                    test_obj[chargerID] = true
+                }
+                else if (charging_value === false) {
+                    if (test_obj.hasOwnProperty(chargerID)){
+                        delete test_obj[chargerID]
+                    }
+                }
+                console.log(test_obj)
 
             })
         }
 
+        // charging_ref.on("child_changed", async function(snapshot){
+        //     let _isCharging_obj = snapshot.val();
+        //     console.log('New value of _isCharging_obj');
+        //     console.log(_isCharging_obj);
+        //     snapshot.ref().child()
+        // })
 
-
-        charging_ref.on("value", async function(snapshot){
-            let _isCharging_obj = snapshot.val();
-            console.log('New value of _isCharging_obj');
-            console.log(_isCharging_obj)
-
-            for (let chargerID in _isCharging_obj){
-                if (_isCharging_obj[chargerID] === true & !(chargerID in FIRST_LOAD_FLAG_OBJ)){
-                    console.log('Found a key that was not in first load flag')
-                }
-                else if (_isCharging_obj[chargerID] === false){
-                    delete FIRST_LOAD_FLAG_OBJ[chargerID]
-                }
-            }
-        })
-        
 
         let charging_history_keys_ref = db.ref(`users/${user.uid}/charging_history_keys/`);
 
