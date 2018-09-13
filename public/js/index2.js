@@ -32,7 +32,9 @@ function generate_date() {
 function create_charts(data_obj, needed_charts) {
 
     if (needed_charts === "ev_charging_chart") {
-        let ev_charging_chart = new Chart(document.getElementById("ev_charging_chart"), {
+        console.log(data_obj)
+        console.log('Finished creating chart')
+        return new Chart(document.getElementById("ev_charging_chart"), {
             type: 'line',
             data: data_obj,
             // {
@@ -77,9 +79,9 @@ function create_charts(data_obj, needed_charts) {
                         }
                     }],
                     yAxes: [{
-                            id: 'A',
-                            position: 'left'
-                        },
+                        id: 'A',
+                        position: 'left'
+                    },
                         {
                             id: 'B',
                             type: 'linear',
@@ -104,9 +106,6 @@ function create_charts(data_obj, needed_charts) {
             }]
         });
 
-        return {
-            'ev_charging_chart': ev_charging_chart
-        }
     } else if (needed_charts === "live_charts") {
         let utility_chart = new Chart(document.getElementById("utility_chart"), {
             type: 'line',
@@ -152,9 +151,9 @@ function create_charts(data_obj, needed_charts) {
                         }
                     }],
                     yAxes: [{
-                            id: 'A',
-                            position: 'left'
-                        },
+                        id: 'A',
+                        position: 'left'
+                    },
                         {
                             id: 'B',
                             position: 'right'
@@ -237,9 +236,9 @@ function create_charts(data_obj, needed_charts) {
                         }
                     }],
                     yAxes: [{
-                            id: 'A',
-                            position: 'left'
-                        },
+                        id: 'A',
+                        position: 'left'
+                    },
                         {
                             id: 'B',
                             type: 'linear',
@@ -288,7 +287,7 @@ function create_charts(data_obj, needed_charts) {
                     // backgroundColor: '#ffc107',
                     backgroundColor: colour_array,
                     fill: false
-                }, ]
+                },]
             },
             options: {
                 title: {
@@ -567,24 +566,88 @@ function update_charts(chart_obj, data_obj) {
     }
 }
 
-async function start_charging_session_listeners(user, db, initial_charging_data_obj, isCharging_parent_node) {
-    let charger_list = Object.keys(isCharging_parent_node)
-    console.log(charger_list)
+async function start_charging_session_listeners(user, db, initial_charging_data_obj,
+                                                charging_chart_obj, isCharging_parent_node) {
+    console.log('Starting listeners function');
 
-    let test_obj = {}
+    // charger_list is a list of all of the charger IDs that are registered to the system
+    let charger_list = Object.keys(isCharging_parent_node);
+
+    // charging_status_object keeps track of which chargers are charging/not charging
+    // Todo: might not need this
+    let charging_status_object = {};
+
+    // Loop through all of our registered chargers
     for (let index in charger_list) {
-        let chargerID = charger_list[index]
-        db.ref(`users/${user.uid}/evc_inputs/charging/${chargerID}`).on('value', function (snapshot) {
-            console.log(chargerID)
+        // Define their chargerID
+        let chargerID = charger_list[index];
+
+        // Start a listener for the charging status of each of the IDs
+        db.ref(`users/${user.uid}/evc_inputs/charging/${chargerID}`).on('value', async function (snapshot) {
+
+            // charging_value is true for charging, false for not charging
             let charging_value = snapshot.val();
+
+            // If the new value of charging is true
             if (charging_value === true) {
-                test_obj[chargerID] = true
-            } else if (charging_value === false) {
-                if (test_obj.hasOwnProperty(chargerID)) {
-                    delete test_obj[chargerID]
+                // and the charger ID exists in our data set - then do nothing
+                if (chargerID_exists_in_dataset(chargerID, charging_chart_obj)) {
+                    console.log('It exists!')
+                }
+                // if the chargerID does not exist in our data set then we need to create an object for it
+                else {
+                    console.log('Dataset does not exist yet, need to create the structure');
+                    charging_chart_obj.data.datasets.push({
+                        data: [],
+                        label: chargerID,
+                        borderColor: "#52ffbf",
+                        fill: false
+                    });
+                    charging_chart_obj.update()
+                }
+
+                // Now that we have sorted out the chart data structure, we start a charge session listener
+                // Get the latest charging time for this chargerID
+                let latest_charging_time = await db.ref(`users/${user.uid}/charging_history_keys/${chargerID}`)
+                    .orderByKey().limitToLast(1).once("value");
+                latest_charging_time = Object.keys(latest_charging_time.val());
+
+                console.log(`Our latest charging time is: ${latest_charging_time}`);
+                console.log(charging_chart_obj.data.datasets);
+
+                // Start a charge session listener for this charger ID
+                let charge_session_ref = db.ref(`users/${user.uid}/charging_history/${chargerID}/${latest_charging_time}`);
+                charge_session_ref.limitToLast(1).on("child_added", async function (snapshot) {
+                    // Todo: keep in mind that we will have duplicate value. Track if we need to fix this or not
+                    let new_data = snapshot.val();
+                    console.log('We got new data coming in:');
+                    console.log(new_data);
+
+                    // Todo: might need to match timestamps.
+                    let new_inverter_data = await db.ref(`users/${user.uid}/history/${date}`).limitToLast(1).once("value");
+                    new_inverter_data = new_inverter_data.val();
+                    console.log(new_inverter_data)
+                    // todo: format inverter history data so that we can use this method
+
+                    append_new_data_to_charging_chart(chargerID, charging_chart_obj, new_data)
+                });
+                charging_status_object[chargerID] = {
+                    charging: true,
+                    listener_ref: charge_session_ref
+                };
+
+            }
+            // If the new value of charging is false
+            else if (charging_value === false) {
+                // Then we need to remove the chargerID from the data set completely
+                charging_chart_obj = delete_chargerID_from_dataset(chargerID, charging_chart_obj);
+
+                if (charging_status_object.hasOwnProperty(chargerID)) {
+                    charging_status_object[chargerID].listener_ref.off();
+                    delete charging_status_object[chargerID];
                 }
             }
-            console.log(test_obj)
+            console.log(charging_status_object)
 
         })
     }
@@ -595,7 +658,9 @@ async function grab_initial_charging_data(user, db, isCharging_parent_node) {
     // charging_data_obj will be the object that defines ALL of our datasets
     let charging_data_obj = {
         datasets: []
-    }
+    };
+
+    let earliest_timestamp = null;
 
     // Loop through all of the chargerIDs that are registered
     for (let chargerID in isCharging_parent_node) {
@@ -609,16 +674,18 @@ async function grab_initial_charging_data(user, db, isCharging_parent_node) {
 
             // Now that we have the latest charging time, we need to get data from the charge session
             let latest_charge_session_obj = await db.ref(`users/${user.uid}/charging_history/${chargerID}/${latest_charging_time}`)
-                .once("value")
+                .orderByKey().once("value");
             latest_charge_session_obj = latest_charge_session_obj.val();
 
             // Now push the data into a temporary array and then into the datasets structure
-            let temp_data_array = []
+            let temp_data_array = [];
             for (let key in latest_charge_session_obj) {
-                temp_data_array.push({
-                    x: moment(latest_charge_session_obj[key]['Time'], 'YYYY-MM-DD hh:mm:ss'),
-                    y: latest_charge_session_obj[key]['Power_Import']
-                })
+                if (latest_charge_session_obj.hasOwnProperty(key)) {
+                    temp_data_array.push({
+                        x: moment(latest_charge_session_obj[key]['Time'], 'YYYY-MM-DD hh:mm:ss'),
+                        y: latest_charge_session_obj[key]['Power_Import']
+                    })
+                }
             }
             charging_data_obj.datasets.push({
                 data: temp_data_array,
@@ -626,12 +693,133 @@ async function grab_initial_charging_data(user, db, isCharging_parent_node) {
                 // Todo: make a color array to reference
                 borderColor: "#ff92d2",
                 fill: false
-            })
+            });
 
-            console.log(charging_data_obj)
-            return charging_data_obj
+            // Todo: this needs to be tested with multiple charge points
+            // If our earliest timestamp is not yet defined, then we know that this is the earliest so far
+            if (earliest_timestamp === null) {
+                earliest_timestamp = temp_data_array[0].x
+            }
+            // If our earliest timestamp has not yet been defined, we need to compare it
+            else if (temp_data_array[0]['Time'].isBefore(earliest_timestamp)) {
+                earliest_timestamp = temp_data_array[0].x
+            }
         }
     }
+
+    // Now that we have the earliest timestamp, we can format it in a way to grab inverter history data
+    earliest_timestamp = earliest_timestamp.format("HHmmss");
+
+    // Todo: add indexing to improve performance
+    let earliest_inverter_payload = await db.ref(`users/${user.uid}/history/${date}`)
+        .orderByChild('time')
+        .startAt(earliest_timestamp)
+        .once('value');
+    earliest_inverter_payload = earliest_inverter_payload.val();
+    console.log(earliest_inverter_payload);
+
+    // Define a temporary data object that includes arrays for all of our inverter data
+    let temp_data_obj = {
+        'Solar Power': [],
+        'Battery Power': [],
+        'Grid Power': []
+    };
+
+    // Loop through all of our inverter history and push the data into the arrays in temp_data_obj
+    for (let key in earliest_inverter_payload) {
+        if (earliest_inverter_payload.hasOwnProperty(key)) {
+            let time_obj = moment(`${date} ${earliest_inverter_payload[key]['time']}`, 'YYYY-MM-DD hhmmss');
+            temp_data_obj['Solar Power'].push({
+                x: time_obj,
+                y: (earliest_inverter_payload[key]['dc1p'] + earliest_inverter_payload[key]['dc2p']) / 1000
+            });
+            temp_data_obj['Battery Power'].push({
+                x: time_obj,
+                y: earliest_inverter_payload[key]['btp'] / 1000
+            });
+            temp_data_obj['Grid Power'].push({
+                x: time_obj,
+                y: earliest_inverter_payload[key]['utility_p'] / 1000
+            })
+        }
+    }
+
+    // Now loop through our temp_data_obj and push the arrays into the charging data object
+    for (let description in temp_data_obj){
+        if (temp_data_obj.hasOwnProperty(description)){
+            charging_data_obj.datasets.push({
+                data: temp_data_obj[description],
+                label: description,
+                // Todo: make a color array to reference
+                borderColor: "#fff020",
+                fill: false
+            });
+        }
+    }
+
+    console.log('Finished grabbing initial data');
+    return charging_data_obj
+
+}
+
+function chargerID_exists_in_dataset(chargerID, charging_chart_obj,) {
+    // This function checks whether or not our chargerID exists in the chart's data object
+
+    let dataset_exists = false;
+    // Loop through our datasets to see if there exists a dataset
+    for (let index in charging_chart_obj.data.datasets) {
+
+        // Check if index exists in our datasets object
+        if (charging_chart_obj.data.datasets.hasOwnProperty(index)) {
+
+            // If chargerID = label, then there is already a data object
+            if (chargerID === charging_chart_obj.data.datasets[index]['label']) {
+                dataset_exists = true
+            }
+        }
+    }
+    return dataset_exists
+}
+
+function delete_chargerID_from_dataset(chargerID, charging_chart_obj) {
+    // This function takes in a chargerID and deletes the data object from the charging chart
+    for (let index in charging_chart_obj.data.datasets) {
+        if (charging_chart_obj.data.datasets.hasOwnProperty(index)) {
+
+            // Match the chargerID with the label
+            if (chargerID === charging_chart_obj.data.datasets[index]['label']) {
+                //... delete the series object and update the chart
+                charging_chart_obj.data.datasets.splice(index, 1);
+                charging_chart_obj.update();
+                console.log(`Deleted ${chargerID}!`);
+                break
+            }
+
+        }
+    }
+    return charging_chart_obj
+}
+
+function append_new_data_to_charging_chart(chargerID, charging_chart_obj, new_data) {
+    for (let index in charging_chart_obj.data.datasets) {
+
+        // Check if index exists in our datasets object
+        if (charging_chart_obj.data.datasets.hasOwnProperty(index)) {
+
+            // If chargerID = label, then we have found the corresponding data object to modify
+            if (chargerID === charging_chart_obj.data.datasets[index]['label']) {
+                // Append the data into the charging chart
+                charging_chart_obj.data.datasets[index].data.push({
+                    x: moment(new_data['Time'], 'YYYY-MM-DD hh:mm:ss'),
+                    y: new_data['Power_Import']
+                });
+                break
+            }
+        }
+    }
+    charging_chart_obj.update();
+    console.log('Updated the chart!')
+    console.log(charging_chart_obj.data.datasets)
 }
 
 function start_master_listener(user) {
@@ -763,10 +951,11 @@ function start_master_listener(user) {
     charging_ref.once('value', async function (snapshot) {
         isCharging_parent_node = snapshot.val();
         let charging_data_obj = await grab_initial_charging_data(user, db, isCharging_parent_node)
-        let success = await start_charging_session_listeners(user, db, charging_data_obj, isCharging_parent_node)
+        charging_chart_obj = create_charts(charging_data_obj, 'ev_charging_chart');
+        let success = await start_charging_session_listeners(user, db, charging_data_obj, charging_chart_obj, isCharging_parent_node)
         console.log(success)
         console.log('completed!')
-        charging_chart_obj = create_charts(charging_data_obj, 'ev_charging_chart');
+
 
     }).then(function () {
         console.log('shoudl i be here...')
@@ -794,7 +983,6 @@ function start_master_listener(user) {
         //
         //     })
         // }
-
 
 
         // charging_ref.on("child_changed", async function(snapshot){
@@ -1179,26 +1367,27 @@ function start_master_listener(user) {
             update_tables(data_obj, 'general table');
         });
 
-        // Define our analytics listener and print info to all our top cards and update the last bar of our bar chart
-        let analytics_ref = db.ref("users/" + user.uid + "/analytics/");
-        analytics_ref.on("value", function (snapshot) {
-            let payload = snapshot.val();
-
-            document.getElementById("dctp_card").innerText = payload['dcp_t'].toFixed(2) + "kWh";
-
-            update_charts({
-                'solar_history_bar_chart_today_update': analytics_charts_obj['solar_history_bar_chart']
-            }, {
-                label: moment(),
-                data: payload['dcp_t'].toFixed(2)
-            });
-
-            document.getElementById("utility_p_export_card").innerText = payload['utility_p_export_t'].toFixed(2) + "kWh";
-            document.getElementById("utility_p_import_card").innerText = -1 * payload['utility_p_import_t'].toFixed(2) + "kWh";
-            document.getElementById("bt_consumed_card").innerText = payload['btp_consumed_t'].toFixed(2) + "kWh";
-            document.getElementById("bt_charged_card").innerText = -1 * (payload['btp_charged_t'].toFixed(2)) + "kWh";
-
-        });
+        // Todo: reenable for analytics
+        // // Define our analytics listener and print info to all our top cards and update the last bar of our bar chart
+        // let analytics_ref = db.ref("users/" + user.uid + "/analytics/");
+        // analytics_ref.on("value", function (snapshot) {
+        //     let payload = snapshot.val();
+        //
+        //     document.getElementById("dctp_card").innerText = payload['dcp_t'].toFixed(2) + "kWh";
+        //
+        //     update_charts({
+        //         'solar_history_bar_chart_today_update': analytics_charts_obj['solar_history_bar_chart']
+        //     }, {
+        //         label: moment(),
+        //         data: payload['dcp_t'].toFixed(2)
+        //     });
+        //
+        //     document.getElementById("utility_p_export_card").innerText = payload['utility_p_export_t'].toFixed(2) + "kWh";
+        //     document.getElementById("utility_p_import_card").innerText = -1 * payload['utility_p_import_t'].toFixed(2) + "kWh";
+        //     document.getElementById("bt_consumed_card").innerText = payload['btp_consumed_t'].toFixed(2) + "kWh";
+        //     document.getElementById("bt_charged_card").innerText = -1 * (payload['btp_charged_t'].toFixed(2)) + "kWh";
+        //
+        // });
 
     });
 
