@@ -11,7 +11,7 @@
             transition: opacity 0.7s ease-in;
         }
 
-        #master_row.load{
+        #master_row.load {
             opacity: 1;
         }
 
@@ -238,7 +238,8 @@
         <div class="card blue-grey darken-1 hoverable second_row_card">
             <div class="card-content white-text">
                 <span class="card-title center-align">Battery Buffering Usage</span>
-                <p class="center-align">How aggressive should we be in using the battery. The more aggressive, the more the battery
+                <p class="center-align">How aggressive should we be in using the battery. The more aggressive, the more
+                    the battery
                     will be used in standalone modes</p>
                 <div class="input-field white-text center-align">
                     <select id="battery_buffer_select" class="center-align">
@@ -351,17 +352,50 @@
     <div class="col s12 m12 l12">
         <div class="card green lighten-2 z-depth-2 hoverable">
             <div class="card-content green lighten-1">
-                <span class="card-title activator grey-text text-darken-4">
-                    EV Charging
+                <span class="card-title activator grey-text text-darken-4 center-align" id="ev_charging_chart_title">
                 </span>
             </div>
+
             <div class="card-image">
-                <canvas id="ev_charging_chart" width="400" height="170"></canvas>
+                <div id="ev_charging_chart_div">
+                    <canvas id="ev_charging_chart"></canvas>
+                </div>
             </div>
 
         </div>
     </div>
-
+    <!------------------------------------------- THIRD ROW--------------------------------------------------------->
+    <!-------------------------------------------------------------------------------------------------------------->
+    <!------------------------------------------- FOURTH ROW-------------------------------------------------------->
+    <!-------------------------------------------------------------------------------------------------------------->
+    <div class="col s12 m6 l4">
+        <div class="card blue-grey darken-1 hoverable second_row_card">
+            <div class="card-content white-text">
+                <span class="card-title center-align">Charger Status</span>
+            </div>
+        </div>
+    </div>
+    <div class="col s12 m6 l4">
+        <div class="card blue-grey darken-1 hoverable second_row_card">
+        </div>
+    </div>
+    <div class="col s12 m6 l4">
+        <div class="card blue-grey darken-1 hoverable second_row_card">
+            <div class="card-content white-text">
+                <span class="card-title center-align">Charger Energy Breakdown</span>
+            </div>
+        </div>
+    </div>
+    <!------------------------------------------- FOURTH ROW-------------------------------------------------------->
+    <!-------------------------------------------------------------------------------------------------------------->
+    <!------------------------------------------- FIFTH ROW--------------------------------------------------------->
+    <!-------------------------------------------------------------------------------------------------------------->
+    <div class="col s12 m12 l12">
+        <div class="card blue-grey darken-1 hoverable second_row_card">
+        </div>
+    </div>
+    <!------------------------------------------- FIFTH ROW--------------------------------------------------------->
+    <!-------------------------------------------------------------------------------------------------------------->
 
 </div>
 
