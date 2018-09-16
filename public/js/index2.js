@@ -786,7 +786,7 @@ function adjust_ev_charging_title_and_height(charging_status_object){
     }
     else {
         // Before we do anything, set the heading to no active charging sessions
-        document.getElementById('ev_charging_chart_title').innerText = `EV Charging - There is ${chargers_active} Active Charging Session`;
+        document.getElementById('ev_charging_chart_title').innerText = `EV Charging - There are ${chargers_active} Active Charging Sessions`;
         // Set the height of the graph to 0
         document.getElementById('ev_charging_chart_div').style.height = '250px';
     }
@@ -941,6 +941,8 @@ function start_master_listener(user) {
     };
     let media_elem3 = document.getElementById('solar_history_slider');
     M.Slider.init(media_elem3, second_row_slider_options);
+    let media_elem4 = document.getElementById('charging_analytics_slider');
+    M.Slider.init(media_elem4, second_row_slider_options);
 
 
     // Now we have to initialize our title pushpin. This will make the title stick at the top while scrolling
@@ -983,10 +985,6 @@ function start_master_listener(user) {
         let charging_data_obj = await grab_initial_charging_data(user, db, isCharging_parent_node)
         charging_chart_obj = create_charts(charging_data_obj, 'ev_charging_chart');
         let success = await start_charging_session_listeners(user, db, charging_data_obj, charging_chart_obj, isCharging_parent_node)
-        console.log(success);
-        console.log('completed!')
-
-
     });
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
