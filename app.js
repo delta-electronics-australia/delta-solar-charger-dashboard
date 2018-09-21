@@ -58,6 +58,10 @@ app.get('/delta_dashboard/hardware_info', function (req, res) {
     res.render('hardware_info')
 });
 
+app.get('/delta_dashboard/profile', function (req, res) {
+    res.render('profile')
+});
+
 app.use('/delta_dashboard/public', express.static(__dirname + '/public'));
 app.use(express.json());
 
