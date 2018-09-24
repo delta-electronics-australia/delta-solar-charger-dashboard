@@ -34,6 +34,8 @@ function generate_date() {
 }
 
 function get_current_date() {
+    // This function is the same as generate_date but instead returns a date string
+
     let today = new Date();
     let dd = today.getDate();
     let mm = today.getMonth() + 1; //January is 0!
@@ -97,8 +99,7 @@ function create_charts(data_obj, needed_charts) {
                             }
                         }
                     }],
-                    yAxes: [
-                        {
+                    yAxes: [{
                             id: 'A',
                             position: 'left'
                         },
@@ -120,9 +121,7 @@ function create_charts(data_obj, needed_charts) {
             }]
         });
 
-    }
-
-    else if (needed_charts === "live_charts") {
+    } else if (needed_charts === "live_charts") {
         let utility_chart = new Chart(document.getElementById("utility_chart"), {
             type: 'line',
             data: {
@@ -167,9 +166,9 @@ function create_charts(data_obj, needed_charts) {
                         }
                     }],
                     yAxes: [{
-                        id: 'A',
-                        position: 'left'
-                    },
+                            id: 'A',
+                            position: 'left'
+                        },
                         {
                             id: 'B',
                             position: 'right'
@@ -252,9 +251,9 @@ function create_charts(data_obj, needed_charts) {
                         }
                     }],
                     yAxes: [{
-                        id: 'A',
-                        position: 'left'
-                    },
+                            id: 'A',
+                            position: 'left'
+                        },
                         {
                             id: 'B',
                             type: 'linear',
@@ -274,9 +273,7 @@ function create_charts(data_obj, needed_charts) {
             'dcp': dcp,
             'btp_chart': btp_chart
         }
-    }
-
-    else if (needed_charts === "analytics_bar_charts") {
+    } else if (needed_charts === "analytics_bar_charts") {
 
         // This code generates our colour array. Important point is that the last element is green
         let colour_array = [];
@@ -305,7 +302,7 @@ function create_charts(data_obj, needed_charts) {
                     // backgroundColor: '#ffc107',
                     backgroundColor: colour_array,
                     fill: false
-                },]
+                }, ]
             },
             options: {
                 title: {
@@ -370,9 +367,7 @@ function create_charts(data_obj, needed_charts) {
             'solar_history_bar_chart': solar_history_bar,
         }
 
-    }
-
-    else if (needed_charts === "last_ev_charge_line_chart") {
+    } else if (needed_charts === "last_ev_charge_line_chart") {
         return new Chart(document.getElementById("last_ev_charge_session_line"), {
             type: 'line',
             data: {
@@ -474,9 +469,7 @@ function create_charts(data_obj, needed_charts) {
 
             },
         })
-    }
-
-    else if (needed_charts === "charger_status_pie") {
+    } else if (needed_charts === "charger_status_pie") {
 
         return new Chart(document.getElementById('charger_status_pie'), {
             type: 'doughnut',
@@ -491,52 +484,43 @@ function create_charts(data_obj, needed_charts) {
                 }
             }
         });
-    }
-
-    else if (needed_charts === "daily_charging_breakdown_bar") {
-        let test_date = moment(date + ' 24:00:00.000');
-        // need to find a way to subtract days off midnight
-        // console.log(moment())
-        // console.log(test_date)
-        // console.log(test_date.subtract(3, 'days'))
+    } else if (needed_charts === "daily_charging_breakdown_bar") {
+        console.log(data_obj)
         let solar_history_bar = new Chart(document.getElementById("daily_charging_breakdown_bar"), {
             type: 'bar',
-            data: {
-                labels: [moment().subtract(3, 'days'), moment().subtract(2, 'days'), moment().subtract(1, 'days'), moment()],
-                datasets: [{
-                    type: 'bar',
-                    label: "sup 1",
-                    data: [5, 10, 20, 30],
-                    borderColor: "#ffc107",
-                    // backgroundColor: '#ffc107',
-                    backgroundColor: 'black',
-                    fill: false
-                }, {
-                    type: 'bar',
-                    label: "sup 1",
-                    data: [25, 15, 15, 15],
-                    borderColor: "#ffc107",
-                    // backgroundColor: '#ffc107',
-                    backgroundColor: 'green',
-                    fill: false
-                }, {
-                    type: 'bar',
-                    label: "sup 1",
-                    data: [54, 15, 30, 40],
-                    borderColor: "#ffc107",
-                    // backgroundColor: '#ffc107',
-                    backgroundColor: 'blue',
-                    fill: false
-                },]
-            },
+            data: data_obj,
+            // {
+            //     labels: [moment().subtract(3, 'days').startOf('day'), moment().subtract(2, 'days').startOf('day'), moment().subtract(1, 'days').startOf('day'), moment().startOf('day')],
+            //     datasets: [{
+            //         type: 'bar',
+            //         label: "sup 1",
+            //         data: [5, 10, 20, 30],
+            //         borderColor: "#ffc107",
+            //         // backgroundColor: '#ffc107',
+            //         backgroundColor: 'black',
+            //         fill: false
+            //     }, {
+            //         type: 'bar',
+            //         label: "sup 2",
+            //         data: [25, 15, 15, 15],
+            //         borderColor: "#ffc107",
+            //         // backgroundColor: '#ffc107',
+            //         backgroundColor: 'green',
+            //         fill: false
+            //     }, {
+            //         type: 'bar',
+            //         label: "sup 3",
+            //         data: [54, 15, 30, 40],
+            //         borderColor: "#ffc107",
+            //         // backgroundColor: '#ffc107',
+            //         backgroundColor: 'blue',
+            //         fill: false
+            //     }, ]
+            // },
             options: {
-                // title: {
-                //     display: false,
-                //     text: 'Solar Generation History'
-                // },
-                // legend: {
-                //     display: false,
-                // },
+                legend: {
+                    display: false,
+                },
                 scales: {
                     xAxes: [{
                         type: 'time',
@@ -546,7 +530,8 @@ function create_charts(data_obj, needed_charts) {
                             source: 'auto',
                         },
                         gridLines: {
-                            color: '#a19ca1'
+                            color: '#a19ca1',
+                            display: false
                         },
                         distribution: 'series',
                         time: {
@@ -555,26 +540,30 @@ function create_charts(data_obj, needed_charts) {
                             }
                         },
                         stacked: true
+
                     }],
                     yAxes: [{
                         scaleLabel: {
                             display: true,
-                            labelString: 'Solar Generated (kWh)',
+                            labelString: 'Energy Consumed (kWh)',
                             fontColor: '#ffffff'
                         },
                         ticks: {
                             fontColor: "#ffffff"
                         },
                         gridLines: {
-                            color: '#a19ca1'
-                        }
+                            color: '#a19ca1',
+                            display: false
+                        },
+                        stacked: true
                     }]
                 },
                 tooltips: {
                     enabled: true,
                     callbacks: {
                         label: function (tooltipItems, data) {
-                            return tooltipItems.yLabel + ' kWh'
+                            console.log(tooltipItems)
+                            return `${data.datasets[tooltipItems.datasetIndex].label} : ${tooltipItems.yLabel} kWh`
                         }
                     }
                 },
@@ -694,7 +683,7 @@ function update_charts(chart_obj, data_obj) {
 }
 
 async function start_charging_session_listeners(user, db, initial_charging_data_obj,
-                                                charging_chart_obj, isCharging_parent_node) {
+    charging_chart_obj, isCharging_parent_node) {
     console.log('Starting listeners function');
 
     // charger_list is a list of all of the charger IDs that are registered to the system
@@ -905,14 +894,12 @@ function adjust_ev_charging_title_and_height(charging_status_object) {
         document.getElementById('ev_charging_chart_title').innerText = 'EV Charging - No Active Charging Sessions';
         // Set the height of the graph to 0
         document.getElementById('ev_charging_chart_div').style.height = '0px';
-    }
-    else if (chargers_active === 1) {
+    } else if (chargers_active === 1) {
         // Before we do anything, set the heading to no active charging sessions
         document.getElementById('ev_charging_chart_title').innerText = `EV Charging - There is ${chargers_active} Active Charging Session`;
         // Set the height of the graph to 0
         document.getElementById('ev_charging_chart_div').style.height = '250px';
-    }
-    else {
+    } else {
         // Before we do anything, set the heading to no active charging sessions
         document.getElementById('ev_charging_chart_title').innerText = `EV Charging - There are ${chargers_active} Active Charging Sessions`;
         // Set the height of the graph to 0
@@ -920,7 +907,7 @@ function adjust_ev_charging_title_and_height(charging_status_object) {
     }
 }
 
-function chargerID_exists_in_dataset(chargerID, charging_chart_obj,) {
+function chargerID_exists_in_dataset(chargerID, charging_chart_obj, ) {
     // This function checks whether or not our chargerID exists in the chart's data object
 
     let dataset_exists = false;
@@ -1002,8 +989,7 @@ function calculate_number_of_online_chargers(charger_status_obj) {
         if (charger_status_obj.hasOwnProperty(key)) {
             if (charger_status_obj[key]) {
                 online_chargers = online_chargers + 1
-            }
-            else {
+            } else {
                 offline_chargers = offline_chargers + 1
             }
         }
@@ -1091,8 +1077,7 @@ function update_last_charging_session_table(chargerID, last_charge_session_obj) 
     if (hours > 0) {
         if (hours === 1) {
             final_duration_string = `${hours}hr `
-        }
-        else {
+        } else {
             final_duration_string = `${hours}hrs `
         }
     }
@@ -1191,41 +1176,116 @@ function update_last_charging_session(user, db) {
 
 }
 
-async function grab_charger_analytics_values(user, db, ev_chargers, num_days) {
-    // Loop through all of the ev chargers
-    for (let index in ev_chargers) {
-        let chargerID = "";
-        if (ev_chargers.hasOwnProperty(index)) {
-            chargerID = ev_chargers[index]
-        }
-        console.log(chargerID);
-        for (let i = 0; i < num_days; i++) {
-            let day = moment().subtract(i, 'days').format('YYYY-MM-DD');
-            console.log(day);
+function append_new_data_to_daily_charging_breakdown(data_obj, chargerID, new_data) {
+    // This function takes a single value and appends it to the end of the data array for the chargerID
 
-            let temp_data = await db.ref(`users/${user.uid}/analytics/charging_history_analytics/${chargerID}/${day}`).once("value");
-            console.log(temp_data.val())
+    for (let index in data_obj.datasets) {
+        if (data_obj.datasets.hasOwnProperty(index)) {
+            if (chargerID === data_obj.datasets[index]['label']) {
+                data_obj.datasets[index].data.push(new_data)
+            }
+        }
+    }
+    return data_obj
+}
+
+async function condition_analytics_values_for_daily_charger_breakdown(charger_analytics_values, ev_chargers) {
+
+    // This function should take all the analytics values and condition them for chartJS stacked bar chart
+    console.log(charger_analytics_values)
+    // Initialize our conditioned analytics values object
+    let conditioned_charger_analytics_object = {
+        labels: [],
+        datasets: []
+    }
+
+    for (index in ev_chargers) {
+        let chargerID = ev_chargers[index]
+
+        conditioned_charger_analytics_object.datasets.push({
+            type: 'bar',
+            label: chargerID,
+            data: [],
+            // Todo: need a colour array here
+            backgroundColor: 'blue',
+            fill: false
+        })
+    }
+
+    for (date in charger_analytics_values) {
+        console.log('starting!')
+        if (charger_analytics_values.hasOwnProperty(date)) {
+            // Convert the dates to moment objects and append them to our labels
+            conditioned_charger_analytics_object.labels.push(moment(date, 'YYYY-MM-DD'))
+
+            // Now we have to go through all of the chargerIDs and find the total energy from each charge point for the day
+            for (chargerID in charger_analytics_values[date]) {
+                let temp_charge_energy = 0;
+
+                // If this chargerID has data for this particular date
+                if (charger_analytics_values[date][chargerID] !== null) {
+                    // Then we loop through the charge sessions for that day for that charger ID and add up the energy
+                    for (charge_session_time in charger_analytics_values[date][chargerID]) {
+                        temp_charge_energy = temp_charge_energy + charger_analytics_values[date][chargerID][charge_session_time].energy.toFixed(2)
+                    }
+                }
+
+                // Once we finished this loop, we append the total energy in our conditioned analytics obj
+                conditioned_charger_analytics_object = append_new_data_to_daily_charging_breakdown(conditioned_charger_analytics_object, chargerID, temp_charge_energy)
+            }
+        }
+    }
+    return conditioned_charger_analytics_object
+}
+
+async function grab_charger_analytics_values(user, db, ev_chargers, num_days) {
+    // This function serves update_daily_charger_breakdown and grabs all of the analytics values for the for the past num_days days
+
+    let charger_analytics_values = {};
+
+    for (let i = num_days; i >= 0; i--) {
+        let day = moment().subtract(i, 'days').format('YYYY-MM-DD');
+        console.log(i)
+        console.log(day);
+        charger_analytics_values[day] = {}
+
+        // Loop through all of the ev chargers
+        for (let index in ev_chargers) {
+            let chargerID = "";
+            if (ev_chargers.hasOwnProperty(index)) {
+                chargerID = ev_chargers[index]
+                // console.log(chargerID);
+
+                let temp_data = await db.ref(`users/${user.uid}/analytics/charging_history_analytics/${chargerID}/${day}`).once("value");
+                // console.log(temp_data.val())
+                charger_analytics_values[day][chargerID] = temp_data.val()
+            }
 
         }
     }
-    await sleep(2000)
-    return 'hello'
+    return charger_analytics_values
 }
 
 function update_daily_charger_breakdown(user, db) {
     let i;
 
+    let charger_analytics_values;
     let ev_chargers = [];
     let charging_ref = db.ref("users/" + user.uid + "/evc_inputs/charging/");
     charging_ref.once("value", function (snapshot) {
-        ev_chargers = Object.keys(snapshot.val())
-    })
+            ev_chargers = Object.keys(snapshot.val())
+        })
         .then(function () {
             console.log(ev_chargers);
-            let test = grab_charger_analytics_values(user, db, ev_chargers, 15)
-                .then(function () {
-                    console.log('done!')
-                    create_charts({}, 'daily_charging_breakdown_bar')
+            grab_charger_analytics_values(user, db, ev_chargers, 15)
+                .then(function (charger_analytics_values) {
+                    condition_analytics_values_for_daily_charger_breakdown(charger_analytics_values, ev_chargers)
+                        .then(function (final_analytics_values) {
+
+
+                            console.log('done!')
+                            create_charts(final_analytics_values, 'daily_charging_breakdown_bar')
+                        })
                 })
 
         });
@@ -1709,9 +1769,7 @@ function update_live_data_tables(data_obj, purpose) {
         evc_output += "<tr><td>" + "AC2 Current" + "</td><td>" + data_obj.ac2c + "A" + "</td>";
 
         document.getElementById("evc_table_body").innerHTML = evc_output;
-    }
-
-    else {
+    } else {
 
         let ac1_output = "";
         let dcp_output = "";
