@@ -107,9 +107,9 @@ async function create_charts() {
                     }
                 }],
                 yAxes: [{
-                    id: 'A',
-                    position: 'left'
-                },
+                        id: 'A',
+                        position: 'left'
+                    },
                     {
                         id: 'B',
                         type: 'linear',
@@ -237,13 +237,34 @@ function update_cards(overview_data_obj) {
 
 }
 
-function date_chosen(selected_date, user, db){
+async function get_ev_charger_list(user, db) {
+    let ev_chargers = db.ref(`users/${user.uid}/ev_chargers`).once("value")
+    return Object.keys(ev_chargers.val())
+}
+
+async function create_charge_session_cards(selected_date, ev_chargers) {
+    for (let index in ev_chargers) {
+        if (ev_chargers.hasOwnProperty(index)) {
+            let chargerID = ev_chargers[index]
+            // Now we have the selected date, we have to bring up all of the charging sessions that occurred on that date
+            db.ref(`users/${user.uid}/analytics/charging_history_analytics/${chargerID}/${selected_date}`)
+        }
+    }
+}
+
+function date_chosen(selected_date, user, db) {
     selected_date = selected_date.date.yyyymmdd();
     console.log(selected_date)
 
-    // Now we have the selected date, we have to bring up all of the charging sessions that occurred on that date
+    // First get a list of ev_chargers
+    get_ev_charger_list
+        .then(function (ev_chargers) {
+            create_charge_session_cards(selected_date, ev_chargers)
+                .then(function () {
 
-    db.ref(`users/${user.uid}/analytics/charging_history_analytics`)
+                })
+        })
+
 }
 
 async function get_valid_charging_dates(user, db) {
@@ -281,7 +302,10 @@ async function get_valid_charging_dates(user, db) {
             }
         }
     }
-    return {"valid_dates": valid_dates, "earliest_date": earliest_date}
+    return {
+        "valid_dates": valid_dates,
+        "earliest_date": earliest_date
+    }
 }
 
 function start_charging_history_page(user) {
@@ -324,24 +348,20 @@ function start_charging_history_page(user) {
 
         // Activate our date picker
         let datepicker_elem = document.querySelector('.datepicker');
-        let datepicker_instance = M.Datepicker.init(datepicker_elem,
-            {
-                autoClose: true,
-                format: 'mmm dd, yyyy',
-                onClose: function () {
-                    date_chosen(datepicker_instance, user, db)
-                },
+        let datepicker_instance = M.Datepicker.init(datepicker_elem, {
+            autoClose: true,
+            format: 'mmm dd, yyyy',
+            onClose: function () {
+                date_chosen(datepicker_instance, user, db)
+            },
+            minDate: new Date(earliest_date),
 
-                onSelect: function (test) {
-                },
-                minDate: new Date(earliest_date),
-
-                disableDayFn: function (day) {
-                    // This function disables the dates that were not in our list of available dates
-                    let current_date_check = day.yyyymmdd();
-                    return !valid_dates.includes(current_date_check)
-                }
-            });
+            disableDayFn: function (day) {
+                // This function disables the dates that were not in our list of available dates
+                let current_date_check = day.yyyymmdd();
+                return !valid_dates.includes(current_date_check)
+            }
+        });
     })
 
 
