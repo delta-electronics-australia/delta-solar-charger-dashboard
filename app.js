@@ -54,6 +54,10 @@ app.get('/delta_dashboard/charging_history', function (req, res) {
     res.render('charging_history')
 });
 
+app.get('/delta_dashboard/charging_history2', function (req, res) {
+    res.render('charging_history2')
+});
+
 app.get('/delta_dashboard/hardware_info', function (req, res) {
     res.render('hardware_info')
 });

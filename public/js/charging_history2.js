@@ -237,11 +237,58 @@ function update_cards(overview_data_obj) {
 
 }
 
-async function start_charging_history_page(user) {
+function date_chosen(selected_date, user, db){
+    selected_date = selected_date.date.yyyymmdd();
+    console.log(selected_date)
+
+    // Now we have the selected date, we have to bring up all of the charging sessions that occurred on that date
+
+    db.ref(`users/${user.uid}/analytics/charging_history_analytics`)
+}
+
+async function get_valid_charging_dates(user, db) {
+    let valid_dates = [];
+
+    let charging_history_keys_obj = await db.ref(`users/${user.uid}/charging_history_keys`).once("value");
+    charging_history_keys_obj = charging_history_keys_obj.val();
+
+    let earliest_date = Infinity;
+    for (let chargerID in charging_history_keys_obj) {
+
+        if (charging_history_keys_obj.hasOwnProperty(chargerID)) {
+            console.log(chargerID);
+
+            // temp_dates is the list of dates available for this chargerID
+            let temp_dates = Object.keys(charging_history_keys_obj[chargerID]);
+
+            // Loop through all of the charging dates within this chargerID
+            for (let index in temp_dates) {
+                if (temp_dates.hasOwnProperty(index)) {
+
+                    // First convert the current temp_date into UTC
+                    let temp_date_utc = moment(temp_dates[index], 'YYYY-MM-DD').valueOf();
+
+                    // Compare it: if the current value is lower, then it is earlier so replace the earliest_date value
+                    if (temp_date_utc < earliest_date) {
+                        earliest_date = temp_dates[index]
+                    }
+
+                    // If the current date is not in our valid dates, then we add it in
+                    if (!valid_dates.includes(temp_dates[index])) {
+                        valid_dates.push(temp_dates[index]);
+                    }
+                }
+            }
+        }
+    }
+    return {"valid_dates": valid_dates, "earliest_date": earliest_date}
+}
+
+function start_charging_history_page(user) {
     let db = firebase.database();
 
-    // Initialize our charts
-    let chart_obj = await create_charts();
+    // // Initialize our charts
+    // let chart_obj = await create_charts();
 
     let media_options = {
         height: 150,
@@ -268,131 +315,155 @@ async function start_charging_history_page(user) {
 
     let analytics_obj = {};
 
-    // New code.
-    let idToken = await firebase.auth().currentUser.getIdToken(true);
+    // let idToken = await firebase.auth().currentUser.getIdToken(true);
 
-    // Point to our charging history keys
-    let charging_history_key_ref = db.ref(`users/${user.uid}/charging_history_keys/`);
-    charging_history_key_ref.orderByKey().once("value", async function (snapshot) {
-        if (snapshot.val() !== null) {
-            let charging_session_keys = Object.keys(snapshot.val());
+    // First we grab our valid charging dates
+    get_valid_charging_dates(user, db).then(function (valid_charging_dates_payload) {
+        let valid_dates = valid_charging_dates_payload['valid_dates'];
+        let earliest_date = valid_charging_dates_payload['earliest_date'];
 
-            ///////////////////////////////////////////////////////////////////////////////////////////
-            // Now that we have loaded our charging history keys, we can now show the master_row
-            document.getElementById('master_row').style.visibility = 'visible';
-            ///////////////////////////////////////////////////////////////////////////////////////////
+        // Activate our date picker
+        let datepicker_elem = document.querySelector('.datepicker');
+        let datepicker_instance = M.Datepicker.init(datepicker_elem,
+            {
+                autoClose: true,
+                format: 'mmm dd, yyyy',
+                onClose: function () {
+                    date_chosen(datepicker_instance, user, db)
+                },
 
-            // Need to check if we are currently charging:
-            // let _isCharging = false;
-            let charging_ref = db.ref("users/" + user.uid + "/evc_inputs/charging/");
-            let _isCharging = await charging_ref.once('value');
-            _isCharging = _isCharging.val();
+                onSelect: function (test) {
+                },
+                minDate: new Date(earliest_date),
 
-            // Convert yyyy-mm-ddThhmm to yyyy-mm-dd hh:mm, append to our drop down list
-            let options = "";
-            let display_value = "";
-            $.each(charging_session_keys, function (i, val) {
-                display_value = (val.slice(0, 13) + ":" + val.slice(13)).replace("T", " ");
-
-                if (_isCharging && val === charging_session_keys[charging_session_keys.length - 1]){
-                    console.log('We have reached the one that should be disabled...');
-                    console.log(val);
-                    console.log(options + "<option value='" + val + "' ' + disabled'>" + display_value + "</option>")
+                disableDayFn: function (day) {
+                    // This function disables the dates that were not in our list of available dates
+                    let current_date_check = day.yyyymmdd();
+                    return !valid_dates.includes(current_date_check)
                 }
-
-                options = options + "<option value='" + val + "'>" + display_value + "</option>";
             });
-
-            let start_charging_session = $('#select_charging_session');
-            start_charging_session.append(options);
-
-            let selected_charging_session = "";
-            start_charging_session.on('change', function () {
-                selected_charging_session = $(this).val();
-
-                /////////////////////////////////////////////////////////////////////////////////////
-                // When the user selects the charge session date, hide all of the graphs and inline preloader
-                document.getElementById('reset_zoom_button_div').style.visibility = 'hidden';
-                document.getElementById('charging_history_tabs').style.visibility = 'hidden';
-                document.getElementById('charging_history_overview_tab').style.visibility = 'hidden';
-                document.getElementById('charging_history_chart_tab').style.visibility = 'hidden';
-                document.getElementById('charging_history_sankey_tab').style.visibility = 'hidden';
-
-                document.getElementById('preloader').style.display = 'inline';
-                /////////////////////////////////////////////////////////////////////////////////////
-
-                let url = "/delta_dashboard/charging_history_request";
-                let xhr = new XMLHttpRequest();
-                xhr.open("POST", url, true);
-                xhr.setRequestHeader("Content-Type", "application/json");
-
-                xhr.onload = function () {
-                    if (xhr.readyState === 4 && xhr.status === 200) {
-
-                        // Now that data has come in, initialize and display our tabs
-                        let tabs_elem = document.querySelector('.tabs');
-                        let tabs_instance = M.Tabs.init(tabs_elem);
-
-                        data_obj = JSON.parse(xhr.response)['data_obj'];
-                        let sankey_data_obj = JSON.parse(xhr.response)['sankey_data_obj'];
-                        let overview_data_obj = JSON.parse(xhr.response)['overview_data_obj'];
-                        // Convert all of the time values into moment objects (depending on the format)
-                        if (data_obj['time'][0].length < 10) {
-                            data_obj['time'].forEach(function (value, key, time_array) {
-                                time_array[key] = moment(time_array[key], "HH:mm:ss")
-                            });
-                        } else {
-                            data_obj['time'].forEach(function (value, key, time_array) {
-                                time_array[key] = moment(time_array[key], "YYYY-MM-DD HH:mm:ss.SSSSSS")
-                            });
-                        }
-                        //////////////////////////////////////////////////////////////////////////////////
-                        document.getElementById('preloader').style.display = 'none';
-
-                        document.getElementById('charging_history_tabs').style.visibility = 'visible';
-                        document.getElementById('charging_history_overview_tab').style.visibility = 'visible';
-                        document.getElementById('charging_history_chart_tab').style.visibility = 'visible';
-                        document.getElementById('charging_history_sankey_tab').style.visibility = 'visible';
-                        document.getElementById('reset_zoom_button_div').style.visibility = 'visible';
-                        //////////////////////////////////////////////////////////////////////////////////
-                        update_charts(chart_obj, data_obj, sankey_data_obj);
-                        update_cards(overview_data_obj);
-
-                    }
-                };
-
-                data = JSON.stringify({
-                    "idToken": idToken,
-                    'date': selected_charging_session
-                });
-
-                xhr.send(data);
-                console.log('sent!')
-            })
-        }
-
-        // Initialize our drop down menu
-        let elems = document.querySelectorAll('select');
-        let instances = M.FormSelect.init(elems);
-
-        $('#reset_zoom_button').click(function () {
-            chart_obj.charging_history_chart.resetZoom()
-        })
     })
+
+
+    // // Point to our charging history keys
+    // let charging_history_key_ref = db.ref(`users/${user.uid}/charging_history_keys/`);
+    // charging_history_key_ref.orderByKey().once("value", async function (snapshot) {
+    //     if (snapshot.val() !== null) {
+    //         let charging_session_keys = Object.keys(snapshot.val());
+    //
+    //         ///////////////////////////////////////////////////////////////////////////////////////////
+    //         // Now that we have loaded our charging history keys, we can now show the master_row
+    //         document.getElementById('master_row').style.visibility = 'visible';
+    //         ///////////////////////////////////////////////////////////////////////////////////////////
+    //
+    //         // Need to check if we are currently charging:
+    //         // let _isCharging = false;
+    //         let charging_ref = db.ref("users/" + user.uid + "/evc_inputs/charging/");
+    //         let _isCharging = await charging_ref.once('value');
+    //         _isCharging = _isCharging.val();
+    //
+    //         // Convert yyyy-mm-ddThhmm to yyyy-mm-dd hh:mm, append to our drop down list
+    //         let options = "";
+    //         let display_value = "";
+    //         $.each(charging_session_keys, function (i, val) {
+    //             display_value = (val.slice(0, 13) + ":" + val.slice(13)).replace("T", " ");
+    //
+    //             if (_isCharging && val === charging_session_keys[charging_session_keys.length - 1]){
+    //                 console.log('We have reached the one that should be disabled...');
+    //                 console.log(val);
+    //                 console.log(options + "<option value='" + val + "' ' + disabled'>" + display_value + "</option>")
+    //             }
+    //
+    //             options = options + "<option value='" + val + "'>" + display_value + "</option>";
+    //         });
+    //
+    //         let start_charging_session = $('#select_charging_session');
+    //         start_charging_session.append(options);
+    //
+    //         let selected_charging_session = "";
+    //         start_charging_session.on('change', function () {
+    //             selected_charging_session = $(this).val();
+    //
+    //             /////////////////////////////////////////////////////////////////////////////////////
+    //             // When the user selects the charge session date, hide all of the graphs and inline preloader
+    //
+    //             // document.getElementById('reset_zoom_button_div').style.visibility = 'hidden';
+    //             // document.getElementById('charging_history_tabs').style.visibility = 'hidden';
+    //             // document.getElementById('charging_history_overview_tab').style.visibility = 'hidden';
+    //             // document.getElementById('charging_history_chart_tab').style.visibility = 'hidden';
+    //             // document.getElementById('charging_history_sankey_tab').style.visibility = 'hidden';
+    //
+    //             // document.getElementById('preloader').style.display = 'inline';
+    //             /////////////////////////////////////////////////////////////////////////////////////
+    //
+    //             let url = "/delta_dashboard/charging_history_request";
+    //             let xhr = new XMLHttpRequest();
+    //             xhr.open("POST", url, true);
+    //             xhr.setRequestHeader("Content-Type", "application/json");
+    //
+    //             xhr.onload = function () {
+    //                 if (xhr.readyState === 4 && xhr.status === 200) {
+    //
+    //                     // Now that data has come in, initialize and display our tabs
+    //                     let tabs_elem = document.querySelector('.tabs');
+    //                     let tabs_instance = M.Tabs.init(tabs_elem);
+    //
+    //                     data_obj = JSON.parse(xhr.response)['data_obj'];
+    //                     let sankey_data_obj = JSON.parse(xhr.response)['sankey_data_obj'];
+    //                     let overview_data_obj = JSON.parse(xhr.response)['overview_data_obj'];
+    //                     // Convert all of the time values into moment objects (depending on the format)
+    //                     if (data_obj['time'][0].length < 10) {
+    //                         data_obj['time'].forEach(function (value, key, time_array) {
+    //                             time_array[key] = moment(time_array[key], "HH:mm:ss")
+    //                         });
+    //                     } else {
+    //                         data_obj['time'].forEach(function (value, key, time_array) {
+    //                             time_array[key] = moment(time_array[key], "YYYY-MM-DD HH:mm:ss.SSSSSS")
+    //                         });
+    //                     }
+    //                     //////////////////////////////////////////////////////////////////////////////////
+    //                     // document.getElementById('preloader').style.display = 'none';
+    //
+    //                     // document.getElementById('charging_history_tabs').style.visibility = 'visible';
+    //                     // document.getElementById('charging_history_overview_tab').style.visibility = 'visible';
+    //                     // document.getElementById('charging_history_chart_tab').style.visibility = 'visible';
+    //                     // document.getElementById('charging_history_sankey_tab').style.visibility = 'visible';
+    //                     // document.getElementById('reset_zoom_button_div').style.visibility = 'visible';
+    //                     //////////////////////////////////////////////////////////////////////////////////
+    //                     update_charts(chart_obj, data_obj, sankey_data_obj);
+    //                     update_cards(overview_data_obj);
+    //
+    //                 }
+    //             };
+    //
+    //             data = JSON.stringify({
+    //                 "idToken": idToken,
+    //                 'date': selected_charging_session
+    //             });
+    //
+    //             xhr.send(data);
+    //             console.log('sent!')
+    //         })
+    //     }
+    //
+    //     $('#reset_zoom_button').click(function () {
+    //         chart_obj.charging_history_chart.resetZoom()
+    //     })
+    // })
 }
 
 function checkIfLoggedIn() {
     // When we first load the page, hide the tabs and none the preloader
 
-    document.getElementById('master_row').style.visibility = 'hidden';
+    // document.getElementById('master_row').style.visibility = 'hidden';
 
-    document.getElementById('charging_history_tabs').style.visibility = 'hidden';
-    document.getElementById('charging_history_overview_tab').style.visibility = 'hidden';
-    document.getElementById('charging_history_chart_tab').style.visibility = 'hidden';
-    document.getElementById('charging_history_sankey_tab').style.visibility = 'hidden';
-    document.getElementById('reset_zoom_button_div').style.visibility = 'hidden';
+    // document.getElementById('charging_history_tabs').style.visibility = 'hidden';
+    // document.getElementById('charging_history_overview_tab').style.visibility = 'hidden';
+    // document.getElementById('charging_history_chart_tab').style.visibility = 'hidden';
+    // document.getElementById('charging_history_sankey_tab').style.visibility = 'hidden';
+    // document.getElementById('reset_zoom_button_div').style.visibility = 'hidden';
 
-    document.getElementById('preloader').style.display = 'none';
+    // document.getElementById('preloader').style.display = 'none';
 
     // Check if we are logged in
     firebase.auth().onAuthStateChanged(function (user) {

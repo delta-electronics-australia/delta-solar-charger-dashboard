@@ -266,8 +266,6 @@ async function start_charging_history_page(user) {
         'time': []
     };
 
-    let analytics_obj = {};
-
     // New code.
     let idToken = await firebase.auth().currentUser.getIdToken(true);
 

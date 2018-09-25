@@ -1,3 +1,5 @@
+import * as M from "./materialize";
+
 let date;
 
 let chart_properties = {
@@ -100,9 +102,9 @@ function create_charts(data_obj, needed_charts) {
                         }
                     }],
                     yAxes: [{
-                            id: 'A',
-                            position: 'left'
-                        },
+                        id: 'A',
+                        position: 'left'
+                    },
 
                     ]
                 },
@@ -166,9 +168,9 @@ function create_charts(data_obj, needed_charts) {
                         }
                     }],
                     yAxes: [{
-                            id: 'A',
-                            position: 'left'
-                        },
+                        id: 'A',
+                        position: 'left'
+                    },
                         {
                             id: 'B',
                             position: 'right'
@@ -251,9 +253,9 @@ function create_charts(data_obj, needed_charts) {
                         }
                     }],
                     yAxes: [{
-                            id: 'A',
-                            position: 'left'
-                        },
+                        id: 'A',
+                        position: 'left'
+                    },
                         {
                             id: 'B',
                             type: 'linear',
@@ -302,7 +304,7 @@ function create_charts(data_obj, needed_charts) {
                     // backgroundColor: '#ffc107',
                     backgroundColor: colour_array,
                     fill: false
-                }, ]
+                },]
             },
             options: {
                 title: {
@@ -485,38 +487,10 @@ function create_charts(data_obj, needed_charts) {
             }
         });
     } else if (needed_charts === "daily_charging_breakdown_bar") {
-        console.log(data_obj)
-        let solar_history_bar = new Chart(document.getElementById("daily_charging_breakdown_bar"), {
+        console.log(data_obj);
+        let daily_charging_breakdown_bar = new Chart(document.getElementById("daily_charging_breakdown_bar"), {
             type: 'bar',
             data: data_obj,
-            // {
-            //     labels: [moment().subtract(3, 'days').startOf('day'), moment().subtract(2, 'days').startOf('day'), moment().subtract(1, 'days').startOf('day'), moment().startOf('day')],
-            //     datasets: [{
-            //         type: 'bar',
-            //         label: "sup 1",
-            //         data: [5, 10, 20, 30],
-            //         borderColor: "#ffc107",
-            //         // backgroundColor: '#ffc107',
-            //         backgroundColor: 'black',
-            //         fill: false
-            //     }, {
-            //         type: 'bar',
-            //         label: "sup 2",
-            //         data: [25, 15, 15, 15],
-            //         borderColor: "#ffc107",
-            //         // backgroundColor: '#ffc107',
-            //         backgroundColor: 'green',
-            //         fill: false
-            //     }, {
-            //         type: 'bar',
-            //         label: "sup 3",
-            //         data: [54, 15, 30, 40],
-            //         borderColor: "#ffc107",
-            //         // backgroundColor: '#ffc107',
-            //         backgroundColor: 'blue',
-            //         fill: false
-            //     }, ]
-            // },
             options: {
                 legend: {
                     display: false,
@@ -562,7 +536,7 @@ function create_charts(data_obj, needed_charts) {
                     enabled: true,
                     callbacks: {
                         label: function (tooltipItems, data) {
-                            console.log(tooltipItems)
+                            console.log(tooltipItems);
                             return `${data.datasets[tooltipItems.datasetIndex].label} : ${tooltipItems.yLabel} kWh`
                         }
                     }
@@ -646,7 +620,7 @@ function update_charts(chart_obj, data_obj) {
         // let labels = chart_obj.solar_history_bar_chart.data.labels;
 
         // console.log(chart_obj.solar_history_bar_chart.data.labels.length);
-        let data_array = chart_obj['solar_history_bar_chart_today_update'].data.datasets[1].data
+        let data_array = chart_obj['solar_history_bar_chart_today_update'].data.datasets[1].data;
         // Todo: we have to keep a track on this, to see if we need to update labels
         // chart_obj.solar_history_bar_chart.data.labels = data_obj.labels;
         data_array[data_array.length - 1] = data_obj['data'];
@@ -683,7 +657,7 @@ function update_charts(chart_obj, data_obj) {
 }
 
 async function start_charging_session_listeners(user, db, initial_charging_data_obj,
-    charging_chart_obj, isCharging_parent_node) {
+                                                charging_chart_obj, isCharging_parent_node) {
     console.log('Starting listeners function');
 
     // charger_list is a list of all of the charger IDs that are registered to the system
@@ -907,7 +881,7 @@ function adjust_ev_charging_title_and_height(charging_status_object) {
     }
 }
 
-function chargerID_exists_in_dataset(chargerID, charging_chart_obj, ) {
+function chargerID_exists_in_dataset(chargerID, charging_chart_obj,) {
     // This function checks whether or not our chargerID exists in the chart's data object
 
     let dataset_exists = false;
@@ -1190,48 +1164,51 @@ function append_new_data_to_daily_charging_breakdown(data_obj, chargerID, new_da
 }
 
 async function condition_analytics_values_for_daily_charger_breakdown(charger_analytics_values, ev_chargers) {
-
     // This function should take all the analytics values and condition them for chartJS stacked bar chart
-    console.log(charger_analytics_values)
+
     // Initialize our conditioned analytics values object
     let conditioned_charger_analytics_object = {
         labels: [],
         datasets: []
-    }
+    };
 
-    for (index in ev_chargers) {
-        let chargerID = ev_chargers[index]
+    for (let index in ev_chargers) {
+        if (ev_chargers.hasOwnProperty(index)) {
+            let chargerID = ev_chargers[index];
 
-        conditioned_charger_analytics_object.datasets.push({
-            type: 'bar',
-            label: chargerID,
-            data: [],
-            // Todo: need a colour array here
-            backgroundColor: 'blue',
-            fill: false
-        })
+            conditioned_charger_analytics_object.datasets.push({
+                type: 'bar',
+                label: chargerID,
+                data: [],
+                // Todo: need a colour array here
+                backgroundColor: 'blue',
+                fill: false
+            })
+        }
+
     }
 
     for (date in charger_analytics_values) {
-        console.log('starting!')
         if (charger_analytics_values.hasOwnProperty(date)) {
             // Convert the dates to moment objects and append them to our labels
-            conditioned_charger_analytics_object.labels.push(moment(date, 'YYYY-MM-DD'))
+            conditioned_charger_analytics_object.labels.push(moment(date, 'YYYY-MM-DD'));
 
             // Now we have to go through all of the chargerIDs and find the total energy from each charge point for the day
-            for (chargerID in charger_analytics_values[date]) {
+            for (let chargerID in charger_analytics_values[date]) {
                 let temp_charge_energy = 0;
-
-                // If this chargerID has data for this particular date
-                if (charger_analytics_values[date][chargerID] !== null) {
-                    // Then we loop through the charge sessions for that day for that charger ID and add up the energy
-                    for (charge_session_time in charger_analytics_values[date][chargerID]) {
-                        temp_charge_energy = temp_charge_energy + charger_analytics_values[date][chargerID][charge_session_time].energy.toFixed(2)
+                if (charger_analytics_values[date].hasOwnProperty(chargerID)) {
+                    // If this chargerID has data for this particular date
+                    if (charger_analytics_values[date][chargerID] !== null) {
+                        // Then we loop through the charge sessions for that day for that charger ID and add up the energy
+                        for (let charge_session_time in charger_analytics_values[date][chargerID]) {
+                            if (charger_analytics_values[date][chargerID].hasOwnProperty(charge_session_time)) {
+                                temp_charge_energy = temp_charge_energy + charger_analytics_values[date][chargerID][charge_session_time].energy.toFixed(2)
+                            }
+                        }
                     }
+                    // Once we finished this loop, we append the total energy in our conditioned analytics obj
+                    conditioned_charger_analytics_object = append_new_data_to_daily_charging_breakdown(conditioned_charger_analytics_object, chargerID, temp_charge_energy)
                 }
-
-                // Once we finished this loop, we append the total energy in our conditioned analytics obj
-                conditioned_charger_analytics_object = append_new_data_to_daily_charging_breakdown(conditioned_charger_analytics_object, chargerID, temp_charge_energy)
             }
         }
     }
@@ -1245,15 +1222,13 @@ async function grab_charger_analytics_values(user, db, ev_chargers, num_days) {
 
     for (let i = num_days; i >= 0; i--) {
         let day = moment().subtract(i, 'days').format('YYYY-MM-DD');
-        console.log(i)
-        console.log(day);
-        charger_analytics_values[day] = {}
+        charger_analytics_values[day] = {};
 
         // Loop through all of the ev chargers
         for (let index in ev_chargers) {
             let chargerID = "";
             if (ev_chargers.hasOwnProperty(index)) {
-                chargerID = ev_chargers[index]
+                chargerID = ev_chargers[index];
                 // console.log(chargerID);
 
                 let temp_data = await db.ref(`users/${user.uid}/analytics/charging_history_analytics/${chargerID}/${day}`).once("value");
@@ -1267,23 +1242,21 @@ async function grab_charger_analytics_values(user, db, ev_chargers, num_days) {
 }
 
 function update_daily_charger_breakdown(user, db) {
-    let i;
-
-    let charger_analytics_values;
     let ev_chargers = [];
     let charging_ref = db.ref("users/" + user.uid + "/evc_inputs/charging/");
+
+    // Get a list of all of our ev chargers
     charging_ref.once("value", function (snapshot) {
-            ev_chargers = Object.keys(snapshot.val())
-        })
+        ev_chargers = Object.keys(snapshot.val())
+    })
         .then(function () {
-            console.log(ev_chargers);
+            // Then we grab all of the analytics values for the past 15 days
             grab_charger_analytics_values(user, db, ev_chargers, 15)
                 .then(function (charger_analytics_values) {
+                    // Then we condition the data in the way that we need to chart
                     condition_analytics_values_for_daily_charger_breakdown(charger_analytics_values, ev_chargers)
                         .then(function (final_analytics_values) {
-
-
-                            console.log('done!')
+                            // Then we plot it in a stacked bar chart
                             create_charts(final_analytics_values, 'daily_charging_breakdown_bar')
                         })
                 })
