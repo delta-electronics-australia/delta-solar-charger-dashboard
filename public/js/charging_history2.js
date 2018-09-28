@@ -107,9 +107,9 @@ async function create_charts() {
                     }
                 }],
                 yAxes: [{
-                        id: 'A',
-                        position: 'left'
-                    },
+                    id: 'A',
+                    position: 'left'
+                },
                     {
                         id: 'B',
                         type: 'linear',
@@ -237,31 +237,184 @@ function update_cards(overview_data_obj) {
 
 }
 
+function openModal(button_id) {
+    console.log('hello!')
+    console.log(button_id)
+
+    $("#charge_sessions_row").append(`
+                    <div id="charging_history_modal" class="modal">
+                        <div class="modal-content">
+                            <h4>Test!</h4>
+                            <div id="modal_body">
+                                ${button_id}
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+                        </div>
+                    </div>
+                    `)
+
+    console.log('rah!');
+
+    console.log($('#charge_sessions_row').get(0).outerHTML);
+
+
+    let elems = document.querySelectorAll('.modal');
+    let instance = M.Modal.init(elems);
+    console.log(instance)
+
+    // $('#charging_history_modal').modal();
+    // $('.modal').modal('open');
+    instance.open()
+
+
+    // console.log(instances)
+}
+
 async function get_ev_charger_list(user, db) {
-    let ev_chargers = db.ref(`users/${user.uid}/ev_chargers`).once("value")
+    let ev_chargers = await db.ref(`users/${user.uid}/ev_chargers`).once("value");
     return Object.keys(ev_chargers.val())
 }
 
-async function create_charge_session_cards(selected_date, ev_chargers) {
+function convert_seconds_into_words(duration_seconds) {
+    // This function takes in an amount of seconds and converts it into real words eg. 2hrs 5min
+    let total_seconds = duration_seconds;
+    let hours = Math.floor(total_seconds / 3600);
+    total_seconds %= 3600;
+    let minutes = Math.floor(total_seconds / 60);
+    let seconds = total_seconds % 60;
+
+    let final_duration_string = "";
+
+    if (hours > 0) {
+        if (hours === 1) {
+            final_duration_string = `${hours}hr `
+        } else {
+            final_duration_string = `${hours}hrs `
+        }
+    }
+    if (minutes > 0) {
+        final_duration_string += `${minutes}min `;
+    }
+    if (seconds > 0) {
+        final_duration_string += `${seconds}sec`
+    }
+
+    return final_duration_string
+}
+
+async function create_charge_session_cards(user, db, selected_date, ev_chargers) {
+
+    let charge_session_row = $("#charge_sessions_row");
+    charge_session_row.empty();
     for (let index in ev_chargers) {
         if (ev_chargers.hasOwnProperty(index)) {
-            let chargerID = ev_chargers[index]
+            let chargerID = ev_chargers[index];
             // Now we have the selected date, we have to bring up all of the charging sessions that occurred on that date
-            db.ref(`users/${user.uid}/analytics/charging_history_analytics/${chargerID}/${selected_date}`)
+            let temp_charging_analytics = await db.ref(`users/${user.uid}/analytics/charging_history_analytics/${chargerID}/${selected_date}`).once("value");
+
+
+            temp_charging_analytics = temp_charging_analytics.val();
+            // If this charger has charging sessions on this day, then there will be an object returned
+            if (temp_charging_analytics !== null) {
+                // Need to loop through all of the charging sessions now
+                for (let charging_time in temp_charging_analytics) {
+                    if (temp_charging_analytics.hasOwnProperty(charging_time)) {
+
+                        let duration_string = convert_seconds_into_words(temp_charging_analytics[charging_time]['duration_seconds']);
+                        let start_time = moment(charging_time, "hhmm").format('h:mm A');
+
+                        charge_session_row.append(`
+                            <div class="col s12 m6 l4">
+                                <div class="card blue-grey darken-1 hoverable">
+                                    <div class="card-content white-text">
+                                        <span class="card-title center-align">${start_time}</span>
+                                        <table class="">
+                                            <thead>
+                                            <tr>
+                                                <th>Description</th>
+                                                <th>Value</th>
+                                            </tr>
+                                            </thead>
+                    
+                                            <tbody id="dcp_reveal_table">
+                                            <tr>
+                                                <td>Charger ID</td>
+                                                <td>${chargerID}</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Charge Duration</td>
+                                                <td>${duration_string}</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Charge Energy</td>
+                                                <td>${temp_charging_analytics[charging_time]['energy'].toFixed(2)} kWh</td>
+                                            </tr>
+                                            </tbody>
+                                        </table>
+                                        <a class="right-align">
+                                            <!--<a class="waves-effect waves-light btn modal-trigger" href="#charging_history_modal">More Info</a>-->
+                                            <a class="waves-effect waves-light btn" id="${chargerID}_button" onclick="openModal(this.id)">More Info</a>
+
+                                        </div>
+                                    </div>
+                                </div>
+                            `)
+                    }
+                }
+            }
+            // Testing: if it is null then let's add a card with nothing in it
+            else {
+                charge_session_row.append(`
+                            <div class="col s12 m6 l4">
+                                <div class="card blue-grey darken-1 hoverable">
+                                    <div class="card-content white-text">
+                                        <span class="card-title center-align">None</span>
+                                        <table class="">
+                                            <thead>
+                                            <tr>
+                                                <th>Description</th>
+                                                <th>Value</th>
+                                            </tr>
+                                            </thead>
+                    
+                                            <tbody id="dcp_reveal_table">
+                                            <tr>
+                                                <td>Charger ID</td>
+                                                <td>${chargerID}</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Charge Duration</td>
+                                                <td>None</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Charge Energy</td>
+                                                <td>None</td>
+                                            </tr>
+                                            </tbody>
+                                        </table>
+                                        <div class="right-align">
+                                            <a class="waves-effect waves-light btn">More Info</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                `)
+            }
         }
     }
 }
 
 function date_chosen(selected_date, user, db) {
     selected_date = selected_date.date.yyyymmdd();
-    console.log(selected_date)
+    console.log(selected_date);
 
     // First get a list of ev_chargers
-    get_ev_charger_list
+    get_ev_charger_list(user, db)
         .then(function (ev_chargers) {
-            create_charge_session_cards(selected_date, ev_chargers)
+            create_charge_session_cards(user, db, selected_date, ev_chargers)
                 .then(function () {
-
                 })
         })
 
@@ -270,7 +423,7 @@ function date_chosen(selected_date, user, db) {
 async function get_valid_charging_dates(user, db) {
     let valid_dates = [];
 
-    let charging_history_keys_obj = await db.ref(`users/${user.uid}/charging_history_keys`).once("value");
+    let charging_history_keys_obj = await db.ref(`users/${user.uid}/analytics/charging_history_analytics`).once("value");
     charging_history_keys_obj = charging_history_keys_obj.val();
 
     let earliest_date = Infinity;
@@ -336,6 +489,7 @@ function start_charging_history_page(user) {
         'ac2p': [],
         'time': []
     };
+
 
     let analytics_obj = {};
 

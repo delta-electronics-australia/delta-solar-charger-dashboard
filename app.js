@@ -157,8 +157,13 @@ app.post('/delta_dashboard/archive_request', function (req, res) {
             let snapshot = await history_ref.orderByKey().once("value");
             let data = snapshot.val();
 
-            let csvwriter = fs.createWriteStream(`C:\\Delta_AU_Services\\EVCS_portal\\logs\\${uid}\\temp_logs\\${selected_date}.csv`);
+            let temp_csv_destination = `C:\\Delta_AU_Services\\EVCS_portal\\logs\\${uid}\\temp_logs\\`;
+            mkdirp(temp_csv_destination, function (err) {
+                if (err) console.error(err);
+                else console.log('pow!')
+            });
 
+            let csvwriter = fs.createWriteStream(`${temp_csv_destination}${selected_date}.csv`);
             // This listener waits until the writing is finished, then sends that file out
             csvwriter.on('finish', () => {
                 // res.download(`C:\\Delta_AU_Services\\EVCS_portal\\logs\\${uid}\\${selected_date}.csv`);
@@ -229,7 +234,6 @@ app.post('/delta_dashboard/archive_request', function (req, res) {
             // Tell the program that writing to csv file has ended
             writer.end('This is the end of writing\n');
         }
-
 
     });
 

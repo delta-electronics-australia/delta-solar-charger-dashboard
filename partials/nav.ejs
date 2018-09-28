@@ -32,7 +32,7 @@
 </ul>
 <ul id="archive_dropdown" class="dropdown-content">
     <li><a href="/delta_dashboard/history">Inverter History</a></li>
-    <li><a href="/delta_dashboard/charging_history">Previous Charging Sessions</a></li>
+    <li><a href="/delta_dashboard/charging_history" id="charging_history_link">Previous Charging Sessions</a></li>
 </ul>
 
 <nav>
@@ -46,7 +46,7 @@
 
         <!--<a href="#" class="brand-logo">Logo</a>-->
         <ul id="nav-mobile" class="right hide-on-med-and-down">
-            <li><a href="/delta_dashboard">Dashboard</a></li>
+            <li><a href="/delta_dashboard" id="dashboard_link">Dashboard</a></li>
             <li><a class="archive_dropdown_trigger" href="#!" data-target="archive_dropdown">Archive</a>
             <li><a href="/delta_dashboard/hardware_info">Hardware Info</a></li>
             <li><a class="user_dropdown_trigger" href="#!" id="displayName" data-target="user_dropdown"></a>
@@ -76,6 +76,17 @@
         });
         // Get the user's displayname and put it in the nav bar
         document.getElementById("displayName").innerHTML = "<b>" + user.displayName + "</b>"
+
+        // Now we need to determine what kind of system this account is running
+        let db = firebase.database()
+
+        // If this system is running a multiple charger system, then we need to change the links to index2 etc...
+        db.ref(`users/${user.uid}/system_type`).once("value", function (snapshot) {
+            if (snapshot.val() === "multiple") {
+                document.getElementById("dashboard_link").href = '/delta_dashboard/index2'
+                document.getElementById("charging_history_link").href = '/delta_dashboard/charging_history2'
+            }
+        })
     });
 
 </script>

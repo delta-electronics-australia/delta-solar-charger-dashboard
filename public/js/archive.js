@@ -302,7 +302,7 @@ async function date_chosen(selected_date, chart_obj, db, user) {
                 }
             };
 
-            data = JSON.stringify({"idToken": idToken, 'date': selected_date});
+            let data = JSON.stringify({"idToken": idToken, 'date': selected_date});
 
             xhr.send(data);
             console.log('sent!')

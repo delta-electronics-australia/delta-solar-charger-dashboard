@@ -1,5 +1,3 @@
-import * as M from "./materialize";
-
 let date;
 
 let chart_properties = {
@@ -103,13 +101,18 @@ function create_charts(data_obj, needed_charts) {
                     }],
                     yAxes: [{
                         id: 'A',
-                        position: 'left'
+                        position: 'left',
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Power (kW)',
+                            fontColor: '#000000'
+                        },
                     },
 
                     ]
                 },
                 maintainAspectRatio: false,
-                responsive: true
+                responsive: true,
             },
             plugins: [{
                 beforeUpdate: function (chart, options) {
@@ -123,7 +126,9 @@ function create_charts(data_obj, needed_charts) {
             }]
         });
 
-    } else if (needed_charts === "live_charts") {
+    }
+
+    else if (needed_charts === "live_charts") {
         let utility_chart = new Chart(document.getElementById("utility_chart"), {
             type: 'line',
             data: {
@@ -275,7 +280,9 @@ function create_charts(data_obj, needed_charts) {
             'dcp': dcp,
             'btp_chart': btp_chart
         }
-    } else if (needed_charts === "analytics_bar_charts") {
+    }
+
+    else if (needed_charts === "analytics_bar_charts") {
 
         // This code generates our colour array. Important point is that the last element is green
         let colour_array = [];
@@ -369,7 +376,9 @@ function create_charts(data_obj, needed_charts) {
             'solar_history_bar_chart': solar_history_bar,
         }
 
-    } else if (needed_charts === "last_ev_charge_line_chart") {
+    }
+
+    else if (needed_charts === "last_ev_charge_line_chart") {
         return new Chart(document.getElementById("last_ev_charge_session_line"), {
             type: 'line',
             data: {
@@ -471,7 +480,9 @@ function create_charts(data_obj, needed_charts) {
 
             },
         })
-    } else if (needed_charts === "charger_status_pie") {
+    }
+
+    else if (needed_charts === "charger_status_pie") {
 
         return new Chart(document.getElementById('charger_status_pie'), {
             type: 'doughnut',
@@ -486,7 +497,9 @@ function create_charts(data_obj, needed_charts) {
                 }
             }
         });
-    } else if (needed_charts === "daily_charging_breakdown_bar") {
+    }
+
+    else if (needed_charts === "daily_charging_breakdown_bar") {
         console.log(data_obj);
         let daily_charging_breakdown_bar = new Chart(document.getElementById("daily_charging_breakdown_bar"), {
             type: 'bar',
@@ -656,6 +669,21 @@ function update_charts(chart_obj, data_obj) {
     }
 }
 
+async function get_latest_charging_time(user, db, chargerID) {
+    // This function takes in a chargerID and finds the latest charging time for that given chargerID
+
+    // Get the latest charging date for this chargerID
+    let latest_charging_date = await db.ref(`users/${user.uid}/charging_history_keys/${chargerID}`)
+        .orderByKey().limitToLast(1).once("value");
+    latest_charging_date = Object.keys(latest_charging_date.val())[0];
+
+    // Once we have the latest date, we can use it to find the latest time
+    let latest_charging_time = await db.ref(`users/${user.uid}/charging_history_keys/${chargerID}/${latest_charging_date}`)
+        .orderByKey().limitToLast(1).once("value");
+
+    return {'date': latest_charging_date, 'time': Object.keys(latest_charging_time.val())[0]};
+}
+
 async function start_charging_session_listeners(user, db, initial_charging_data_obj,
                                                 charging_chart_obj, isCharging_parent_node) {
     console.log('Starting listeners function');
@@ -696,11 +724,8 @@ async function start_charging_session_listeners(user, db, initial_charging_data_
                     charging_chart_obj.update()
                 }
 
-                // Now that we have sorted out the chart data structure, we start a charge session listener
-                // Get the latest charging time for this chargerID
-                let latest_charging_time = await db.ref(`users/${user.uid}/charging_history_keys/${chargerID}/${get_current_date()}`)
-                    .orderByKey().limitToLast(1).once("value");
-                latest_charging_time = Object.keys(latest_charging_time.val());
+                let latest_charging_values = await get_latest_charging_time(user, db, chargerID);
+                let latest_charging_time = latest_charging_values['time'];
 
                 console.log(`Our latest charging time is: ${latest_charging_time}`);
                 console.log(charging_chart_obj.data.datasets);
@@ -714,9 +739,9 @@ async function start_charging_session_listeners(user, db, initial_charging_data_
                     console.log(new_data);
 
                     // Todo: might need to match timestamps.
-                    let new_inverter_data = await db.ref(`users/${user.uid}/history/${date}`).limitToLast(1).once("value");
-                    new_inverter_data = new_inverter_data.val();
-                    console.log(new_inverter_data);
+                    // let new_inverter_data = await db.ref(`users/${user.uid}/history/${date}`).limitToLast(1).once("value");
+                    // new_inverter_data = new_inverter_data.val();
+                    // console.log(new_inverter_data);
                     // todo: format inverter history data so that we can use this method
 
                     append_new_data_to_charging_chart(chargerID, charging_chart_obj, new_data)
@@ -763,13 +788,21 @@ async function grab_initial_charging_data(user, db, isCharging_parent_node) {
         // Double check if the chargerID exists and chargerID is currently charging
         if (isCharging_parent_node.hasOwnProperty(chargerID) && isCharging_parent_node[chargerID] === true) {
 
-            // Get the latest charging time for this chargerID
-            let latest_charging_time = await db.ref(`users/${user.uid}/charging_history_keys/${chargerID}/${date}`)
-                .orderByKey().limitToLast(1).once("value");
-            latest_charging_time = Object.keys(latest_charging_time.val());
+            // // Get the latest charging time for this chargerID
+            // let latest_charging_date = await db.ref(`users/${user.uid}/charging_history_keys/${chargerID}`)
+            //     .orderByKey().limitToLast(1).once("value");
+            // latest_charging_date = Object.keys(latest_charging_date.val())[0];
+            //
+            // let latest_charging_time = await db.ref(`users/${user.uid}/charging_history_keys/${chargerID}/${latest_charging_date}`)
+            //     .orderByKey().limitToLast(1).once("value");
+            // latest_charging_time = Object.keys(latest_charging_time.val());
+
+            let latest_charging_values = await get_latest_charging_time(user, db, chargerID);
+            let latest_charging_time = latest_charging_values['time'];
+            let latest_charging_date = latest_charging_values['date'];
 
             // Now that we have the latest charging time, we need to get data from the charge session
-            let latest_charge_session_obj = await db.ref(`users/${user.uid}/charging_history/${chargerID}/${date} ${latest_charging_time}`)
+            let latest_charge_session_obj = await db.ref(`users/${user.uid}/charging_history/${chargerID}/${latest_charging_date} ${latest_charging_time}`)
                 .orderByKey().once("value");
             latest_charge_session_obj = latest_charge_session_obj.val();
 
@@ -939,8 +972,6 @@ function append_new_data_to_charging_chart(chargerID, charging_chart_obj, new_da
         }
     }
     charging_chart_obj.update();
-    console.log('Updated the chart!');
-    console.log(charging_chart_obj.data.datasets)
 }
 
 function update_weather() {
@@ -1083,7 +1114,7 @@ function update_last_charging_session(user, db) {
             let chargerID = ev_chargers[index];
 
             // Get the latest date in our analytics node
-            let temp_date = await db.ref(`users/${user.uid}/charging_history_keys/${chargerID}`).orderByKey().limitToLast(1).once("value");
+            let temp_date = await db.ref(`users/${user.uid}/analytics/charging_history_analytics/${chargerID}`).orderByKey().limitToLast(1).once("value");
             temp_date = temp_date.val();
 
             // If the retrieved date is valid
@@ -1105,8 +1136,8 @@ function update_last_charging_session(user, db) {
                 }
             }
         }
-        // console.log(`${latest_chargerID} wins!`);
-        // console.log(latest_date.format('YYYY-MM-DD HHmm'));
+        console.log(`${latest_chargerID} wins!`);
+        console.log(latest_date.format('YYYY-MM-DD HHmm'));
 
         // Now that we have the latest chargerID and date of charging session, we can grab the analytics
         let charging_analytics_obj = await db.ref(`users/${user.uid}/analytics/charging_history_analytics/${latest_chargerID}/${latest_date.format('YYYY-MM-DD')}/${latest_date.format('HHmm')}`)
@@ -1269,6 +1300,14 @@ function update_daily_charger_breakdown(user, db) {
 function start_master_listener(user) {
 
     let db = firebase.database();
+
+    // If this system is not running a multiple charger system, redirect to single charger homepage
+    db.ref(`users/${user.uid}/system_type`).once("value", function (snapshot) {
+        if (snapshot.val() !== "multiple") {
+            window.location.replace("/delta_dashboard/");
+        }
+    })
+
     let data_obj = {
         'utility_p': [],
         'utility_c': [],

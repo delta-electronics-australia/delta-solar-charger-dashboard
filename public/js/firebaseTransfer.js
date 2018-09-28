@@ -686,6 +686,14 @@ function start_master_listener(user) {
     // });
 
     let db = firebase.database();
+
+    // If this system is running a multiple charger system, then we need to redirect the page to the right homepage
+    db.ref(`users/${user.uid}/system_type`).once("value", function (snapshot) {
+        if (snapshot.val() === "multiple") {
+            window.location.replace("/delta_dashboard/index2");
+        }
+    });
+
     let data_obj = {
         'utility_p': [],
         'utility_c': [],
@@ -1251,6 +1259,7 @@ function checkIfLoggedIn() {
 
     firebase.auth().onAuthStateChanged(function (user) {
         if (user) {
+
             // This will update our global date variable
             generate_date();
 
