@@ -237,36 +237,115 @@ function update_cards(overview_data_obj) {
 
 }
 
-function openModal(button_id) {
-    console.log('hello!')
-    console.log(button_id)
+function create_charts2(){
+        // Create a line chart
+        let charging_history_chart = new Chart(document.getElementById("charging_graph"), {
+            type: 'line',
+            data: {
+                labels: [1,2,3,4,5],
+                datasets: [{
+                    data: [1,4,9,16,25],
+                    label: "Solar Power",
+                    borderColor: "#ffcc00",
+                    fill: false,
+                    yAxisID: 'A'
+                }, ],
+                spanGaps: false
+            },
+            options: {
+                responsive: true,
+                title: {
+                    display: false,
+                    text: 'history test'
+                },
+                elements: {
+                    line: {
+                        tension: 0
+                    },
+                    point: {
+                        radius: 2
+    
+                    }
+                },
+                scales: {
+                    xAxes: [{
+                        type: 'time',
+                        time: {
+                            displayFormats: {
+                                second: 'h:mm:ss a'
+                            }
+                        }
+                    }],
+                    yAxes: [{
+                        id: 'A',
+                        position: 'left'
+                    },
+                        // {
+                        //     id: 'B',
+                        //     type: 'linear',
+                        //     position: 'right',
+                        //     ticks: {
+                        //         max: 100,
+                        //         min: 0
+                        //     }
+                        // },
+                    ]
+                },
+                pan: {
+                    enabled: true,
+                    mode: "x",
+                    rangeMin: {
+                        x: null
+                    },
+                    rangeMax: {
+                        x: null
+                    }
+                },
+                zoom: {
+                    enabled: true,
+                    drag: false,
+                    mode: "x",
+                    // limits: {
+                    //     max: 10,
+                    //     min: 0.5
+                    // }
+                }
+            },
+            plugins: [{
+                // beforeUpdate: function (chart, options) {
+                //     filterData(chart);
+                // },
+                // afterUpdate: function (chart, options) {
+                //     console.log('after update!!');
+                //     console.log(chart.data.datasets)
+                // }
+            }]
+    
+        });
+}
 
+function openModal(chargerID, start_time, duration_string, charge_energy) {
     $("#charge_sessions_row").append(`
                     <div id="charging_history_modal" class="modal">
                         <div class="modal-content">
-                            <h4>Test!</h4>
+                            <h4>${chargerID} - ${start_time}</h4>
                             <div id="modal_body">
-                                ${button_id}
+                                <canvas id="charging_graph"></canvas>
+                                // ${chargerID} ${start_time} ${duration_string} ${charge_energy}
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+                            <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>
                         </div>
                     </div>
                     `)
 
-    console.log('rah!');
+    // let elems = document.getElementById('charging_history_modal')
+    let elem = document.querySelectorAll('.modal');
+    let instance = M.Modal.init(elem);
 
-    console.log($('#charge_sessions_row').get(0).outerHTML);
-
-
-    let elems = document.querySelectorAll('.modal');
-    let instance = M.Modal.init(elems);
-    console.log(instance)
-
-    // $('#charging_history_modal').modal();
-    // $('.modal').modal('open');
-    instance.open()
+    create_charts2()
+    instance[1].open()
 
 
     // console.log(instances)
@@ -355,7 +434,7 @@ async function create_charge_session_cards(user, db, selected_date, ev_chargers)
                                         </table>
                                         <a class="right-align">
                                             <!--<a class="waves-effect waves-light btn modal-trigger" href="#charging_history_modal">More Info</a>-->
-                                            <a class="waves-effect waves-light btn" id="${chargerID}_button" onclick="openModal(this.id)">More Info</a>
+                                            <a class="waves-effect waves-light btn" onclick="openModal('${chargerID}', '${start_time}', '${duration_string}', '${temp_charging_analytics[charging_time]['energy'].toFixed(2)}')">More Info</a>
 
                                         </div>
                                     </div>
@@ -490,6 +569,8 @@ function start_charging_history_page(user) {
         'time': []
     };
 
+    let elems = document.querySelectorAll('.modal');
+    let instance = M.Modal.init(elems);
 
     let analytics_obj = {};
 
@@ -516,6 +597,9 @@ function start_charging_history_page(user) {
                 return !valid_dates.includes(current_date_check)
             }
         });
+        document.getElementById('preloader').style.display = 'none';
+        document.getElementById('master_row').style.visibility = 'visible';
+
     })
 
 
@@ -629,15 +713,8 @@ function start_charging_history_page(user) {
 function checkIfLoggedIn() {
     // When we first load the page, hide the tabs and none the preloader
 
-    // document.getElementById('master_row').style.visibility = 'hidden';
-
-    // document.getElementById('charging_history_tabs').style.visibility = 'hidden';
-    // document.getElementById('charging_history_overview_tab').style.visibility = 'hidden';
-    // document.getElementById('charging_history_chart_tab').style.visibility = 'hidden';
-    // document.getElementById('charging_history_sankey_tab').style.visibility = 'hidden';
-    // document.getElementById('reset_zoom_button_div').style.visibility = 'hidden';
-
-    // document.getElementById('preloader').style.display = 'none';
+    document.getElementById('master_row').style.visibility = 'hidden';
+    document.getElementById('preloader').style.display = 'inline';
 
     // Check if we are logged in
     firebase.auth().onAuthStateChanged(function (user) {

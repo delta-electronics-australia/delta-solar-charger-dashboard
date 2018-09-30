@@ -33,6 +33,8 @@ function update_ev_charger_information(data_obj) {
         charger_number++
 
     }
+    document.getElementById('master_row').style.visibility = 'visible';
+    document.getElementById('preloader').style.display = 'none';
 
     let inverter_info_row = $("inverter_info_row");
 
@@ -195,6 +197,8 @@ async function start_hardware_info_page(user) {
 }
 
 function checkIfLoggedIn() {
+    document.getElementById('master_row').style.visibility = 'hidden';
+    document.getElementById('preloader').style.display = 'inline';
 
     // Check if we are logged in
     firebase.auth().onAuthStateChanged(function (user) {

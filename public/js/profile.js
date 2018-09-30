@@ -1,20 +1,103 @@
+
+
+function load_map(user, db) {
+
+    function CenterControl(controlDiv, map) {
+
+        // Set CSS for the control border.
+        var controlUI = document.createElement('div');
+        controlUI.style.backgroundColor = '#fff';
+        controlUI.style.border = '2px solid #fff';
+        controlUI.style.borderRadius = '3px';
+        controlUI.style.boxShadow = '0 2px 6px rgba(0,0,0,.3)';
+        controlUI.style.cursor = 'pointer';
+        controlUI.style.marginBottom = '22px';
+        controlUI.style.textAlign = 'center';
+        controlUI.title = 'Click to select the pin location as your system location';
+        controlDiv.appendChild(controlUI);
+    
+        // Set CSS for the control interior.
+        var controlText = document.createElement('div');
+        controlText.style.color = 'rgb(25,25,25)';
+        controlText.style.fontFamily = 'Roboto,Arial,sans-serif';
+        controlText.style.fontSize = '16px';
+        controlText.style.lineHeight = '38px';
+        controlText.style.paddingLeft = '5px';
+        controlText.style.paddingRight = '5px';
+        controlText.innerHTML = 'Drag pin to system location and click here';
+        controlUI.appendChild(controlText);
+    
+        // Setup the click event listeners: simply set the map to Chicago.
+        controlUI.addEventListener('click', function () {
+            console.log('button clicked!')
+            // Todo: put this location into Firebase
+            db.ref(`users/${user.uid}/system_location`).update({
+                'lat': myMarker.position.lat(),
+                'lng': myMarker.position.lng()
+            }).then(function(){
+                M.toast({html: 'System location updated. Please refresh all dashboard pages!'})
+            })
+        });
+    
+    }
+
+    let myMarker;
+    // Grab the system's location
+    db.ref(`users/${user.uid}/system_location`).once("value").then(function(snapshot){
+        // Set a default lat/lng
+        let startLatLng = {
+            lat: -37.8136,
+            lng: 144.9631
+        }
+
+        // Todo: check if undefined is the right check
+        if (snapshot.val() !== undefined){
+            startLatLng = snapshot.val()
+        }
+        console.log(startLatLng)
+        let map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 10,
+            center: startLatLng
+        });
+    
+        let centerControlDiv = document.createElement('div');
+        let centerControl = new CenterControl(centerControlDiv, map);
+        
+        centerControlDiv.index = 1;
+        map.controls[google.maps.ControlPosition.TOP_CENTER].push(centerControlDiv);
+        myMarker = new google.maps.Marker({
+            position: startLatLng,
+            map: map,
+            draggable: true
+        });
+    
+        google.maps.event.addListener(myMarker, 'drag', function () {
+            console.log(myMarker.position.lat())
+            console.log(myMarker.position.lng())
+        });
+    })
+
+}
+
 function change_pw_button_pressed() {
     let old_pw = document.getElementById('old_pw').value;
     let new_pw = document.getElementById('new_pw').value;
 
     let email = firebase.auth().currentUser.email;
     firebase.auth().currentUser.reauthenticateWithCredential(
-        firebase.auth.EmailAuthProvider.credential(
-            email,
-            old_pw
+            firebase.auth.EmailAuthProvider.credential(
+                email,
+                old_pw
+            )
         )
-    )
         .then(function (success) {
             console.log(success)
 
         })
-        .catch(function(error){
-            M.toast({html: 'Error: Old password is incorrect'})
+        .catch(function (error) {
+            M.toast({
+                html: 'Error: Old password is incorrect'
+            })
         })
 }
 
@@ -23,7 +106,15 @@ function start_profile_page(user) {
 
     var elems = document.querySelectorAll('#main_collapsible');
     var instances = M.Collapsible.init(elems, {
-        accordion: false
+        accordion: false,
+        onOpenStart: function (test) {
+
+            let opened_collapsible_id = $(test).attr('id')
+
+            if (opened_collapsible_id === "map_collapsible") {
+                load_map(user, db)
+            }
+        }
     });
 
     let db = firebase.database();
@@ -62,9 +153,10 @@ function start_profile_page(user) {
     $('#change_display_name_button').click(function () {
         let new_display_name = document.getElementById('name').value;
         if (new_display_name === '') {
-            M.toast({html: 'Please enter a name.'})
-        }
-        else {
+            M.toast({
+                html: 'Please enter a name.'
+            })
+        } else {
             user.updateProfile({
                 displayName: new_display_name,
                 // photoURL: "https://example.com/jane-q-user/profile.jpg"

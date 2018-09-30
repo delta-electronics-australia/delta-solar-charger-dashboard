@@ -100,14 +100,14 @@ function create_charts(data_obj, needed_charts) {
                         }
                     }],
                     yAxes: [{
-                        id: 'A',
-                        position: 'left',
-                        scaleLabel: {
-                            display: true,
-                            labelString: 'Power (kW)',
-                            fontColor: '#000000'
+                            id: 'A',
+                            position: 'left',
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Power (kW)',
+                                fontColor: '#000000'
+                            },
                         },
-                    },
 
                     ]
                 },
@@ -126,9 +126,7 @@ function create_charts(data_obj, needed_charts) {
             }]
         });
 
-    }
-
-    else if (needed_charts === "live_charts") {
+    } else if (needed_charts === "live_charts") {
         let utility_chart = new Chart(document.getElementById("utility_chart"), {
             type: 'line',
             data: {
@@ -173,9 +171,9 @@ function create_charts(data_obj, needed_charts) {
                         }
                     }],
                     yAxes: [{
-                        id: 'A',
-                        position: 'left'
-                    },
+                            id: 'A',
+                            position: 'left'
+                        },
                         {
                             id: 'B',
                             position: 'right'
@@ -258,9 +256,9 @@ function create_charts(data_obj, needed_charts) {
                         }
                     }],
                     yAxes: [{
-                        id: 'A',
-                        position: 'left'
-                    },
+                            id: 'A',
+                            position: 'left'
+                        },
                         {
                             id: 'B',
                             type: 'linear',
@@ -280,9 +278,7 @@ function create_charts(data_obj, needed_charts) {
             'dcp': dcp,
             'btp_chart': btp_chart
         }
-    }
-
-    else if (needed_charts === "analytics_bar_charts") {
+    } else if (needed_charts === "analytics_bar_charts") {
 
         // This code generates our colour array. Important point is that the last element is green
         let colour_array = [];
@@ -311,7 +307,7 @@ function create_charts(data_obj, needed_charts) {
                     // backgroundColor: '#ffc107',
                     backgroundColor: colour_array,
                     fill: false
-                },]
+                }, ]
             },
             options: {
                 title: {
@@ -340,9 +336,10 @@ function create_charts(data_obj, needed_charts) {
                         },
                         distribution: 'series',
                         time: {
-                            displayFormats: {
-                                day: 'MMM D'
-                            }
+                            unit: 'day'
+                            // displayFormats: {
+                            //     day: 'MMM D'
+                            // }
                         }
                     }],
                     yAxes: [{
@@ -352,7 +349,7 @@ function create_charts(data_obj, needed_charts) {
                             fontColor: '#ffffff'
                         },
                         ticks: {
-                            fontColor: "#ffffff"
+                            fontColor: "#ffffff",
                         },
                         gridLines: {
                             color: '#a19ca1'
@@ -362,8 +359,13 @@ function create_charts(data_obj, needed_charts) {
                 tooltips: {
                     enabled: true,
                     callbacks: {
+                        title: function (tooltipItems, data) {
+                            console.log(tooltipItems[0]['xLabel'])
+                            let split_string = tooltipItems[0]['xLabel'].split(' ')
+                            return `${split_string[0]} ${split_string[1]} ${split_string[2]}`
+                        },
                         label: function (tooltipItems, data) {
-                            return tooltipItems.yLabel + ' kWh'
+                            return 'Solar Generated: ' + tooltipItems.yLabel + ' kWh'
                         }
                     }
                 },
@@ -376,113 +378,7 @@ function create_charts(data_obj, needed_charts) {
             'solar_history_bar_chart': solar_history_bar,
         }
 
-    }
-
-    else if (needed_charts === "last_ev_charge_line_chart") {
-        return new Chart(document.getElementById("last_ev_charge_session_line"), {
-            type: 'line',
-            data: {
-                labels: data_obj.time,
-                datasets: [{
-                    data: data_obj.dcp,
-                    label: "Solar",
-                    borderColor: "#ffcc00",
-                    fill: false,
-                    yAxisID: 'A'
-                }, {
-                    data: data_obj.utility_p,
-                    label: "Grid",
-                    borderColor: "#6f95ff",
-                    fill: false,
-                    yAxisID: 'A',
-                    hidden: false
-                }, {
-                    data: data_obj.ac2p,
-                    label: "EV Charger",
-                    borderColor: "#ff3300",
-                    fill: false,
-                    yAxisID: 'A',
-                    hidden: false
-                }, {
-                    data: data_obj.btp,
-                    label: "Battery",
-                    borderColor: "#33cc33",
-                    fill: false,
-                    yAxisID: 'A',
-                    hidden: false
-                }],
-                spanGaps: false
-            },
-            options: {
-                maintainAspectRatio: false,
-                responsive: true,
-                title: {
-                    display: false,
-                    text: 'history test'
-                },
-                elements: {
-                    line: {
-                        tension: 0
-                    },
-                    point: {
-                        radius: 0,
-                        hitRadius: 5,
-                        hoverRadius: 5
-                    }
-                },
-                scales: {
-                    xAxes: [{
-                        type: 'time',
-                        distribution: 'series',
-                        time: {
-                            displayFormats: {
-                                second: 'h:mm:ss a'
-                            },
-                        },
-                        gridLines: {
-                            color: '#a19ca1'
-                        },
-                        ticks: {
-                            display: true,
-                            fontColor: '#ffffff',
-                            source: 'auto'
-                        },
-                    }],
-                    yAxes: [{
-                        id: 'A',
-                        position: 'left',
-                        scaleLabel: {
-                            display: true,
-                            labelString: 'Power (kW)',
-                            fontColor: '#ffffff'
-                        },
-                        ticks: {
-                            fontColor: "#ffffff"
-                        },
-                        gridLines: {
-                            color: '#a19ca1'
-                        },
-                    }]
-                },
-                tooltips: {
-                    enabled: true,
-                    callbacks: {
-                        label: function (tooltipItems, data) {
-                            return tooltipItems.yLabel + ' kWh'
-                        }
-                    }
-                },
-                legend: {
-                    labels: {
-                        fontColor: '#ffffff'
-                    }
-                }
-
-            },
-        })
-    }
-
-    else if (needed_charts === "charger_status_pie") {
+    } else if (needed_charts === "charger_status_pie") {
 
         return new Chart(document.getElementById('charger_status_pie'), {
             type: 'doughnut',
@@ -497,9 +393,7 @@ function create_charts(data_obj, needed_charts) {
                 }
             }
         });
-    }
-
-    else if (needed_charts === "daily_charging_breakdown_bar") {
+    } else if (needed_charts === "daily_charging_breakdown_bar") {
         console.log(data_obj);
         let daily_charging_breakdown_bar = new Chart(document.getElementById("daily_charging_breakdown_bar"), {
             type: 'bar',
@@ -522,9 +416,7 @@ function create_charts(data_obj, needed_charts) {
                         },
                         distribution: 'series',
                         time: {
-                            displayFormats: {
-                                day: 'MMM D'
-                            }
+                            units: 'day'
                         },
                         stacked: true
 
@@ -549,7 +441,6 @@ function create_charts(data_obj, needed_charts) {
                     enabled: true,
                     callbacks: {
                         label: function (tooltipItems, data) {
-                            console.log(tooltipItems);
                             return `${data.datasets[tooltipItems.datasetIndex].label} : ${tooltipItems.yLabel} kWh`
                         }
                     }
@@ -657,16 +548,6 @@ function update_charts(chart_obj, data_obj) {
 
         chart_obj.charging_history_bar_chart.update()
     }
-
-    if (chart_obj.hasOwnProperty('last_ev_charge_line_chart')) {
-        chart_obj.last_ev_charge_line_chart.data.labels = data_obj.time;
-        chart_obj.last_ev_charge_line_chart.data.datasets[0].data = data_obj.dcp;
-        chart_obj.last_ev_charge_line_chart.data.datasets[1].data = data_obj.utility_p;
-        chart_obj.last_ev_charge_line_chart.data.datasets[2].data = data_obj.ac2p;
-        chart_obj.last_ev_charge_line_chart.data.datasets[3].data = data_obj.btp;
-
-        chart_obj.last_ev_charge_line_chart.update()
-    }
 }
 
 async function get_latest_charging_time(user, db, chargerID) {
@@ -681,11 +562,14 @@ async function get_latest_charging_time(user, db, chargerID) {
     let latest_charging_time = await db.ref(`users/${user.uid}/charging_history_keys/${chargerID}/${latest_charging_date}`)
         .orderByKey().limitToLast(1).once("value");
 
-    return {'date': latest_charging_date, 'time': Object.keys(latest_charging_time.val())[0]};
+    return {
+        'date': latest_charging_date,
+        'time': Object.keys(latest_charging_time.val())[0]
+    };
 }
 
 async function start_charging_session_listeners(user, db, initial_charging_data_obj,
-                                                charging_chart_obj, isCharging_parent_node) {
+    charging_chart_obj, isCharging_parent_node) {
     console.log('Starting listeners function');
 
     // charger_list is a list of all of the charger IDs that are registered to the system
@@ -761,11 +645,12 @@ async function start_charging_session_listeners(user, db, initial_charging_data_
                     charging_status_object[chargerID].listener_ref.off();
                     delete charging_status_object[chargerID];
                 }
+                // We should also update our daily charger breakdown
+                update_daily_charger_breakdown(user, db)
             }
-            // console.log(charging_status_object);
-
             // Analyze our charging status object and update our ev charging heading and height
             adjust_ev_charging_title_and_height(charging_status_object)
+
 
         })
     }
@@ -914,7 +799,7 @@ function adjust_ev_charging_title_and_height(charging_status_object) {
     }
 }
 
-function chargerID_exists_in_dataset(chargerID, charging_chart_obj,) {
+function chargerID_exists_in_dataset(chargerID, charging_chart_obj, ) {
     // This function checks whether or not our chargerID exists in the chart's data object
 
     let dataset_exists = false;
@@ -974,16 +859,36 @@ function append_new_data_to_charging_chart(chargerID, charging_chart_obj, new_da
     charging_chart_obj.update();
 }
 
-function update_weather() {
+function update_weather(user, db) {
     // This function gets the weather at the location of the system and updates the card
 
-    let weather_card = document.getElementById('weather_card');
-    $.getJSON("http://api.openweathermap.org/data/2.5/weather?q=Melbourne,au&APPID=4b7ee1f96bfd687f2fff4f7cdf1cd11c&units=metric", function (json) {
-        weather_card.innerHTML = `${json.main.temp}&deg;C`
-    });
+    db.ref(`users/${user.uid}/system_location`).once("value").then(function (snapshot) {
+        let system_location_object = snapshot.val()
+        let weather_url;
 
-    // Re-run 30 minutes later
-    setTimeout(update_weather, 1800000)
+        let weather_card = document.getElementById('weather_card');
+        // If there is no location, then we go with the stock
+        if (system_location_object === undefined) {
+            weather_url = "http://api.openweathermap.org/data/2.5/weather?q=Melbourne,au&APPID=4b7ee1f96bfd687f2fff4f7cdf1cd11c&units=metric"
+        }
+
+        // If there is a location, we use that for our weather update
+        else {
+            weather_url = `http://api.openweathermap.org/data/2.5/weather?lat=${system_location_object.lat}&lon=${system_location_object.lng}&APPID=4b7ee1f96bfd687f2fff4f7cdf1cd11c&units=metric`
+        }
+        $.getJSON(weather_url, function (json) {
+            weather_card.innerHTML = `${json.weather[0].description.toLowerCase()
+            .split(' ')
+            .map((s) => s.charAt(0).toUpperCase() + s.substring(1))
+            .join(' ')
+            } - ${json.main.temp}&deg;C`
+        });
+
+        // Re-run 30 minutes later
+        setTimeout(update_weather, 1800000)
+    })
+
+
 }
 
 function calculate_number_of_online_chargers(charger_status_obj) {
@@ -1203,6 +1108,10 @@ async function condition_analytics_values_for_daily_charger_breakdown(charger_an
         datasets: []
     };
 
+    // Todo: maybe make this as long as the amount of chargers in Firebase
+    // Define a colour array that will be referenced each time
+    let colour_array = ['blue', 'pink', 'green', 'black']
+
     for (let index in ev_chargers) {
         if (ev_chargers.hasOwnProperty(index)) {
             let chargerID = ev_chargers[index];
@@ -1212,7 +1121,7 @@ async function condition_analytics_values_for_daily_charger_breakdown(charger_an
                 label: chargerID,
                 data: [],
                 // Todo: need a colour array here
-                backgroundColor: 'blue',
+                backgroundColor: colour_array[index],
                 fill: false
             })
         }
@@ -1278,8 +1187,8 @@ function update_daily_charger_breakdown(user, db) {
 
     // Get a list of all of our ev chargers
     charging_ref.once("value", function (snapshot) {
-        ev_chargers = Object.keys(snapshot.val())
-    })
+            ev_chargers = Object.keys(snapshot.val())
+        })
         .then(function () {
             // Then we grab all of the analytics values for the past 15 days
             grab_charger_analytics_values(user, db, ev_chargers, 15)
@@ -1350,7 +1259,7 @@ function start_master_listener(user) {
     // Define the second row of sliders
     let second_row_slider_options = {
         height: 275,
-        interval: 30000
+        interval: 12000
     };
     let media_elem3 = document.getElementById('solar_history_slider');
     M.Slider.init(media_elem3, second_row_slider_options);
@@ -1384,7 +1293,7 @@ function start_master_listener(user) {
     });
 
     // Get the weather forecast for the location of the solar charger
-    update_weather();
+    update_weather(user, db);
     // Start updating our pie chart that shows charger online/offline status
     update_charger_status(user, db);
     // Start listening for the latest charging session and push that to our table
@@ -1474,83 +1383,6 @@ function start_master_listener(user) {
     });
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // Todo: move this into a new function
-
-    // // Now let's get the last charging session
-    // let last_charge_session_data_obj;
-    // let last_ev_charge_line_chart;
-    // let latest_date_string;
-    // let url = "/delta_dashboard/last_charge_session_request";
-    // let xhr = new XMLHttpRequest();
-    // xhr.open("POST", url, true);
-    // xhr.setRequestHeader("Content-Type", "application/json");
-    // xhr.onload = function () {
-    //     if (xhr.readyState === 4 && xhr.status === 200) {
-    //         last_charge_session_data_obj = JSON.parse(xhr.response)['data_obj'];
-    //
-    //         // Convert all of the time values into moment objects (depending on the format)
-    //         last_charge_session_data_obj['time'].forEach(function (value, key, time_array) {
-    //             time_array[key] = moment(time_array[key])
-    //         });
-    //
-    //         // Modify the card title with the date and time of the last charging session
-    //         latest_date_string = JSON.parse(xhr.response)['date_string'];
-    //         document.getElementById('last_ev_charging_session_title').innerHTML = `Last EV Charging Session: ${latest_date_string}`;
-    //         last_ev_charge_line_chart = create_charts(last_charge_session_data_obj, 'last_ev_charge_line_chart');
-    //     }
-    // };
-    //
-    // let last_charging_session_request_payload = JSON.stringify({
-    //     'latest_date': 'first_grab',
-    //     'uid': user.uid
-    // });
-    // xhr.send(last_charging_session_request_payload);
-    //
-    // // After we have gotten
-    // setInterval(function () {
-    //     // let last_charge_session_data_obj;
-    //     // let last_ev_charge_line_chart;
-    //     let url = "/delta_dashboard/last_charge_session_request";
-    //     let xhr = new XMLHttpRequest();
-    //     xhr.open("POST", url, true);
-    //     xhr.setRequestHeader("Content-Type", "application/json");
-    //     xhr.onload = function () {
-    //         if (xhr.readyState === 4 && xhr.status === 200) {
-    //             if (JSON.parse(xhr.response)['new_data']) {
-    //                 last_charge_session_data_obj = JSON.parse(xhr.response)['data_obj'];
-    //
-    //                 // Convert all of the time values into moment objects (depending on the format)
-    //                 last_charge_session_data_obj['time'].forEach(function (value, key, time_array) {
-    //                     time_array[key] = moment(time_array[key])
-    //                 });
-    //
-    //                 // Modify the card title with the date and time of the last charging session
-    //                 document.getElementById('last_ev_charging_session_title').innerHTML = `Last EV Charging Session: ${JSON.parse(xhr.response)['date_string']}`
-    //                 update_charts({
-    //                     'last_ev_charge_line_chart': last_ev_charge_line_chart
-    //                 }, last_charge_session_data_obj);
-    //             }
-    //
-    //             // If there is no new data
-    //             else {
-    //                 console.log('no new data')
-    //             }
-    //         }
-    //     };
-    //
-    //     let data = JSON.stringify({
-    //         'latest_date': latest_date_string,
-    //         'uid': user.uid
-    //     });
-    //
-    //     xhr.send(data);
-    // }, 60000);
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////// LIVE INVERTER AND BATTERY GRAPHS ///////////////////////////////////////////////////
