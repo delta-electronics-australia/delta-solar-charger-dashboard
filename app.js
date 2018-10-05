@@ -551,6 +551,116 @@ app.post('/delta_dashboard/charging_history_request', function (req, res) {
     })
 });
 
+app.post('/delta_dashboard/charging_history_request2', function (req, res) {
+
+    let payload = req.body;
+
+    let selected_charging_session = `${payload['start_date']} ${payload['start_time']}`;
+    let chargerID = payload['chargerID'];
+
+    console.log(`${selected_charging_session} ${chargerID}`);
+
+    let data_obj = {
+        'time': [],
+        'charge_power': []
+    }
+    // let data_obj = {
+    //     'utility_p': [],
+    //     'utility_c': [],
+    //     'dcp': [],
+    //     'btp': [],
+    //     'btsoc': [],
+    //     'bt_module1_max_temp': [],
+    //     'bt_module1_min_temp': [],
+    //     'time': []
+    // };
+    //
+    // let analytics_obj = {
+    //     'utility_p': 0,
+    //     'dcp': 0,
+    //     'btp': 0,
+    //     'ac2p': 0
+    // };
+    //
+    // let overview_data_obj = {
+    //     ac2p: 0,
+    //     dcp: 0,
+    //     btp_discharge: 0,
+    //     btp_charge: 0,
+    //     utility_p_export: 0,
+    //     utility_p_import: 0
+    // };
+
+    console.log(payload);
+
+    admin.auth().verifyIdToken(payload.idToken).then(async function (decodedToken) {
+        let uid = decodedToken.uid;
+
+        let dcp = 0;
+        let utility_p = 0;
+        let btp = 0;
+        let ac2p = 0;
+        let counter = 0;
+        fs.createReadStream(`C:\\Delta_AU_Services\\EVCS_portal\\logs\\${uid}\\charging_logs\\${chargerID}\\${selected_charging_session}.csv`)
+            .pipe(csv())
+            .on("data", function (data) {
+
+                // ac2p = Number(data[4]);
+                // dcp = Number(data[7]) + Number(data[10]);
+                // btp = Number(data[13]);
+                // utility_p = Number(data[17]);
+
+                // if (!isNaN(dcp)) {
+                //     overview_data_obj.ac2p = overview_data_obj.ac2p + (ac2p / 3600);
+                //     overview_data_obj.dcp = overview_data_obj.dcp + (dcp / 3600);
+                //
+                //     if (btp >= 0) {
+                //         overview_data_obj.btp_discharge = overview_data_obj.btp_discharge + (btp / 3600);
+                //     }
+                //     else {
+                //         overview_data_obj.btp_charge = overview_data_obj.btp_charge + (btp / 3600);
+                //     }
+                //
+                //     if (utility_p >= 0) {
+                //         overview_data_obj.utility_p_export = overview_data_obj.utility_p_export + (utility_p / 3600);
+                //     }
+                //     else {
+                //         overview_data_obj.utility_p_import = overview_data_obj.utility_p_import + (utility_p / 3600);
+                //     }
+                // }
+                //
+                // if (!isNaN(dcp)) {
+                //     analytics_obj.ac2p = analytics_obj.ac2p + (ac2p / 3600);
+                //     analytics_obj.dcp = analytics_obj.dcp + (dcp / 3600);
+                //
+                //     analytics_obj.btp = analytics_obj.btp + (btp / 3600);
+                //
+                //     analytics_obj.utility_p = analytics_obj.utility_p + (utility_p / 3600);
+                // }
+
+                if (counter === 2) {
+                    data_obj.time.push(data[0]);
+                    data_obj.charge_power.push(data[3])
+
+                    counter = 0
+                }
+                counter++
+            })
+            .on("end", function () {
+                console.log("done");
+
+                // let sankey_data_obj = calculate_sankey_values(analytics_obj);
+
+                res.json({
+                    data_obj: data_obj,
+                    // sankey_data_obj: sankey_data_obj,
+                    // overview_data_obj: overview_data_obj
+                })
+            });
+    })
+});
+
+
 app.post('/delta_dashboard/last_charge_session_request', function (req, res) {
     let uid = req.body.uid;
     let received_date_string = req.body.latest_date;
@@ -629,7 +739,6 @@ app.post('/delta_dashboard/last_charge_session_request', function (req, res) {
             });
     }
 });
-
 
 server.listen(process.env.PORT, function () {
     console.log('listening on *:3000');

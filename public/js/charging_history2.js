@@ -1,3 +1,5 @@
+let globals = {};
+
 function drawSankeyChart(sankey_data_obj, charging_history_sankey) {
     // drawSankeyChart will be a function that draws a Sankey Diagram from all of the available history data
     console.log('im in drawsankey');
@@ -189,42 +191,28 @@ async function create_charts() {
 
 }
 
-function update_charts(chart_obj, data_obj, sankey_data_obj) {
-
-    if (chart_obj.hasOwnProperty('charging_history_chart')) {
-        console.log('updating charts');
-        chart_obj.charging_history_chart.data.labels = data_obj.time;
-        chart_obj.charging_history_chart.data.datasets[0].data = data_obj.dcp;
-        chart_obj.charging_history_chart.data.datasets[1].data = data_obj.utility_p;
-        chart_obj.charging_history_chart.data.datasets[2].data = data_obj.ac2p;
-        chart_obj.charging_history_chart.data.datasets[3].data = data_obj.btp;
-        chart_obj.charging_history_chart.data.datasets[4].data = data_obj.btsoc;
-        chart_obj.charging_history_chart.data.datasets[5].data = data_obj.bt_module1_max_temp;
-        chart_obj.charging_history_chart.data.datasets[6].data = data_obj.bt_module1_min_temp;
-
-        // If we have a lot of data then we can turn off data points to optimize performance
-        if (data_obj.time.length > 200) {
-            chart_obj.charging_history_chart.options.elements.point.radius = 0;
-            chart_obj.charging_history_chart.options.elements.point.hitRadius = 7;
-            chart_obj.charging_history_chart.options.elements.point.hoverRadius = 7;
-        } else {
-            chart_obj.charging_history_chart.options.elements.point.radius = 3;
-            chart_obj.charging_history_chart.options.elements.point.hitRadius = 1;
-            chart_obj.charging_history_chart.options.elements.point.hoverRadius = 4;
-        }
-
-        chart_obj.charging_history_chart.data.origDatasetsData = undefined;
-        chart_obj.charging_history_chart.data.origDatasetsLabels = undefined;
-        chart_obj.charging_history_chart.resetZoom();
-        chart_obj.charging_history_chart.update();
-
-
-    }
-
-    if (chart_obj.hasOwnProperty('charging_history_sankey')) {
-        drawSankeyChart(sankey_data_obj, chart_obj.charging_history_sankey)
-    }
-}
+// function update_charts(purpose, data_obj) {
+//     // This function updates our charging archive charts
+//
+//     console.log(globals.charging_line_chart.data);
+//     if (purpose === 'line_chart') {
+//         globals.charging_line_chart.data.labels = [1, 2, 3];
+//         globals.charging_line_chart.data.datasets[0].data = [1, 4, 9];
+//
+//         // globals.charging_line_chart.data.datasets[0].data = data_obj.datasets[0].data;
+//         // globals.charging_line_chart.resetZoom();
+//         console.log(globals.charging_line_chart.data)
+//
+//         globals.charging_line_chart.update();
+//         console.log('updated!')
+//         console.log(globals.charging_line_chart.data)
+//
+//     }
+//
+//     // if (chart_obj.hasOwnProperty('charging_history_sankey')) {
+//     //     drawSankeyChart(sankey_data_obj, chart_obj.charging_history_sankey)
+//     // }
+// }
 
 function update_cards(overview_data_obj) {
     console.log(overview_data_obj);
@@ -237,22 +225,27 @@ function update_cards(overview_data_obj) {
 
 }
 
-function create_charts2(){
-        // Create a line chart
-        let charging_history_chart = new Chart(document.getElementById("charging_graph"), {
+function create_charts2(purpose, data_obj) {
+    // Create a line chart
+
+    if (purpose === 'line_chart') {
+        return new Chart(document.getElementById("charging_graph"), {
             type: 'line',
-            data: {
-                labels: [1,2,3,4,5],
-                datasets: [{
-                    data: [1,4,9,16,25],
-                    label: "Solar Power",
-                    borderColor: "#ffcc00",
-                    fill: false,
-                    yAxisID: 'A'
-                }, ],
-                spanGaps: false
-            },
+            data:
+            data_obj,
+            // {
+            //     labels: [1, 2, 3, 4, 5],
+            //     datasets: [{
+            //         data: [1, 4, 9, 16, 49],
+            //         label: "Solar Power",
+            //         borderColor: "#ffcc00",
+            //         fill: false,
+            //         yAxisID: 'A'
+            //     },],
+            //     spanGaps: false
+            // },
             options: {
+                // maintainAspectRatio: false,
                 responsive: true,
                 title: {
                     display: false,
@@ -263,9 +256,14 @@ function create_charts2(){
                         tension: 0
                     },
                     point: {
-                        radius: 2
-    
-                    }
+                        radius: 0,
+                        hitRadius: 5,
+                        hoverRadius: 5
+                    },
+
+                },
+                hover: {
+                    animationDuration: 0
                 },
                 scales: {
                     xAxes: [{
@@ -320,35 +318,82 @@ function create_charts2(){
                 //     console.log(chart.data.datasets)
                 // }
             }]
-    
+
         });
+    }
 }
 
-function openModal(chargerID, start_time, duration_string, charge_energy) {
+function condition_data_for_chart(raw_data) {
+    let final_data_object = {
+        datasets: [{
+            data: [],
+            label: "Charging Power",
+            borderColor: "#ff3300",
+            fill: false
+        }]
+    };
+
+    let length = raw_data['time'].length;
+
+    for (let i = 0; i < length; i++) {
+        final_data_object.datasets[0].data.push({
+            x: moment(raw_data.time[i], 'YYYY-MM-DD hh:mm:ss'),
+            y: raw_data.charge_power[i]
+        })
+    }
+    return final_data_object
+}
+
+function openModal(chargerID, start_time, start_date, duration_string, charge_energy) {
+    let formatted_start_time = moment(start_time, "hhmm").format('h:mm A');
+
+    if (globals.hasOwnProperty('charging_line_chart')) {
+        globals.charging_line_chart.destroy();
+        console.log('poof!')
+    }
+
     $("#charge_sessions_row").append(`
                     <div id="charging_history_modal" class="modal">
                         <div class="modal-content">
-                            <h4>${chargerID} - ${start_time}</h4>
+                            <h4>${chargerID} - ${formatted_start_time}</h4>
                             <div id="modal_body">
                                 <canvas id="charging_graph"></canvas>
-                                // ${chargerID} ${start_time} ${duration_string} ${charge_energy}
                             </div>
                         </div>
                         <div class="modal-footer">
                             <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>
                         </div>
                     </div>
-                    `)
+                    `);
 
-    // let elems = document.getElementById('charging_history_modal')
-    let elem = document.querySelectorAll('.modal');
-    let instance = M.Modal.init(elem);
+    let elem = document.querySelectorAll('.modal')[1];
+    let instance = M.Modal.init(elem, {});
 
-    create_charts2()
-    instance[1].open()
+    firebase.auth().currentUser.getIdToken(true).then(function (idToken) {
+        let url = "/delta_dashboard/charging_history_request2";
+        let xhr = new XMLHttpRequest();
+        xhr.open("POST", url, true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.onload = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                let raw_charging_data = JSON.parse(xhr.response);
+                let final_data_object = condition_data_for_chart(raw_charging_data['data_obj']);
+
+                globals['charging_line_chart'] = create_charts2('line_chart', final_data_object);
+            }
+        };
+
+        xhr.send(JSON.stringify({
+            'chargerID': chargerID,
+            'start_date': start_date,
+            'start_time': start_time,
+            'idToken': idToken
+        }));
+
+    });
+    instance.open()
 
 
-    // console.log(instances)
 }
 
 async function get_ev_charger_list(user, db) {
@@ -402,13 +447,13 @@ async function create_charge_session_cards(user, db, selected_date, ev_chargers)
                     if (temp_charging_analytics.hasOwnProperty(charging_time)) {
 
                         let duration_string = convert_seconds_into_words(temp_charging_analytics[charging_time]['duration_seconds']);
-                        let start_time = moment(charging_time, "hhmm").format('h:mm A');
+                        let formatted_start_time = moment(charging_time, "hhmm").format('h:mm A');
 
                         charge_session_row.append(`
                             <div class="col s12 m6 l4">
                                 <div class="card blue-grey darken-1 hoverable">
                                     <div class="card-content white-text">
-                                        <span class="card-title center-align">${start_time}</span>
+                                        <span class="card-title center-align">${formatted_start_time}</span>
                                         <table class="">
                                             <thead>
                                             <tr>
@@ -434,7 +479,7 @@ async function create_charge_session_cards(user, db, selected_date, ev_chargers)
                                         </table>
                                         <a class="right-align">
                                             <!--<a class="waves-effect waves-light btn modal-trigger" href="#charging_history_modal">More Info</a>-->
-                                            <a class="waves-effect waves-light btn" onclick="openModal('${chargerID}', '${start_time}', '${duration_string}', '${temp_charging_analytics[charging_time]['energy'].toFixed(2)}')">More Info</a>
+                                            <a class="waves-effect waves-light btn" onclick="openModal('${chargerID}', '${charging_time}', '${selected_date}', '${duration_string}', '${temp_charging_analytics[charging_time]['energy'].toFixed(2)}')">More Info</a>
 
                                         </div>
                                     </div>

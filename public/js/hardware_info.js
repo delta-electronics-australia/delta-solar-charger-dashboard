@@ -7,7 +7,7 @@ function update_ev_charger_information(data_obj) {
             evc_info_row.append(`<div class="col s12">
             <h5><span class="dot" style="background-color: ${data_obj[key]['alive'] ? '#33cc33' : '#ff0000'}"></span> Charger ${charger_number} - ${key}${data_obj[key]['primary_charger'] ? " - Primary Charger" : ''}</h5></div>`);
 
-            evc_info_row.append(`<div class="col s8">
+            evc_info_row.append(`<div class="col s9">
             <table><thead><tr><th>Description</th><th>Value</th></tr></thead><tbody>
             <tr><td>Charge Point Vendor</td><td>${data_obj[key]['chargePointVendor']}</td></tr>
             <tr><td>Charge Point Model</td><td>${data_obj[key]['chargePointModel']}</td></tr>
@@ -18,14 +18,14 @@ function update_ev_charger_information(data_obj) {
 
             if (data_obj[key]['chargePointModel'].substring(0, 4) === 'EVPE') {
                 evc_info_row.append(`
-            <div class="col s4">
-                <img class="materialboxed center-align" width="225" src="../delta_dashboard/public/img/acminiplus.jpg">
+            <div class="col s3">
+                <img class="materialboxed center-align" style="max-width: 80%; height: auto;" src="../delta_dashboard/public/img/acminiplus.jpg">
             </div>`);
             }
             else if (data_obj[key]['chargePointModel'].substring(0, 4) === 'EVDE') {
                 evc_info_row.append(`
-            <div class="col s4">
-                <img class="materialboxed center-align" width="225" src="../delta_dashboard/public/img/acminiplus.jpg">
+            <div class="col s3">
+                <img class="materialboxed center-align" style="max-width: 80%; height: auto;" src="../delta_dashboard/public/img/acminiplus.jpg">
             </div>`);
             }
 

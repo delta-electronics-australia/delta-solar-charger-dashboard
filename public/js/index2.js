@@ -126,7 +126,9 @@ function create_charts(data_obj, needed_charts) {
             }]
         });
 
-    } else if (needed_charts === "live_charts") {
+    }
+
+    else if (needed_charts === "live_charts") {
         let utility_chart = new Chart(document.getElementById("utility_chart"), {
             type: 'line',
             data: {
@@ -278,7 +280,9 @@ function create_charts(data_obj, needed_charts) {
             'dcp': dcp,
             'btp_chart': btp_chart
         }
-    } else if (needed_charts === "analytics_bar_charts") {
+    }
+
+    else if (needed_charts === "analytics_bar_charts") {
 
         // This code generates our colour array. Important point is that the last element is green
         let colour_array = [];
@@ -645,6 +649,7 @@ async function start_charging_session_listeners(user, db, initial_charging_data_
                     charging_status_object[chargerID].listener_ref.off();
                     delete charging_status_object[chargerID];
                 }
+
                 // We should also update our daily charger breakdown
                 update_daily_charger_breakdown(user, db)
             }
@@ -1092,7 +1097,7 @@ function append_new_data_to_daily_charging_breakdown(data_obj, chargerID, new_da
     for (let index in data_obj.datasets) {
         if (data_obj.datasets.hasOwnProperty(index)) {
             if (chargerID === data_obj.datasets[index]['label']) {
-                data_obj.datasets[index].data.push(new_data)
+                data_obj.datasets[index].data.push(new_data.toFixed(2))
             }
         }
     }
@@ -1110,7 +1115,7 @@ async function condition_analytics_values_for_daily_charger_breakdown(charger_an
 
     // Todo: maybe make this as long as the amount of chargers in Firebase
     // Define a colour array that will be referenced each time
-    let colour_array = ['blue', 'pink', 'green', 'black']
+    let colour_array = ['blue', 'pink', 'green', 'black'];
 
     for (let index in ev_chargers) {
         if (ev_chargers.hasOwnProperty(index)) {
@@ -1120,7 +1125,6 @@ async function condition_analytics_values_for_daily_charger_breakdown(charger_an
                 type: 'bar',
                 label: chargerID,
                 data: [],
-                // Todo: need a colour array here
                 backgroundColor: colour_array[index],
                 fill: false
             })
@@ -1142,7 +1146,7 @@ async function condition_analytics_values_for_daily_charger_breakdown(charger_an
                         // Then we loop through the charge sessions for that day for that charger ID and add up the energy
                         for (let charge_session_time in charger_analytics_values[date][chargerID]) {
                             if (charger_analytics_values[date][chargerID].hasOwnProperty(charge_session_time)) {
-                                temp_charge_energy = temp_charge_energy + charger_analytics_values[date][chargerID][charge_session_time].energy.toFixed(2)
+                                temp_charge_energy = temp_charge_energy + parseFloat(charger_analytics_values[date][chargerID][charge_session_time].energy)
                             }
                         }
                     }
