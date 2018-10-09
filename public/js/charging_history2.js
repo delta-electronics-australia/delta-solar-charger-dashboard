@@ -278,15 +278,15 @@ function create_charts2(purpose, data_obj) {
                         id: 'A',
                         position: 'left'
                     },
-                        // {
-                        //     id: 'B',
-                        //     type: 'linear',
-                        //     position: 'right',
-                        //     ticks: {
-                        //         max: 100,
-                        //         min: 0
-                        //     }
-                        // },
+                        {
+                            id: 'B',
+                            type: 'linear',
+                            position: 'right',
+                            ticks: {
+                                max: 100,
+                                min: 0
+                            }
+                        },
                     ]
                 },
                 pan: {
@@ -324,24 +324,28 @@ function create_charts2(purpose, data_obj) {
 }
 
 function condition_data_for_chart(raw_data) {
-    let final_data_object = {
-        datasets: [{
-            data: [],
-            label: "Charging Power",
-            borderColor: "#ff3300",
-            fill: false
-        }]
-    };
 
-    let length = raw_data['time'].length;
-
-    for (let i = 0; i < length; i++) {
-        final_data_object.datasets[0].data.push({
-            x: moment(raw_data.time[i], 'YYYY-MM-DD hh:mm:ss'),
-            y: raw_data.charge_power[i]
-        })
+    // First we need to create a temporary time array (since the data has all the same timestamps)
+    let temp_time_array = [];
+    for (let index in raw_data.datasets[0].data) {
+        if (raw_data.datasets[0].data.hasOwnProperty(index)) {
+            temp_time_array.push(moment(raw_data.datasets[0].data[index].x, 'YYYY-MM-DD hh:mm:ss'));
+        }
     }
-    return final_data_object
+
+    // First loop through all of the entries in datasets
+    for (let data_index in raw_data.datasets) {
+        if (raw_data.datasets.hasOwnProperty(data_index)) {
+
+            // Now loop through all of the data entries in each dataset
+            for (let index in raw_data.datasets[data_index].data) {
+                if (raw_data.datasets[data_index].data.hasOwnProperty(index)) {
+                    raw_data.datasets[data_index].data[index].x = temp_time_array[index]
+                }
+            }
+        }
+    }
+    return raw_data
 }
 
 function openModal(chargerID, start_time, start_date, duration_string, charge_energy) {
@@ -377,9 +381,8 @@ function openModal(chargerID, start_time, start_date, duration_string, charge_en
         xhr.onload = function () {
             if (xhr.readyState === 4 && xhr.status === 200) {
                 let raw_charging_data = JSON.parse(xhr.response);
-                let final_data_object = condition_data_for_chart(raw_charging_data['data_obj']);
-
-                globals['charging_line_chart'] = create_charts2('line_chart', final_data_object);
+                // let final_data_object = condition_data_for_chart(raw_charging_data['data_obj']);
+                globals['charging_line_chart'] = create_charts2('line_chart', raw_charging_data['data_obj']);
             }
         };
 
@@ -490,41 +493,41 @@ async function create_charge_session_cards(user, db, selected_date, ev_chargers)
             }
             // Testing: if it is null then let's add a card with nothing in it
             else {
-                charge_session_row.append(`
-                            <div class="col s12 m6 l4">
-                                <div class="card blue-grey darken-1 hoverable">
-                                    <div class="card-content white-text">
-                                        <span class="card-title center-align">None</span>
-                                        <table class="">
-                                            <thead>
-                                            <tr>
-                                                <th>Description</th>
-                                                <th>Value</th>
-                                            </tr>
-                                            </thead>
-                    
-                                            <tbody id="dcp_reveal_table">
-                                            <tr>
-                                                <td>Charger ID</td>
-                                                <td>${chargerID}</td>
-                                            </tr>
-                                            <tr>
-                                                <td>Charge Duration</td>
-                                                <td>None</td>
-                                            </tr>
-                                            <tr>
-                                                <td>Charge Energy</td>
-                                                <td>None</td>
-                                            </tr>
-                                            </tbody>
-                                        </table>
-                                        <div class="right-align">
-                                            <a class="waves-effect waves-light btn">More Info</a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                `)
+                // charge_session_row.append(`
+                //             <div class="col s12 m6 l4">
+                //                 <div class="card blue-grey darken-1 hoverable">
+                //                     <div class="card-content white-text">
+                //                         <span class="card-title center-align">None</span>
+                //                         <table class="">
+                //                             <thead>
+                //                             <tr>
+                //                                 <th>Description</th>
+                //                                 <th>Value</th>
+                //                             </tr>
+                //                             </thead>
+                //
+                //                             <tbody id="dcp_reveal_table">
+                //                             <tr>
+                //                                 <td>Charger ID</td>
+                //                                 <td>${chargerID}</td>
+                //                             </tr>
+                //                             <tr>
+                //                                 <td>Charge Duration</td>
+                //                                 <td>None</td>
+                //                             </tr>
+                //                             <tr>
+                //                                 <td>Charge Energy</td>
+                //                                 <td>None</td>
+                //                             </tr>
+                //                             </tbody>
+                //                         </table>
+                //                         <div class="right-align">
+                //                             <a class="waves-effect waves-light btn">More Info</a>
+                //                         </div>
+                //                     </div>
+                //                 </div>
+                //             </div>
+                // `)
             }
         }
     }
@@ -541,7 +544,6 @@ function date_chosen(selected_date, user, db) {
                 .then(function () {
                 })
         })
-
 }
 
 async function get_valid_charging_dates(user, db) {
@@ -550,11 +552,10 @@ async function get_valid_charging_dates(user, db) {
     let charging_history_keys_obj = await db.ref(`users/${user.uid}/analytics/charging_history_analytics`).once("value");
     charging_history_keys_obj = charging_history_keys_obj.val();
 
-    let earliest_date = Infinity;
+    let earliest_date = moment('2050-01-01', 'YYYY-MM-DD');
     for (let chargerID in charging_history_keys_obj) {
 
         if (charging_history_keys_obj.hasOwnProperty(chargerID)) {
-            console.log(chargerID);
 
             // temp_dates is the list of dates available for this chargerID
             let temp_dates = Object.keys(charging_history_keys_obj[chargerID]);
@@ -567,7 +568,7 @@ async function get_valid_charging_dates(user, db) {
                     let temp_date_utc = moment(temp_dates[index], 'YYYY-MM-DD').valueOf();
 
                     // Compare it: if the current value is lower, then it is earlier so replace the earliest_date value
-                    if (temp_date_utc < earliest_date) {
+                    if (moment(temp_dates[index], 'YYYY-MM-DD').isBefore(moment(earliest_date, 'YYYY-MM-DD'))) {
                         earliest_date = temp_dates[index]
                     }
 
@@ -619,7 +620,16 @@ function start_charging_history_page(user) {
 
     let analytics_obj = {};
 
-    // let idToken = await firebase.auth().currentUser.getIdToken(true);
+    ////////////////////////////////////////////////////////////////////////////////////
+    // db.ref(`users/${user.uid}/history/2018-10-08`)
+    //     .orderByChild('time')
+    //     .startAt('011516')
+    //     .endAt('131807')
+    //     .once('value')
+    //     .then(function (snapshot) {
+    //         console.log(snapshot.val());
+    //     });
+    ////////////////////////////////////////////////////////////////////////////////////
 
     // First we grab our valid charging dates
     get_valid_charging_dates(user, db).then(function (valid_charging_dates_payload) {
@@ -639,6 +649,7 @@ function start_charging_history_page(user) {
             disableDayFn: function (day) {
                 // This function disables the dates that were not in our list of available dates
                 let current_date_check = day.yyyymmdd();
+                // console.log(`${current_date_check} ${!valid_dates.includes(current_date_check)}`)
                 return !valid_dates.includes(current_date_check)
             }
         });
@@ -647,112 +658,6 @@ function start_charging_history_page(user) {
 
     })
 
-
-    // // Point to our charging history keys
-    // let charging_history_key_ref = db.ref(`users/${user.uid}/charging_history_keys/`);
-    // charging_history_key_ref.orderByKey().once("value", async function (snapshot) {
-    //     if (snapshot.val() !== null) {
-    //         let charging_session_keys = Object.keys(snapshot.val());
-    //
-    //         ///////////////////////////////////////////////////////////////////////////////////////////
-    //         // Now that we have loaded our charging history keys, we can now show the master_row
-    //         document.getElementById('master_row').style.visibility = 'visible';
-    //         ///////////////////////////////////////////////////////////////////////////////////////////
-    //
-    //         // Need to check if we are currently charging:
-    //         // let _isCharging = false;
-    //         let charging_ref = db.ref("users/" + user.uid + "/evc_inputs/charging/");
-    //         let _isCharging = await charging_ref.once('value');
-    //         _isCharging = _isCharging.val();
-    //
-    //         // Convert yyyy-mm-ddThhmm to yyyy-mm-dd hh:mm, append to our drop down list
-    //         let options = "";
-    //         let display_value = "";
-    //         $.each(charging_session_keys, function (i, val) {
-    //             display_value = (val.slice(0, 13) + ":" + val.slice(13)).replace("T", " ");
-    //
-    //             if (_isCharging && val === charging_session_keys[charging_session_keys.length - 1]){
-    //                 console.log('We have reached the one that should be disabled...');
-    //                 console.log(val);
-    //                 console.log(options + "<option value='" + val + "' ' + disabled'>" + display_value + "</option>")
-    //             }
-    //
-    //             options = options + "<option value='" + val + "'>" + display_value + "</option>";
-    //         });
-    //
-    //         let start_charging_session = $('#select_charging_session');
-    //         start_charging_session.append(options);
-    //
-    //         let selected_charging_session = "";
-    //         start_charging_session.on('change', function () {
-    //             selected_charging_session = $(this).val();
-    //
-    //             /////////////////////////////////////////////////////////////////////////////////////
-    //             // When the user selects the charge session date, hide all of the graphs and inline preloader
-    //
-    //             // document.getElementById('reset_zoom_button_div').style.visibility = 'hidden';
-    //             // document.getElementById('charging_history_tabs').style.visibility = 'hidden';
-    //             // document.getElementById('charging_history_overview_tab').style.visibility = 'hidden';
-    //             // document.getElementById('charging_history_chart_tab').style.visibility = 'hidden';
-    //             // document.getElementById('charging_history_sankey_tab').style.visibility = 'hidden';
-    //
-    //             // document.getElementById('preloader').style.display = 'inline';
-    //             /////////////////////////////////////////////////////////////////////////////////////
-    //
-    //             let url = "/delta_dashboard/charging_history_request";
-    //             let xhr = new XMLHttpRequest();
-    //             xhr.open("POST", url, true);
-    //             xhr.setRequestHeader("Content-Type", "application/json");
-    //
-    //             xhr.onload = function () {
-    //                 if (xhr.readyState === 4 && xhr.status === 200) {
-    //
-    //                     // Now that data has come in, initialize and display our tabs
-    //                     let tabs_elem = document.querySelector('.tabs');
-    //                     let tabs_instance = M.Tabs.init(tabs_elem);
-    //
-    //                     data_obj = JSON.parse(xhr.response)['data_obj'];
-    //                     let sankey_data_obj = JSON.parse(xhr.response)['sankey_data_obj'];
-    //                     let overview_data_obj = JSON.parse(xhr.response)['overview_data_obj'];
-    //                     // Convert all of the time values into moment objects (depending on the format)
-    //                     if (data_obj['time'][0].length < 10) {
-    //                         data_obj['time'].forEach(function (value, key, time_array) {
-    //                             time_array[key] = moment(time_array[key], "HH:mm:ss")
-    //                         });
-    //                     } else {
-    //                         data_obj['time'].forEach(function (value, key, time_array) {
-    //                             time_array[key] = moment(time_array[key], "YYYY-MM-DD HH:mm:ss.SSSSSS")
-    //                         });
-    //                     }
-    //                     //////////////////////////////////////////////////////////////////////////////////
-    //                     // document.getElementById('preloader').style.display = 'none';
-    //
-    //                     // document.getElementById('charging_history_tabs').style.visibility = 'visible';
-    //                     // document.getElementById('charging_history_overview_tab').style.visibility = 'visible';
-    //                     // document.getElementById('charging_history_chart_tab').style.visibility = 'visible';
-    //                     // document.getElementById('charging_history_sankey_tab').style.visibility = 'visible';
-    //                     // document.getElementById('reset_zoom_button_div').style.visibility = 'visible';
-    //                     //////////////////////////////////////////////////////////////////////////////////
-    //                     update_charts(chart_obj, data_obj, sankey_data_obj);
-    //                     update_cards(overview_data_obj);
-    //
-    //                 }
-    //             };
-    //
-    //             data = JSON.stringify({
-    //                 "idToken": idToken,
-    //                 'date': selected_charging_session
-    //             });
-    //
-    //             xhr.send(data);
-    //             console.log('sent!')
-    //         })
-    //     }
-    //
-    //     $('#reset_zoom_button').click(function () {
-    //         chart_obj.charging_history_chart.resetZoom()
-    //     })
-    // })
 }
 
 function checkIfLoggedIn() {

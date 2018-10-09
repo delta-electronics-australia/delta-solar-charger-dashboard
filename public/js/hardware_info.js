@@ -153,9 +153,9 @@ async function start_hardware_info_page(user) {
         // Start a listener for any FirmwareStatusNotification updates
         db.ref(`users/${user.uid}/evc_inputs/temp_remote_fw_update_info/firmware_update_status`).on('value', function (snapshot) {
             console.log(snapshot.val());
-            let fw_status = snapshot.val()
+            let fw_status = snapshot.val();
             modal_body.empty();
-            modal_body.append(`<h6>${snapshot.val()}</h6>`)
+            modal_body.append(`<h6>${snapshot.val()}</h6>`);
             if (fw_status === 'Downloading') {
                 modal_body.append(
                     `<div class="progress">

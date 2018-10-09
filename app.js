@@ -560,10 +560,49 @@ app.post('/delta_dashboard/charging_history_request2', function (req, res) {
 
     console.log(`${selected_charging_session} ${chargerID}`);
 
-    let data_obj = {
-        'time': [],
-        'charge_power': []
-    }
+    let final_data_object = {
+        datasets: [{
+            data: [],
+            label: "Charging Power",
+            borderColor: "#ff3300",
+            fill: false
+        }, {
+            data: [],
+            label: "Utility Power",
+            borderColor: "#3366ff",
+            fill: false,
+            yAxisID: 'A',
+            hidden: false
+        }, {
+            data: [],
+            label: "Solar Power",
+            borderColor: "#ffcc00",
+            fill: false,
+            yAxisID: 'A',
+            hidden: false
+        }, {
+            data: [],
+            label: "Battery Power",
+            borderColor: "#33cc33",
+            fill: false,
+            yAxisID: 'A',
+            hidden: false
+        }, {
+            data: [],
+            label: "Battery SOC",
+            borderColor: "#ef2fac",
+            fill: false,
+            yAxisID: 'B',
+            hidden: true
+        }, {
+            data: [],
+            label: "Battery Max Temp",
+            borderColor: "#6600cc",
+            fill: false,
+            yAxisID: 'B',
+            hidden: true
+        }]
+    };
     // let data_obj = {
     //     'utility_p': [],
     //     'utility_c': [],
@@ -590,8 +629,6 @@ app.post('/delta_dashboard/charging_history_request2', function (req, res) {
     //     utility_p_export: 0,
     //     utility_p_import: 0
     // };
-
-    console.log(payload);
 
     admin.auth().verifyIdToken(payload.idToken).then(async function (decodedToken) {
         let uid = decodedToken.uid;
@@ -639,8 +676,42 @@ app.post('/delta_dashboard/charging_history_request2', function (req, res) {
                 // }
 
                 if (counter === 2) {
-                    data_obj.time.push(data[0]);
-                    data_obj.charge_power.push(data[3])
+
+                    if (data.length > 9) {
+                        final_data_object.datasets[0].data.push({
+                            x: moment(data[0], 'YYYY-MM-DD hh:mm:ss'),
+                            y: data[3]
+                        });
+                        final_data_object.datasets[1].data.push({
+                            x: moment(data[0], 'YYYY-MM-DD hh:mm:ss'),
+                            y: data[9]
+                        });
+                        final_data_object.datasets[2].data.push({
+                            x: moment(data[0], 'YYYY-MM-DD hh:mm:ss'),
+                            y: data[5]
+                        });
+                        final_data_object.datasets[3].data.push({
+                            x: moment(data[0], 'YYYY-MM-DD hh:mm:ss'),
+                            y: data[6]
+                        });
+                        final_data_object.datasets[4].data.push({
+                            x: moment(data[0], 'YYYY-MM-DD hh:mm:ss'),
+                            y: data[7]
+                        });
+                        final_data_object.datasets[5].data.push({
+                            x: moment(data[0], 'YYYY-MM-DD hh:mm:ss'),
+                            y: data[8]
+                        });
+                    }
+                    else {
+                        final_data_object.datasets[0].data.push({
+                            x: moment(data[0], 'YYYY-MM-DD hh:mm:ss'),
+                            y: data[3]
+                        });
+                    }
+                    // data_obj.time.push(data[0]);
+                    // data_obj.charge_power.push(data[3]);
+
 
                     counter = 0
                 }
@@ -652,14 +723,13 @@ app.post('/delta_dashboard/charging_history_request2', function (req, res) {
                 // let sankey_data_obj = calculate_sankey_values(analytics_obj);
 
                 res.json({
-                    data_obj: data_obj,
+                    data_obj: final_data_object,
                     // sankey_data_obj: sankey_data_obj,
                     // overview_data_obj: overview_data_obj
                 })
             });
     })
 });
-
 
 app.post('/delta_dashboard/last_charge_session_request', function (req, res) {
     let uid = req.body.uid;
