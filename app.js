@@ -435,6 +435,21 @@ app.post('/delta_dashboard/download_data', function (req, res) {
     });
 });
 
+app.post('/delta_dashboard/download_charge_session2', function (req, res) {
+    // This function allows the user to download their charge session data for index2
+
+    let payload = req.body;
+    let selected_charging_session = `${payload['date']} ${payload['time']}`;
+    let chargerID = payload['chargerID'];
+
+    admin.auth().verifyIdToken(payload.idToken).then(function(decodedToken){
+        let uid = decodedToken.uid;
+        res.download(`C:\\Delta_AU_Services\\EVCS_portal\\logs\\${uid}\\charging_logs\\${chargerID}\\${selected_charging_session}.csv`);
+    })
+
+
+});
+
 app.post('/delta_dashboard/charging_history_request', function (req, res) {
 
     let payload = req.body;

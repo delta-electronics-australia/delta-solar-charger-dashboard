@@ -20,10 +20,15 @@
             display: inline-block;
         }
 
+        .modal {
+            width: 70% !important;
+            max-height: 80% !important;
+        }
+
     </style>
 
     <!--Let browser know website is optimized for mobile-->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
     <script src="../delta_dashboard/public/js/jquery-3.3.1.js"></script>
     <script src="../delta_dashboard/public/js/moment.js"></script>
@@ -47,75 +52,75 @@
 <% include ../partials/nav.ejs %>
 
 <body>
-    <div class="container">
-        <h1 class="center-align">Hardware Info</h1>
+<div class="container">
+    <h1 class="center-align">Hardware Info</h1>
 
-        <div class="col s12" id="preloader">
-            <div class="preloader-wrapper big active" id="loading_id">
-                <div class="spinner-layer spinner-blue-only">
-                    <div class="circle-clipper left">
-                        <div class="circle"></div>
-                    </div>
-                    <div class="gap-patch">
-                        <div class="circle"></div>
-                    </div>
-                    <div class="circle-clipper right">
-                        <div class="circle"></div>
-                    </div>
+    <div class="col s12" id="preloader">
+        <div class="preloader-wrapper big active" id="loading_id">
+            <div class="spinner-layer spinner-blue-only">
+                <div class="circle-clipper left">
+                    <div class="circle"></div>
                 </div>
-            </div>
-        </div>
-        
-        <div class="row" id="master_row">
-            <div class="col s12">
-                <ul class="collapsible">
-                    <li>
-                        <div class="collapsible-header"><b>Inverter Information</b></div>
-                        <div class="collapsible-body">
-                            <div class="row" id="inverter_info_row">
-
-                            </div>
-                            <span>
-                                <a class="waves-effect waves-light btn">Check for FW updates</a>
-                            </span>
-                        </div>
-                    </li>
-                    <li class="active">
-                        <div class="collapsible-header"><b>EV Charger Information</b></div>
-                        <div class="collapsible-body">
-                            <div class="row" id="evc_info_row"></div>
-                            <div class="row">
-                                <a class="waves-effect waves-light btn modal-trigger" href="#update_fw_modal">Update
-                                    Firmware</a>
-                            </div>
-                            <!-- Modal Structure -->
-                            <div id="update_fw_modal" class="modal">
-                                <div class="modal-content">
-                                    <h4>Delta EV Charger Firmware Update Tool</h4>
-                                    <div id="modal_body">
-                                        <h6>Please select the charger you want to update:</h6>
-                                        <div class="input-field white-text center-align">
-                                            <select id="charger_select" class="center-align">
-                                                <option value="" disabled selected>Choose your Delta Charger</option>
-                                            </select>
-                                        </div>
-                                        <a class="waves-effect waves-light btn" id="confirm_update_fw_btn">Update</a>
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
-                                </div>
-                            </div>
-
-                        </div>
-                    </li>
-                </ul>
+                <div class="gap-patch">
+                    <div class="circle"></div>
+                </div>
+                <div class="circle-clipper right">
+                    <div class="circle"></div>
+                </div>
             </div>
         </div>
     </div>
 
-    <script type="text/javascript" src="../delta_dashboard/public/js/materialize.min.js"></script>
-    <script type="application/javascript" src="../delta_dashboard/public/js/hardware_info.js"></script>
+    <div class="row" id="master_row">
+        <div class="col s12">
+            <ul class="collapsible">
+                <li>
+                    <div class="collapsible-header"><b>Inverter Information</b></div>
+                    <div class="collapsible-body">
+                        <div class="row" id="inverter_info_row">
+
+                        </div>
+                        <span>
+                                <a class="waves-effect waves-light btn">Check for FW updates</a>
+                            </span>
+                    </div>
+                </li>
+                <li class="active">
+                    <div class="collapsible-header"><b>EV Charger Information</b></div>
+                    <div class="collapsible-body">
+                        <div class="row" id="evc_info_row"></div>
+                        <div class="row">
+                            <a class="waves-effect waves-light btn modal-trigger" href="#update_fw_modal">Update
+                                Firmware</a>
+                        </div>
+                        <!-- Modal Structure -->
+                        <div id="update_fw_modal" class="modal">
+                            <div class="modal-content">
+                                <h4>Delta EV Charger Firmware Update Tool</h4>
+                                <div id="modal_body">
+                                    <h6>Please select the charger you want to update:</h6>
+                                    <div class="input-field white-text center-align">
+                                        <select id="charger_select" class="center-align">
+                                            <option value="" disabled selected>Choose your Delta Charger</option>
+                                        </select>
+                                    </div>
+                                    <a class="waves-effect waves-light btn" id="confirm_update_fw_btn">Update</a>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>
+                            </div>
+                        </div>
+
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript" src="../delta_dashboard/public/js/materialize.min.js"></script>
+<script type="application/javascript" src="../delta_dashboard/public/js/hardware_info.js"></script>
 
 </body>
 

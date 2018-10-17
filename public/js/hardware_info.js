@@ -120,76 +120,125 @@ async function start_hardware_info_page(user) {
         console.log("Pressed!!");
         let selected_charger = $('#charger_select').val();
 
-        console.log(selected_charger)
+        console.log(selected_charger);
 
         let firmwareType = "";
         // Todo: change this to model group specific, not model specific
-        if (data_obj[selected_charger].chargePointModel === 'EVPE3220MWN') {
+        if (data_obj[selected_charger].chargePointModel === 'EVPE3225MUN') {
             console.log('We have chosen a ACMP!');
-            firmwareType = "ACMP"
+            let modal_body = $('#modal_body');
+
+            // You have selected a DC Wallbox
+            modal_body.empty();
+            modal_body.append('<h6>You have selected a DC Wallbox. Please choose which firmware you would like to upgrade</h6>');
+            modal_body.append(`
+                <div class="input-field white-text center-align">
+                    <select id="firmware_type_select" class="center-align">
+                        <option value="" disabled selected>Choose which component you would like to upgrade</option>
+                        <option value="FileSystem_Admin">File System</option>
+                        <option value="Kernal">Kernal</option>
+                    </select>
+                </div>
+            `);
+            modal_body.append(`<a class="waves-effect waves-light btn" id="confirm_fw_type_btn">Update</a>`);
+            let firmwareselect_elem = document.getElementById('firmware_type_select');
+            let firmwareselect_instance = M.FormSelect.init(firmwareselect_elem);
         }
-        else if (data_obj[selected_charger].chargePointModel === 'EVPE3220MWN') {
+        else if (data_obj[selected_charger].chargePointModel === 'EVDE25D4DUM') {
             console.log('We have chosen a DCWB!');
             // Todo: need more code here to select more options for the DCWB
-            firmwareType = "ACMP"
+
+            let modal_body = $('#modal_body');
+
+            // You have selected a DC Wallbox
+            modal_body.empty();
+            modal_body.append('<h6>You have selected a DC Wallbox. Please choose which firmware you would like to upgrade</h6>');
+            modal_body.append(`
+                <div class="input-field white-text center-align">
+                    <select id="firmware_type_select" class="center-align">
+                        <option value="" disabled selected>Choose which component you would like to upgrade</option>
+                        <option value="Aux_Power">Aux Power</option>
+                        <option value="RCB">Relay Control Board</option>
+                        <option value="BA_Dual">CHAdeMO and Main Control Unit</option>
+                        <option value="CA">CCS Control Unit</option>
+                    </select>
+                </div>
+            `);
+            modal_body.append(`<a class="waves-effect waves-light btn" id="confirm_fw_type_btn">Update</a>`);
+            let firmwareselect_elem = document.getElementById('firmware_type_select');
+            let firmwareselect_instance = M.FormSelect.init(firmwareselect_elem);
         }
 
-        // Send the package that will enable the RemoteUpdate message in the backend
-        db.ref(`users/${user.uid}/evc_inputs/`).update({
-            update_firmware: {
-                'chargerID': selected_charger,
-                'firmwareType': firmwareType,
-                'set': true
-            }
-        });
+        $("#confirm_fw_type_btn").click(function () {
+            let firmwareType = $('#firmware_type_select').val();
+            console.log(firmwareType);
+            // Send the package that will enable the RemoteUpdate message in the backend
+            db.ref(`users/${user.uid}/evc_inputs/`).update({
+                update_firmware: {
+                    'chargerID': selected_charger,
+                    'firmwareType': firmwareType,
+                    'set': true
+                }
+            }).then(function () {
+                // Define our modal body div
+                let modal_body = $('#modal_body');
+                let modal_footer = $('#modal-footer');
+                // Empty it and append the initial loading title
+                modal_body.empty();
+                modal_footer.empty();
+                modal_body.append('<h6>We vibing</h6>');
 
-        // Define our modal body div
-        let modal_body = $('#modal_body');
+                // Start a listener for any FirmwareStatusNotification updates
+                db.ref(`users/${user.uid}/evc_inputs/temp_remote_fw_update_info/firmware_update_status`).on('value', function (snapshot) {
 
-        // Empty it and append the initial loading title
-        modal_body.empty();
-        modal_body.append('<h6>We vibing</h6>');
-
-        // Start a listener for any FirmwareStatusNotification updates
-        db.ref(`users/${user.uid}/evc_inputs/temp_remote_fw_update_info/firmware_update_status`).on('value', function (snapshot) {
-            console.log(snapshot.val());
-            let fw_status = snapshot.val();
-            modal_body.empty();
-            modal_body.append(`<h6>${snapshot.val()}</h6>`);
-            if (fw_status === 'Downloading') {
-                modal_body.append(
-                    `<div class="progress">
+                    if (snapshot.val() !== null) {
+                        let fw_status = snapshot.val();
+                        modal_body.empty();
+                        modal_body.append(`<h6>${snapshot.val()}</h6>`);
+                        if (fw_status === 'Downloading') {
+                            modal_body.append(
+                                `<div class="progress">
                         <div class="determinate" style="width: 10%"></div>
                     </div>`
-                )
-            }
-            else if (fw_status === 'Downloaded') {
-                modal_body.append(
-                    `<div class="progress">
+                            )
+                        }
+                        else if (fw_status === 'Downloaded') {
+                            modal_body.append(
+                                `<div class="progress">
                         <div class="determinate" style="width: 50%"></div>
                     </div>`
-                )
-            }
+                            )
+                        }
 
-            else if (fw_status === 'Installing') {
-                modal_body.append(
-                    `<div class="progress">
+                        else if (fw_status === 'Installing') {
+                            modal_body.append(
+                                `<div class="progress">
                         <div class="determinate" style="width: 70%"></div>
                     </div>`
-                )
-            }
+                            )
+                        }
 
-            else if (fw_status === 'Installed') {
-                modal_body.append(
-                    `<div class="progress">
-                        <div class="determinate" style="width: 100%"></div>
-                    </div>`
-                )
-                setTimeout(function(){
-                    modal_body.empty();
-                    modal_body.append(`<h6>New firmware installed. Charger rebooting now...</h6>`)
-                }, 5000)
-            }
+                        else if (fw_status === 'Installed') {
+                            modal_body.append(
+                                `<div class="progress">
+                                <div class="determinate" style="width: 100%"></div>
+                            </div>`
+                            );
+
+                            // Remove the entry in evc_inputs
+                            db.ref(`users/${user.uid}/evc_inputs/temp_remote_fw_update_info`).remove()
+                                .then(function () {
+                                    setTimeout(function () {
+                                        modal_body.empty();
+                                        modal_body.append(`<h6>New firmware installed. Charger rebooting now...</h6>`)
+                                        modal_footer.append(`<a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>`)
+                                    }, 5000)
+                                });
+                        }
+                    }
+
+                });
+            });
 
         });
     })

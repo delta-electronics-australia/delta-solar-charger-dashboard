@@ -405,7 +405,7 @@ function create_charts(data_obj, needed_charts) {
             }
         });
     } else if (needed_charts === "daily_charging_breakdown_bar") {
-        console.log(data_obj);
+        // console.log(data_obj);
         let daily_charging_breakdown_bar = new Chart(document.getElementById("daily_charging_breakdown_bar"), {
             type: 'bar',
             data: data_obj,
@@ -583,7 +583,7 @@ async function start_charging_session_listeners(user, db, initial_charging_data_
                                                 charging_chart_obj, isCharging_parent_node) {
     console.log('Starting listeners function');
 
-    let temp_data_object = {
+    let inverter_data_keys = {
         "Solar_Power": null,
         "Battery_Power": null,
         "Battery_SOC": null,
@@ -610,58 +610,61 @@ async function start_charging_session_listeners(user, db, initial_charging_data_
 
             // If the new value of charging is true
             if (charging_value === true) {
-                // and the charger ID exists in our data set - then do nothing
-                if (chargerID_exists_in_dataset(chargerID, charging_chart_obj)) {
-                    console.log('It exists!')
-                }
-                // If the chargerID does not exist in our data set then we need to create an object for it
-                else {
-                    console.log('Dataset does not exist yet, need to create the structure');
-                    charging_chart_obj.data.datasets.push({
-                        data: [],
-                        label: chargerID,
-                        borderColor: "#ff3300",
-                        fill: false
-                    });
+                // We first have to merge this new chargerID into the dataset
+                charging_chart_obj = merge_chargerID_into_dataset(chargerID, charging_chart_obj);
+                charging_chart_obj = merge_inverter_info_into_dataset(inverter_data_keys, charging_chart_obj);
+                // // and the charger ID exists in our data set - then do nothing
+                // if (chargerID_exists_in_dataset(chargerID, charging_chart_obj)) {
+                //     console.log('It exists!')
+                // }
+                // // If the chargerID does not exist in our data set then we need to create an object for it
+                // else {
+                //     console.log('Dataset does not exist yet, need to create the structure');
+                //     charging_chart_obj.data.datasets.push({
+                //         data: [],
+                //         label: chargerID,
+                //         borderColor: "#ff3300",
+                //         fill: false
+                //     });
 
-                    // Define our colour object which allows easy access to the colours each field is meant to be
-                    let colour_object = {
-                        'Solar_Power': "#ffcc00",
-                        "Battery_Power": "#33cc33",
-                        "Battery_SOC": "#ef2fac",
-                        "Battery_Temperature": "#6600cc",
-                        "Grid_Power": "#3366ff"
-                    };
-
-                    // Loop through all of the keys in our temp_data_object
-                    for (let data_key in temp_data_object) {
-                        if (temp_data_object.hasOwnProperty(data_key)) {
-
-                            // For each of the keys, our data will be the object[data_key], label will just be the key without _
-                            // and the borderColor should be colour_array[data_key]
-                            // Battery SOC and temp need to be on the right hand axis
-                            if (data_key === "Battery_SOC" || data_key === "Battery_Temperature") {
-                                charging_chart_obj.data.datasets.push({
-                                    data: [],
-                                    label: data_key.replace(/_/g, ' '),
-                                    borderColor: colour_object[data_key],
-                                    yAxisID: 'B',
-                                    fill: false
-                                });
-                            }
-                            else {
-                                charging_chart_obj.data.datasets.push({
-                                    data: [],
-                                    label: data_key.replace(/_/g, ' '),
-                                    borderColor: colour_object[data_key],
-                                    yAxisID: 'A',
-                                    fill: false
-                                });
-                            }
-                        }
-                    }
-                    charging_chart_obj.update()
-                }
+                // // Define our colour object which allows easy access to the colours each field is meant to be
+                // let colour_object = {
+                //     'Solar_Power': "#ffcc00",
+                //     "Battery_Power": "#33cc33",
+                //     "Battery_SOC": "#ef2fac",
+                //     "Battery_Temperature": "#6600cc",
+                //     "Grid_Power": "#3366ff"
+                // };
+                //
+                // // Loop through all of the keys in our temp_data_object
+                // for (let data_key in inverter_data_keys) {
+                //     if (inverter_data_keys.hasOwnProperty(data_key)) {
+                //
+                //         // For each of the keys, our data will be the object[data_key], label will just be the key without _
+                //         // and the borderColor should be colour_array[data_key]
+                //         // Battery SOC and temp need to be on the right hand axis
+                //         if (data_key === "Battery_SOC" || data_key === "Battery_Temperature") {
+                //             charging_chart_obj.data.datasets.push({
+                //                 data: [],
+                //                 label: data_key.replace(/_/g, ' '),
+                //                 borderColor: colour_object[data_key],
+                //                 yAxisID: 'B',
+                //                 fill: false
+                //             });
+                //         }
+                //         else {
+                //             charging_chart_obj.data.datasets.push({
+                //                 data: [],
+                //                 label: data_key.replace(/_/g, ' '),
+                //                 borderColor: colour_object[data_key],
+                //                 yAxisID: 'A',
+                //                 fill: false
+                //             });
+                //         }
+                //     }
+                // }
+                charging_chart_obj.update();
+                // }
 
                 let latest_charging_values = await get_latest_charging_time(user, db, chargerID);
                 let latest_charging_time = latest_charging_values['time'];
@@ -686,16 +689,21 @@ async function start_charging_session_listeners(user, db, initial_charging_data_
 
             // If the new value of charging is false
             else if (charging_value === false) {
-                // Then we need to remove the chargerID from the data set completely
-                charging_chart_obj = delete_chargerID_from_dataset(chargerID, charging_chart_obj);
 
                 if (charging_status_object.hasOwnProperty(chargerID)) {
-                    charging_status_object[chargerID].listener_ref.off();
-                    delete charging_status_object[chargerID];
-                }
 
-                // We should also update our daily charger breakdown
-                update_daily_charger_breakdown(user, db)
+                    // Turn off the listener for that charging session
+                    charging_status_object[chargerID].listener_ref.off();
+                    // Delete this chargerID from the charging_status_object
+                    delete charging_status_object[chargerID];
+
+                    // Then we need to remove the chargerID from the data set completely
+                    charging_chart_obj = delete_chargerID_from_dataset(chargerID, charging_chart_obj, charging_status_object, inverter_data_keys);
+
+                    // We should also update our daily charger breakdown
+                    update_daily_charger_breakdown(user, db)
+
+                }
             }
             // Analyze our charging status object and update our ev charging heading and height
             adjust_ev_charging_title_and_height(charging_status_object)
@@ -928,22 +936,165 @@ function chargerID_exists_in_dataset(chargerID, charging_chart_obj,) {
     return dataset_exists
 }
 
-function delete_chargerID_from_dataset(chargerID, charging_chart_obj) {
-    // This function takes in a chargerID and deletes the data object from the charging chart
-    for (let index in charging_chart_obj.data.datasets) {
-        if (charging_chart_obj.data.datasets.hasOwnProperty(index)) {
+function merge_inverter_info_into_dataset(inverter_data_keys, charging_chart_obj) {
+    // Define our colour object which allows easy access to the colours each field is meant to be
+    let colour_object = {
+        'Solar_Power': "#ffcc00",
+        "Battery_Power": "#33cc33",
+        "Battery_SOC": "#ef2fac",
+        "Battery_Temperature": "#6600cc",
+        "Grid_Power": "#3366ff"
+    };
 
-            // Match the chargerID with the label
-            if (chargerID === charging_chart_obj.data.datasets[index]['label']) {
-                //... delete the series object and update the chart
-                charging_chart_obj.data.datasets.splice(index, 1);
-                charging_chart_obj.update();
-                console.log(`Deleted ${chargerID}!`);
-                break
-            }
-
+    let entry_exists = false;
+    // Loop through all of our dataset entries
+    for (let [index, data_entry] of charging_chart_obj.data.datasets.entries()) {
+        if (data_entry.label === 'Solar Power') {
+            // If Solar_Power exists, then we assume the rest are there too
+            entry_exists = true
         }
     }
+
+    // But if there is no Solar_Power, we assume the rest of the inverter info is also not there
+    if (!entry_exists) {
+        // Loop through all of the keys in our temp_data_object
+        for (let data_key in inverter_data_keys) {
+            if (inverter_data_keys.hasOwnProperty(data_key)) {
+
+                // For each of the keys, our data will be the object[data_key], label will just be the key without _
+                // and the borderColor should be colour_array[data_key]
+                // Battery SOC and temp need to be on the right hand axis
+                if (data_key === "Battery_SOC" || data_key === "Battery_Temperature") {
+                    charging_chart_obj.data.datasets.push({
+                        data: [],
+                        label: data_key.replace(/_/g, ' '),
+                        borderColor: colour_object[data_key],
+                        yAxisID: 'B',
+                        fill: false
+                    });
+                }
+                else {
+                    charging_chart_obj.data.datasets.push({
+                        data: [],
+                        label: data_key.replace(/_/g, ' '),
+                        borderColor: colour_object[data_key],
+                        yAxisID: 'A',
+                        fill: false
+                    });
+                }
+            }
+        }
+    }
+
+    return charging_chart_obj
+}
+
+function merge_chargerID_into_dataset(chargerID, charging_chart_obj) {
+    // This function checks whether or not our chargerID exists in the chart's data object
+
+    // Loop through our datasets to see if there exists a dataset
+    for (let index in charging_chart_obj.data.datasets) {
+
+        // Check if index exists in our datasets object
+        if (charging_chart_obj.data.datasets.hasOwnProperty(index)) {
+
+            // If chargerID = label, then there is already a data object
+            if (chargerID === charging_chart_obj.data.datasets[index]['label']) {
+                return charging_chart_obj
+            }
+        }
+    }
+
+    // If we looped through the whole dataset without returning then we need to add an entry
+    console.log('Dataset does not exist yet, need to create the structure');
+    charging_chart_obj.data.datasets.push({
+        data: [],
+        label: chargerID,
+        borderColor: "#ff3300",
+        fill: false
+    });
+
+    return charging_chart_obj
+}
+
+function delete_chargerID_from_dataset(chargerID, charging_chart_obj, charging_status_object, inverter_data_keys) {
+
+    let charger_list = Object.keys(charging_status_object);
+
+    // If there is still a charging session left
+    if (charger_list.length > 0) {
+        let earliest_charger_moment_object = moment();
+        let earliest_chargerID;
+        for (let [index, data_entry] of charging_chart_obj.data.datasets.entries()) {
+            // If the label of this entry is a charger
+            if (charger_list.hasOwnProperty(data_entry.label)) {
+                // Check if this charger's first timestamp is before the earliest one so far
+                if (data_entry.data[0].x.isBefore(earliest_charger_moment_object)) {
+                    // If it is, the earliest gets replaced
+                    earliest_charger_moment_object = data_entry.data[0].x;
+                    earliest_chargerID = data_entry.label;
+                }
+            }
+        }
+
+        // Now that we have the earliest chargerID, check if it is the ID we are trying to delete
+        if (chargerID === earliest_chargerID) {
+            // Now that we have the earliest charger AND the timestamp, we need to loop through and delete the data that are
+            // before this time
+            let delete_index;
+            for (let [index, data_entry] of charging_chart_obj.data.datasets.entries()) {
+                // If we found solar power
+                if (data_entry.label === "Solar Power") {
+                    // Loop through all of the data in it
+                    for (let [data_index, data] of data_entry['data'].entries()) {
+                        // If the current timestamp is AFTER the earliest charger moment object
+                        if (data.x.isAfter(earliest_charger_moment_object)) {
+                            // We note this index and stop looping over this data array
+                            delete_index = data_index;
+                            break
+                        }
+                    }
+                    // Stop looping over datasets
+                    break
+                }
+            }
+
+            // Finally, loop through our charging chart object again
+            for (let [index, data_entry] of charging_chart_obj.data.datasets.entries()) {
+                // If the label corresponds to a key in our inverter data keys
+                if (inverter_data_keys.hasOwnProperty(data_entry.label)) {
+                    // We need to go into the data and delete all values in the array up to delete_index
+                    charging_chart_obj.data.datasets[index].data = charging_chart_obj.data.datasets[index].data.slice(delete_index)
+                }
+            }
+        }
+
+        // If the chargerID we are trying to delete is not the earliest charging session
+        else {
+            // Then we just need to delete its own data
+            for (let [index, data_entry] in charging_chart_obj.data.datasets) {
+                // Match the chargerID with the label
+                if (chargerID === data_entry['label']) {
+                    //... delete the series object and update the chart
+                    charging_chart_obj.data.datasets.splice(index, 1);
+                    // charging_chart_obj.data.datasets[index].data.length = 0;
+                    console.log(`Deleted ${chargerID}!`);
+                    break
+                }
+            }
+        }
+    }
+
+    // If this charging session is the last one, then we can just delete everything
+    else {
+        charging_chart_obj.data.datasets.length = 0
+        // for (let [index, value] of charging_chart_obj.data.datasets.entries()) {
+        //     // Delete the first
+        //     charging_chart_obj.data.datasets.splice(0, 1);
+        // }
+    }
+
+    charging_chart_obj.update();
     return charging_chart_obj
 }
 
@@ -1039,10 +1190,10 @@ function update_weather(user, db) {
         });
 
         // Re-run 30 minutes later
-        setTimeout(update_weather.bind(user, db), 1800000)
+        setTimeout(function () {
+            update_weather(user, db)
+        }, 900000)
     })
-
-
 }
 
 function calculate_number_of_online_chargers(charger_status_obj) {
@@ -1229,7 +1380,7 @@ function update_last_charging_session(user, db) {
 
                 // Put the analytics in an object and add the start date/time of the charging session
                 charging_analytics_obj = charging_analytics_obj.val();
-                charging_analytics_obj['started'] = latest_date_time.format('DD/MM/YYYY HH:mm');
+                charging_analytics_obj['started'] = moment(latest_date_time, 'YYYY-MM-DD HHmm').format('DD/MM/YYYY HH:mm');
 
                 // Update the table
                 update_last_charging_session_table(chargerID, charging_analytics_obj)
@@ -1310,25 +1461,38 @@ async function condition_analytics_values_for_daily_charger_breakdown(charger_an
 
 async function grab_charger_analytics_values(user, db, ev_chargers, num_days) {
     // This function serves update_daily_charger_breakdown and grabs all of the analytics values for the for the past num_days days
-
     let charger_analytics_values = {};
 
-    for (let i = num_days; i >= 0; i--) {
-        let day = moment().subtract(i, 'days').format('YYYY-MM-DD');
-        charger_analytics_values[day] = {};
+    // Loop through all of the ev chargers
+    for (let index in ev_chargers) {
+        if (ev_chargers.hasOwnProperty(index)) {
+            let chargerID = ev_chargers[index];
 
-        // Loop through all of the ev chargers
-        for (let index in ev_chargers) {
-            let chargerID = "";
-            if (ev_chargers.hasOwnProperty(index)) {
-                chargerID = ev_chargers[index];
-                // console.log(chargerID);
+            // Grab the charging history analytics values for the last 15 days
+            let temp_data = await db.ref(`users/${user.uid}/analytics/charging_history_analytics/${chargerID}/`).limitToLast(num_days).once("value");
+            temp_data = temp_data.val();
 
-                let temp_data = await db.ref(`users/${user.uid}/analytics/charging_history_analytics/${chargerID}/${day}`).once("value");
-                // console.log(temp_data.val())
-                charger_analytics_values[day][chargerID] = temp_data.val()
+            // Loop through the past 15 dates
+            for (let i = num_days; i >= 0; i--) {
+                let day = moment().subtract(i, 'days').format('YYYY-MM-DD');
+
+                // Check if our final object has a field for the current day
+                if (!charger_analytics_values.hasOwnProperty(day)) {
+                    // If not, make a blank object for the current day
+                    charger_analytics_values[day] = {};
+                }
+
+                // If we have data for today then we append that data to the final object
+                if (temp_data !== null && temp_data.hasOwnProperty(day)) {
+                    charger_analytics_values[day][chargerID] = temp_data[day];
+                }
+
+                // If we do not have any data at all for the past 15 days OR if in our data, there is no data for the
+                // current day we append null
+                else {
+                    charger_analytics_values[day][chargerID] = null
+                }
             }
-
         }
     }
     return charger_analytics_values
