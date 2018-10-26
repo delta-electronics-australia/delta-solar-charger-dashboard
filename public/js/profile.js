@@ -136,7 +136,7 @@ function start_profile_page(user) {
     // Get the current charging mode from Firebase and intialize our charging mode input box
     db.ref("users/" + user.uid + "/evc_inputs/buffer_aggro_mode").on('value', function (snapshot) {
         $('#battery_buffer_select').val(snapshot.val());
-        console.log(snapshot.val())
+        console.log(snapshot.val());
         let battery_buffer_select_elem = document.getElementById('battery_buffer_select');
         let battery_buffer_select_instance = M.FormSelect.init(battery_buffer_select_elem);
     });

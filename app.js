@@ -442,7 +442,7 @@ app.post('/delta_dashboard/download_charge_session2', function (req, res) {
     let selected_charging_session = `${payload['date']} ${payload['time']}`;
     let chargerID = payload['chargerID'];
 
-    admin.auth().verifyIdToken(payload.idToken).then(function(decodedToken){
+    admin.auth().verifyIdToken(payload.idToken).then(function (decodedToken) {
         let uid = decodedToken.uid;
         res.download(`C:\\Delta_AU_Services\\EVCS_portal\\logs\\${uid}\\charging_logs\\${chargerID}\\${selected_charging_session}.csv`);
     })
@@ -576,6 +576,7 @@ app.post('/delta_dashboard/charging_history_request2', function (req, res) {
     console.log(`${selected_charging_session} ${chargerID}`);
 
     let final_data_object = {
+        labels: [],
         datasets: [{
             data: [],
             label: "Charging Power",
@@ -693,31 +694,52 @@ app.post('/delta_dashboard/charging_history_request2', function (req, res) {
                 if (counter === 2) {
 
                     if (data.length > 9) {
-                        final_data_object.datasets[0].data.push({
-                            x: moment(data[0], 'YYYY-MM-DD hh:mm:ss'),
-                            y: data[3]
-                        });
-                        final_data_object.datasets[1].data.push({
-                            x: moment(data[0], 'YYYY-MM-DD hh:mm:ss'),
-                            y: data[9]
-                        });
-                        final_data_object.datasets[2].data.push({
-                            x: moment(data[0], 'YYYY-MM-DD hh:mm:ss'),
-                            y: data[5]
-                        });
-                        final_data_object.datasets[3].data.push({
-                            x: moment(data[0], 'YYYY-MM-DD hh:mm:ss'),
-                            y: data[6]
-                        });
-                        final_data_object.datasets[4].data.push({
-                            x: moment(data[0], 'YYYY-MM-DD hh:mm:ss'),
-                            y: data[7]
-                        });
-                        final_data_object.datasets[5].data.push({
-                            x: moment(data[0], 'YYYY-MM-DD hh:mm:ss'),
-                            y: data[8]
-                        });
+                        final_data_object.labels.push(moment(data[0], 'YYYY-MM-DD hh:mm:ss'));
+                        final_data_object.datasets[0].data.push(
+                            data[3]
+                        );
+                        final_data_object.datasets[1].data.push(
+                            data[9]
+                        );
+                        final_data_object.datasets[2].data.push(
+                            data[5]
+                        );
+                        final_data_object.datasets[3].data.push(
+                            data[6]
+                        );
+                        final_data_object.datasets[4].data.push(
+                            data[7]
+                        );
+                        final_data_object.datasets[5].data.push(
+                            data[8]
+                        );
                     }
+                    // if (data.length > 9) {
+                    //     final_data_object.datasets[0].data.push({
+                    //         x: moment(data[0], 'YYYY-MM-DD hh:mm:ss'),
+                    //         y: data[3]
+                    //     });
+                    //     final_data_object.datasets[1].data.push({
+                    //         x: moment(data[0], 'YYYY-MM-DD hh:mm:ss'),
+                    //         y: data[9]
+                    //     });
+                    //     final_data_object.datasets[2].data.push({
+                    //         x: moment(data[0], 'YYYY-MM-DD hh:mm:ss'),
+                    //         y: data[5]
+                    //     });
+                    //     final_data_object.datasets[3].data.push({
+                    //         x: moment(data[0], 'YYYY-MM-DD hh:mm:ss'),
+                    //         y: data[6]
+                    //     });
+                    //     final_data_object.datasets[4].data.push({
+                    //         x: moment(data[0], 'YYYY-MM-DD hh:mm:ss'),
+                    //         y: data[7]
+                    //     });
+                    //     final_data_object.datasets[5].data.push({
+                    //         x: moment(data[0], 'YYYY-MM-DD hh:mm:ss'),
+                    //         y: data[8]
+                    //     });
+                    // }
                     else {
                         final_data_object.datasets[0].data.push({
                             x: moment(data[0], 'YYYY-MM-DD hh:mm:ss'),

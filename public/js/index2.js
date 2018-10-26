@@ -33,25 +33,6 @@ function generate_date() {
     date = yyyy + '-' + mm + '-' + dd;
 }
 
-function get_current_date() {
-    // This function is the same as generate_date but instead returns a date string
-
-    let today = new Date();
-    let dd = today.getDate();
-    let mm = today.getMonth() + 1; //January is 0!
-    let yyyy = today.getFullYear();
-
-    if (dd < 10) {
-        dd = '0' + dd
-    }
-
-    if (mm < 10) {
-        mm = '0' + mm
-    }
-
-    return yyyy + '-' + mm + '-' + dd;
-}
-
 function create_charts(data_obj, needed_charts) {
 
     if (needed_charts === "ev_charging_chart") {
@@ -627,53 +608,17 @@ async function start_charging_session_listeners(user, db, initial_charging_data_
                 //         fill: false
                 //     });
 
-                // // Define our colour object which allows easy access to the colours each field is meant to be
-                // let colour_object = {
-                //     'Solar_Power': "#ffcc00",
-                //     "Battery_Power": "#33cc33",
-                //     "Battery_SOC": "#ef2fac",
-                //     "Battery_Temperature": "#6600cc",
-                //     "Grid_Power": "#3366ff"
-                // };
-                //
-                // // Loop through all of the keys in our temp_data_object
-                // for (let data_key in inverter_data_keys) {
-                //     if (inverter_data_keys.hasOwnProperty(data_key)) {
-                //
-                //         // For each of the keys, our data will be the object[data_key], label will just be the key without _
-                //         // and the borderColor should be colour_array[data_key]
-                //         // Battery SOC and temp need to be on the right hand axis
-                //         if (data_key === "Battery_SOC" || data_key === "Battery_Temperature") {
-                //             charging_chart_obj.data.datasets.push({
-                //                 data: [],
-                //                 label: data_key.replace(/_/g, ' '),
-                //                 borderColor: colour_object[data_key],
-                //                 yAxisID: 'B',
-                //                 fill: false
-                //             });
-                //         }
-                //         else {
-                //             charging_chart_obj.data.datasets.push({
-                //                 data: [],
-                //                 label: data_key.replace(/_/g, ' '),
-                //                 borderColor: colour_object[data_key],
-                //                 yAxisID: 'A',
-                //                 fill: false
-                //             });
-                //         }
-                //     }
-                // }
                 charging_chart_obj.update();
-                // }
 
                 let latest_charging_values = await get_latest_charging_time(user, db, chargerID);
+                let latest_charging_date = latest_charging_values['date']
                 let latest_charging_time = latest_charging_values['time'];
 
-                console.log(`Our latest charging time is: ${latest_charging_time}`);
+                console.log(`Our latest charging time is: ${latest_charging_date} ${latest_charging_time}`);
                 console.log(charging_chart_obj.data.datasets);
 
                 // Start a charge session listener for this charger ID
-                let charge_session_ref = db.ref(`users/${user.uid}/charging_history/${chargerID}/${get_current_date()} ${latest_charging_time}`);
+                let charge_session_ref = db.ref(`users/${user.uid}/charging_history/${chargerID}/${latest_charging_date} ${latest_charging_time}`);
                 charge_session_ref.limitToLast(1).on("child_added", async function (snapshot) {
                     let new_data = snapshot.val();
                     console.log('We got new data coming in:');
@@ -824,7 +769,8 @@ async function grab_initial_charging_data(user, db, isCharging_parent_node) {
                         label: data_key.replace(/_/g, ' '),
                         borderColor: colour_object[data_key],
                         yAxisID: 'B',
-                        fill: false
+                        fill: false,
+                        hidden: true
                     });
                 }
                 else {
@@ -1259,7 +1205,6 @@ function update_charger_status(user, db) {
 
                 // Check if our status has changed (to filter our first run)
                 if (temp_status !== charger_status_obj[chargerID]) {
-                    console.log('hello');
                     charger_status_obj[chargerID] = snapshot.val();
                     data_obj = calculate_number_of_online_chargers(charger_status_obj);
                     charger_status_pie.data = data_obj;
