@@ -569,7 +569,6 @@ app.post('/delta_dashboard/charging_history_request', function (req, res) {
 app.post('/delta_dashboard/charging_history_request2', function (req, res) {
 
     let payload = req.body;
-
     let selected_charging_session = `${payload['start_date']} ${payload['start_time']}`;
     let chargerID = payload['chargerID'];
 
@@ -646,6 +645,7 @@ app.post('/delta_dashboard/charging_history_request2', function (req, res) {
     //     utility_p_import: 0
     // };
 
+    console.log(payload.idToken);
     admin.auth().verifyIdToken(payload.idToken).then(async function (decodedToken) {
         let uid = decodedToken.uid;
 

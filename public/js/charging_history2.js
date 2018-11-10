@@ -489,7 +489,6 @@ async function create_charge_session_cards(user, db, selected_date, ev_chargers)
             // Now we have the selected date, we have to bring up all of the charging sessions that occurred on that date
             let temp_charging_analytics = await db.ref(`users/${user.uid}/analytics/charging_history_analytics/${chargerID}/${selected_date}`).once("value");
 
-
             temp_charging_analytics = temp_charging_analytics.val();
             // If this charger has charging sessions on this day, then there will be an object returned
             if (temp_charging_analytics !== null) {

@@ -124,18 +124,19 @@ async function start_hardware_info_page(user) {
 
         let firmwareType = "";
         // Todo: change this to model group specific, not model specific
-        if (data_obj[selected_charger].chargePointModel === 'EVPE3225MUN') {
+        if (data_obj[selected_charger].chargePointModel === 'EVPE3225MUN' || data_obj[selected_charger].chargePointModel === 'EVPE3220MWN') {
             console.log('We have chosen a ACMP!');
             let modal_body = $('#modal_body');
 
             // You have selected a DC Wallbox
             modal_body.empty();
-            modal_body.append('<h6>You have selected a DC Wallbox. Please choose which firmware you would like to upgrade</h6>');
+            modal_body.append('<h6>You have selected an AC Mini Plus. Please choose which firmware you would like to upgrade</h6>');
             modal_body.append(`
                 <div class="input-field white-text center-align">
                     <select id="firmware_type_select" class="center-align">
                         <option value="" disabled selected>Choose which component you would like to upgrade</option>
-                        <option value="FileSystem_Admin">File System</option>
+                        <option value="FileSystem">File System</option>
+                        <option value="FileSystem_Admin">File System Beta</option>
                         <option value="Kernal">Kernal</option>
                     </select>
                 </div>
@@ -218,6 +219,13 @@ async function start_hardware_info_page(user) {
                             )
                         }
 
+                        else if (fw_status === 'InstallationFailed') {
+                            modal_body.append(
+                                `Installation Failed, please close and try again`
+                            );
+                            modal_footer.append(`<a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>`)
+                        }
+
                         else if (fw_status === 'Installed') {
                             modal_body.append(
                                 `<div class="progress">
@@ -230,7 +238,7 @@ async function start_hardware_info_page(user) {
                                 .then(function () {
                                     setTimeout(function () {
                                         modal_body.empty();
-                                        modal_body.append(`<h6>New firmware installed. Charger rebooting now...</h6>`)
+                                        modal_body.append(`<h6>New firmware installed. Charger rebooting now...</h6>`);
                                         modal_footer.append(`<a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>`)
                                     }, 5000)
                                 });

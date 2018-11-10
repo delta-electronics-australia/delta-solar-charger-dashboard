@@ -593,7 +593,10 @@ async function start_charging_session_listeners(user, db, initial_charging_data_
             if (charging_value === true) {
                 // We first have to merge this new chargerID into the dataset
                 charging_chart_obj = merge_chargerID_into_dataset(chargerID, charging_chart_obj);
+
+                // Make sure there are inverter data entries in the dataset
                 charging_chart_obj = merge_inverter_info_into_dataset(inverter_data_keys, charging_chart_obj);
+
                 // // and the charger ID exists in our data set - then do nothing
                 // if (chargerID_exists_in_dataset(chargerID, charging_chart_obj)) {
                 //     console.log('It exists!')
@@ -611,7 +614,7 @@ async function start_charging_session_listeners(user, db, initial_charging_data_
                 charging_chart_obj.update();
 
                 let latest_charging_values = await get_latest_charging_time(user, db, chargerID);
-                let latest_charging_date = latest_charging_values['date']
+                let latest_charging_date = latest_charging_values['date'];
                 let latest_charging_time = latest_charging_values['time'];
 
                 console.log(`Our latest charging time is: ${latest_charging_date} ${latest_charging_time}`);
@@ -673,7 +676,7 @@ async function grab_initial_charging_data(user, db, isCharging_parent_node) {
     let earliest_charge_session_obj;
 
     // Loop through all of the chargerIDs that are registered
-    for (let chargerID in isCharging_parent_node) {
+    for (let chargerID in isCharging_parent_node === true) {
         // Double check if the chargerID exists and chargerID is currently charging
         if (isCharging_parent_node.hasOwnProperty(chargerID) && isCharging_parent_node[chargerID] === true) {
 
@@ -713,8 +716,8 @@ async function grab_initial_charging_data(user, db, isCharging_parent_node) {
                 earliest_timestamp = temp_data_array[0].x;
                 earliest_charge_session_obj = latest_charge_session_obj
             }
-            // If our earliest timestamp has not yet been defined, we need to compare it
-            else if (temp_data_array[0]['Time'].isBefore(earliest_timestamp)) {
+            // If our earliest timestamp has been defined, we need to compare it
+            else if (temp_data_array[0].x.isBefore(earliest_timestamp)) {
                 earliest_timestamp = temp_data_array[0].x;
                 earliest_charge_session_obj = latest_charge_session_obj
             }
