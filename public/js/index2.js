@@ -676,7 +676,7 @@ async function grab_initial_charging_data(user, db, isCharging_parent_node) {
     let earliest_charge_session_obj;
 
     // Loop through all of the chargerIDs that are registered
-    for (let chargerID in isCharging_parent_node === true) {
+    for (let chargerID in isCharging_parent_node) {
         // Double check if the chargerID exists and chargerID is currently charging
         if (isCharging_parent_node.hasOwnProperty(chargerID) && isCharging_parent_node[chargerID] === true) {
 
@@ -1319,7 +1319,7 @@ function update_last_charging_session(user, db) {
                 // If there is a child removed, then we know this charge session just finished
                 let latest_date_time = snapshot.key;
 
-                console.log(`charging_history removed ${latest_date_time}`);
+                console.log(`charging_history removed ${chargerID} ${latest_date_time}`);
 
                 // Need to take the key of this and get the analytics
                 let charging_analytics_obj = await db.ref(`users/${user.uid}/analytics/charging_history_analytics/${
