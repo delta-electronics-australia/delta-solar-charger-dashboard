@@ -447,7 +447,6 @@ app.post('/delta_dashboard/download_charge_session2', function (req, res) {
         res.download(`C:\\Delta_AU_Services\\EVCS_portal\\logs\\${uid}\\charging_logs\\${chargerID}\\${selected_charging_session}.csv`);
     })
 
-
 });
 
 app.post('/delta_dashboard/charging_history_request', function (req, res) {
@@ -853,8 +852,10 @@ server.listen(process.env.PORT, function () {
 
 let file_watcher = chokidar.watch('./logs/');
 
+// This watcher watches any files that goes into the log folder
 file_watcher.on('change', function (path) {
     analytics.update_inverter_analytics(path, db)
+    // analytics.check_inverter_analytics_integrity(db, 'BjcYG0YUb9g4A1guYWMrkBulfTy1');
 });
 
 // analytics.calculate_inverter_analytics(db);

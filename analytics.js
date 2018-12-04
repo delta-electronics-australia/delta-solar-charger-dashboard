@@ -2,6 +2,58 @@ let fs = require('fs');
 let csv = require("fast-csv");
 let moment = require('moment');
 
+function check_inverter_analytics_integrity(db, uid) {
+    // This function will check the integrity of inverter analytics for a certain uid and make sure it's all there
+
+    db.ref(`users/${uid}/history_keys`).once("value").then(function (snapshot) {
+        if (snapshot.val !== null) {
+            let validDates = Object.keys(snapshot.val());
+
+            // Loop through all of our valid dates
+            for (let index = 0; index < validDates.length; index++) {
+                let date = validDates[index];
+
+                db.ref(`users/${uid}/analytics/inverter_history_analytics/${date}`).once("value").then(function (snapshot) {
+
+                    // If the inverter analytics is null for this date, then we need to analyze it
+                    if (snapshot.val() === null) {
+                        console.log(`${date} null!`);
+
+                        let inverter_analytics_obj = {
+                            dctp: 0,
+                            ac2tp: 0
+                        };
+                        let dcp = 0;
+                        let ac2p = 0;
+
+                        let filename = `${date}.csv`;
+                        fs.createReadStream(`./logs/${uid}/inverter_logs/${filename}`)
+                            .pipe(csv())
+                            .on("data", function (data) {
+                                ac2p = Number(data[4]);
+                                dcp = Number(data[7]) + Number(data[10]);
+
+                                if (!isNaN(dcp)) {
+                                    // Todo: this has to change depending on the interval
+                                    inverter_analytics_obj.ac2tp = inverter_analytics_obj.ac2tp + ((2 * ac2p) / 3600);
+                                    inverter_analytics_obj.dctp = inverter_analytics_obj.dctp + ((2 * dcp) / 3600);
+                                }
+                            })
+                            .on("end", function () {
+                                inverter_analytics_obj.dctp = (inverter_analytics_obj.dctp / 1000).toFixed(2);
+                                inverter_analytics_obj.ac2tp = (inverter_analytics_obj.ac2tp / 1000).toFixed(2);
+                                console.log(`Finished analysing ${filename}. dctp: ${inverter_analytics_obj.dctp}, ac2tp: ${inverter_analytics_obj.ac2tp}`);
+                                db.ref(`users/${uid}/analytics/inverter_history_analytics/${filename.split('.')[0]}/`).update(inverter_analytics_obj)
+                            })
+
+                    }
+                })
+            }
+        }
+
+    })
+}
+
 function calculate_inverter_analytics(db) {
     console.log('We are going to start calculating inverter analytics!');
 
@@ -82,7 +134,7 @@ function update_inverter_analytics(path, db) {
             .on("end", function () {
                 inverter_analytics_obj.dctp = (inverter_analytics_obj.dctp / 1000).toFixed(2);
                 inverter_analytics_obj.ac2tp = (inverter_analytics_obj.ac2tp / 1000).toFixed(2);
-                console.log(`Finished analysing ${file}. dctp: ${inverter_analytics_obj.dctp}, ac2tp: ${inverter_analytics_obj.ac2tp}`)
+                console.log(`Finished analysing ${file}. dctp: ${inverter_analytics_obj.dctp}, ac2tp: ${inverter_analytics_obj.ac2tp}`);
                 db.ref(`users/${uid}/analytics/inverter_history_analytics/${file.split('.')[0]}/`).update(inverter_analytics_obj)
             })
     }
@@ -129,5 +181,6 @@ function average(chunk, data_type) {
 module.exports = {
     'calculate_inverter_analytics': calculate_inverter_analytics,
     'update_inverter_analytics': update_inverter_analytics,
+    'check_inverter_analytics_integrity': check_inverter_analytics_integrity,
     'reduce_data': reduce_data
 }

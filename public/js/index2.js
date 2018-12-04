@@ -33,6 +33,15 @@ function generate_date() {
     date = yyyy + '-' + mm + '-' + dd;
 }
 
+function getRandomColour() {
+    let letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
+
 function create_charts(data_obj, needed_charts) {
 
     if (needed_charts === "ev_charging_chart") {
@@ -115,9 +124,7 @@ function create_charts(data_obj, needed_charts) {
             }]
         });
 
-    }
-
-    else if (needed_charts === "live_charts") {
+    } else if (needed_charts === "live_charts") {
         let utility_chart = new Chart(document.getElementById("utility_chart"), {
             type: 'line',
             data: {
@@ -269,9 +276,7 @@ function create_charts(data_obj, needed_charts) {
             'dcp': dcp,
             'btp_chart': btp_chart
         }
-    }
-
-    else if (needed_charts === "analytics_bar_charts") {
+    } else if (needed_charts === "analytics_bar_charts") {
 
         // This code generates our colour array. Important point is that the last element is green
         let colour_array = [];
@@ -624,8 +629,8 @@ async function start_charging_session_listeners(user, db, initial_charging_data_
                 let charge_session_ref = db.ref(`users/${user.uid}/charging_history/${chargerID}/${latest_charging_date} ${latest_charging_time}`);
                 charge_session_ref.limitToLast(1).on("child_added", async function (snapshot) {
                     let new_data = snapshot.val();
-                    console.log('We got new data coming in:');
-                    console.log(new_data);
+                    // console.log('We got new data coming in:');
+                    // console.log(new_data);
 
                     append_new_data_to_charging_chart(chargerID, charging_chart_obj, new_data)
                 });
@@ -639,11 +644,12 @@ async function start_charging_session_listeners(user, db, initial_charging_data_
             else if (charging_value === false) {
 
                 if (charging_status_object.hasOwnProperty(chargerID)) {
-
+                    console.log(charging_status_object)
                     // Turn off the listener for that charging session
                     charging_status_object[chargerID].listener_ref.off();
                     // Delete this chargerID from the charging_status_object
                     delete charging_status_object[chargerID];
+                    console.log(charging_status_object)
 
                     // Then we need to remove the chargerID from the data set completely
                     charging_chart_obj = delete_chargerID_from_dataset(chargerID, charging_chart_obj, charging_status_object, inverter_data_keys);
@@ -704,13 +710,12 @@ async function grab_initial_charging_data(user, db, isCharging_parent_node) {
             charging_data_obj.datasets.push({
                 data: temp_data_array,
                 label: chargerID,
-                // Todo: make a color array to reference
-                borderColor: "#ff3300",
+                borderColor: getRandomColour(),
+                // borderColor: "#ff3300",
                 yAxisID: 'A',
                 fill: false
             });
 
-            // Todo: this needs to be tested with multiple charge points
             // If our earliest timestamp is not yet defined, then we know that this is the earliest so far
             if (earliest_timestamp === undefined) {
                 earliest_timestamp = temp_data_array[0].x;
@@ -775,8 +780,7 @@ async function grab_initial_charging_data(user, db, isCharging_parent_node) {
                         fill: false,
                         hidden: true
                     });
-                }
-                else {
+                } else {
                     charging_data_obj.datasets.push({
                         data: temp_data_object[data_key],
                         label: data_key.replace(/_/g, ' '),
@@ -790,58 +794,6 @@ async function grab_initial_charging_data(user, db, isCharging_parent_node) {
 
     }
 
-    // // Todo: see if using history is the best move
-    // // If earliest timestamp is null then there is no initial charging sessions. So we can skip the code
-    // if (earliest_timestamp !== null) {
-    //     // Now that we have the earliest timestamp, we can format it in a way to grab inverter history data
-    //     earliest_timestamp = earliest_timestamp.format("HHmmss");
-    //
-    //     let earliest_inverter_payload = await db.ref(`users/${user.uid}/history/${date}`)
-    //         .orderByChild('time')
-    //         .startAt(earliest_timestamp)
-    //         .once('value');
-    //     earliest_inverter_payload = earliest_inverter_payload.val();
-    //     console.log(earliest_inverter_payload);
-    //
-    //     // Define a temporary data object that includes arrays for all of our inverter data
-    //     let temp_data_obj = {
-    //         'Solar Power': [],
-    //         'Battery Power': [],
-    //         'Grid Power': []
-    //     };
-    //
-    //     // Loop through all of our inverter history and push the data into the arrays in temp_data_obj
-    //     for (let key in earliest_inverter_payload) {
-    //         if (earliest_inverter_payload.hasOwnProperty(key)) {
-    //             let time_obj = moment(`${date} ${earliest_inverter_payload[key]['time']}`, 'YYYY-MM-DD hhmmss');
-    //             temp_data_obj['Solar Power'].push({
-    //                 x: time_obj,
-    //                 y: (earliest_inverter_payload[key]['dc1p'] + earliest_inverter_payload[key]['dc2p']) / 1000
-    //             });
-    //             temp_data_obj['Battery Power'].push({
-    //                 x: time_obj,
-    //                 y: earliest_inverter_payload[key]['btp'] / 1000
-    //             });
-    //             temp_data_obj['Grid Power'].push({
-    //                 x: time_obj,
-    //                 y: earliest_inverter_payload[key]['utility_p'] / 1000
-    //             })
-    //         }
-    //     }
-    //
-    //     // Now loop through our temp_data_obj and push the arrays into the charging data object
-    //     for (let description in temp_data_obj) {
-    //         if (temp_data_obj.hasOwnProperty(description)) {
-    //             charging_data_obj.datasets.push({
-    //                 data: temp_data_obj[description],
-    //                 label: description,
-    //                 // Todo: make a color array to reference
-    //                 borderColor: "#fff020",
-    //                 fill: false
-    //             });
-    //         }
-    //     }
-    // }
     console.log('Finished grabbing initial data');
     return charging_data_obj
 }
@@ -921,8 +873,7 @@ function merge_inverter_info_into_dataset(inverter_data_keys, charging_chart_obj
                         yAxisID: 'B',
                         fill: false
                     });
-                }
-                else {
+                } else {
                     charging_chart_obj.data.datasets.push({
                         data: [],
                         label: data_key.replace(/_/g, ' '),
@@ -959,7 +910,8 @@ function merge_chargerID_into_dataset(chargerID, charging_chart_obj) {
     charging_chart_obj.data.datasets.push({
         data: [],
         label: chargerID,
-        borderColor: "#ff3300",
+        borderColor: getRandomColour(),
+        // borderColor: "#ff3300",
         fill: false
     });
 
@@ -975,8 +927,11 @@ function delete_chargerID_from_dataset(chargerID, charging_chart_obj, charging_s
         let earliest_charger_moment_object = moment();
         let earliest_chargerID;
         for (let [index, data_entry] of charging_chart_obj.data.datasets.entries()) {
+
             // If the label of this entry is a charger
-            if (charger_list.hasOwnProperty(data_entry.label)) {
+            if (charger_list.includes(data_entry.label)) {
+                // if (charger_list.hasOwnProperty(data_entry.label)) {
+
                 // Check if this charger's first timestamp is before the earliest one so far
                 if (data_entry.data[0].x.isBefore(earliest_charger_moment_object)) {
                     // If it is, the earliest gets replaced
@@ -985,7 +940,7 @@ function delete_chargerID_from_dataset(chargerID, charging_chart_obj, charging_s
                 }
             }
         }
-
+        console.log(earliest_chargerID);
         // Now that we have the earliest chargerID, check if it is the ID we are trying to delete
         if (chargerID === earliest_chargerID) {
             // Now that we have the earliest charger AND the timestamp, we need to loop through and delete the data that are
@@ -1070,36 +1025,31 @@ function append_new_data_to_charging_chart(chargerID, charging_chart_obj, new_da
                     y: new_data['Power_Import']
                 });
 
-            }
-            else if (charging_chart_obj.data.datasets[index]['label'] === "Solar Power") {
+            } else if (charging_chart_obj.data.datasets[index]['label'] === "Solar Power") {
                 // Append the data into the charging chart
                 charging_chart_obj.data.datasets[index].data.push({
                     x: moment(new_data['Time'], 'YYYY-MM-DD hh:mm:ss'),
                     y: new_data['Solar_Power']
                 });
-            }
-            else if (charging_chart_obj.data.datasets[index]['label'] === "Battery Power") {
+            } else if (charging_chart_obj.data.datasets[index]['label'] === "Battery Power") {
                 // Append the data into the charging chart
                 charging_chart_obj.data.datasets[index].data.push({
                     x: moment(new_data['Time'], 'YYYY-MM-DD hh:mm:ss'),
                     y: new_data['Battery_Power']
                 });
-            }
-            else if (charging_chart_obj.data.datasets[index]['label'] === "Battery SOC") {
+            } else if (charging_chart_obj.data.datasets[index]['label'] === "Battery SOC") {
                 // Append the data into the charging chart
                 charging_chart_obj.data.datasets[index].data.push({
                     x: moment(new_data['Time'], 'YYYY-MM-DD hh:mm:ss'),
                     y: new_data['Battery_SOC']
                 });
-            }
-            else if (charging_chart_obj.data.datasets[index]['label'] === "Battery Temperature") {
+            } else if (charging_chart_obj.data.datasets[index]['label'] === "Battery Temperature") {
                 // Append the data into the charging chart
                 charging_chart_obj.data.datasets[index].data.push({
                     x: moment(new_data['Time'], 'YYYY-MM-DD hh:mm:ss'),
                     y: new_data['Battery_Temperature']
                 });
-            }
-            else if (charging_chart_obj.data.datasets[index]['label'] === "Grid Power") {
+            } else if (charging_chart_obj.data.datasets[index]['label'] === "Grid Power") {
                 // Append the data into the charging chart
                 charging_chart_obj.data.datasets[index].data.push({
                     x: moment(new_data['Time'], 'YYYY-MM-DD hh:mm:ss'),
@@ -1108,7 +1058,6 @@ function append_new_data_to_charging_chart(chargerID, charging_chart_obj, new_da
             }
         }
     }
-
 
     charging_chart_obj.update();
 }
@@ -1122,21 +1071,22 @@ function update_weather(user, db) {
 
         let weather_card = document.getElementById('weather_card');
         // If there is no location, then we go with the stock
-        if (system_location_object === undefined) {
-            weather_url = "http://api.openweathermap.org/data/2.5/weather?q=Melbourne,au&APPID=4b7ee1f96bfd687f2fff4f7cdf1cd11c&units=metric"
+        if (system_location_object === null) {
+            // weather_url = "http://api.openweathermap.org/data/2.5/weather?q=Melbourne,au&APPID=4b7ee1f96bfd687f2fff4f7cdf1cd11c&units=metric"
+            weather_card.innerHTML = `Please set system location in the settings`
         }
-
         // If there is a location, we use that for our weather update
         else {
             weather_url = `http://api.openweathermap.org/data/2.5/weather?lat=${system_location_object.lat}&lon=${system_location_object.lng}&APPID=4b7ee1f96bfd687f2fff4f7cdf1cd11c&units=metric`
+
+            $.getJSON(weather_url, function (json) {
+                weather_card.innerHTML = `${json.weather[0].description.toLowerCase()
+                    .split(' ')
+                    .map((s) => s.charAt(0).toUpperCase() + s.substring(1))
+                    .join(' ')
+                    } - ${json.main.temp}&deg;C`
+            })
         }
-        $.getJSON(weather_url, function (json) {
-            weather_card.innerHTML = `${json.weather[0].description.toLowerCase()
-                .split(' ')
-                .map((s) => s.charAt(0).toUpperCase() + s.substring(1))
-                .join(' ')
-                } - ${json.main.temp}&deg;C`
-        });
 
         // Re-run 30 minutes later
         setTimeout(function () {
@@ -1302,39 +1252,44 @@ function update_last_charging_session(user, db) {
 
         // Store all of the analytics in an object and add the start date/time into the object too
         charging_analytics_obj = charging_analytics_obj.val();
-        charging_analytics_obj['started'] = latest_date.format('DD/MM/YYYY HH:mm');
 
-        // Update the table
-        update_last_charging_session_table(latest_chargerID, charging_analytics_obj);
+        if (charging_analytics_obj !== null) {
+            charging_analytics_obj['started'] = latest_date.format('DD/MM/YYYY HH:mm');
 
-        // Now that our table is updated, we loop through our ev chargers again
-        for (let index in ev_chargers) {
-            let chargerID = ev_chargers[index];
+            // Update the table
+            update_last_charging_session_table(latest_chargerID, charging_analytics_obj);
 
-            // Start a child removed listener to listen for any new completed charging sessions
-            db.ref(`users/${user.uid}/charging_history/${chargerID}`).on("child_removed", async function (snapshot) {
-                // console.log(snapshot.key);
-                // console.log(chargerID);
+            // Now that our table is updated, we loop through our ev chargers again
+            for (let index in ev_chargers) {
+                let chargerID = ev_chargers[index];
 
-                // If there is a child removed, then we know this charge session just finished
-                let latest_date_time = snapshot.key;
+                // Start a child removed listener to listen for any new completed charging sessions
+                db.ref(`users/${user.uid}/charging_history/${chargerID}`).on("child_removed", async function (snapshot) {
+                    // console.log(snapshot.key);
+                    // console.log(chargerID);
 
-                console.log(`charging_history removed ${chargerID} ${latest_date_time}`);
+                    // If there is a child removed, then we know this charge session just finished
+                    let latest_date_time = snapshot.key;
 
-                // Need to take the key of this and get the analytics
-                let charging_analytics_obj = await db.ref(`users/${user.uid}/analytics/charging_history_analytics/${
-                    chargerID}/${latest_date_time.split(' ')[0]}/${latest_date_time.split(' ')[1]}`)
-                    .orderByKey().once("value");
+                    console.log(`charging_history removed ${chargerID} ${latest_date_time}`);
 
-                // Put the analytics in an object and add the start date/time of the charging session
-                charging_analytics_obj = charging_analytics_obj.val();
-                charging_analytics_obj['started'] = moment(latest_date_time, 'YYYY-MM-DD HHmm').format('DD/MM/YYYY HH:mm');
+                    // Need to take the key of this and get the analytics
+                    let charging_analytics_obj = await db.ref(`users/${user.uid}/analytics/charging_history_analytics/${
+                        chargerID}/${latest_date_time.split(' ')[0]}/${latest_date_time.split(' ')[1]}`)
+                        .orderByKey().once("value");
 
-                // Update the table
-                update_last_charging_session_table(chargerID, charging_analytics_obj)
-            });
+                    // Put the analytics in an object and add the start date/time of the charging session
+                    charging_analytics_obj = charging_analytics_obj.val();
+                    charging_analytics_obj['started'] = moment(latest_date_time, 'YYYY-MM-DD HHmm').format('DD/MM/YYYY HH:mm');
+
+                    // Update the table
+                    update_last_charging_session_table(chargerID, charging_analytics_obj)
+                });
+            }
+        } else {
+            console.log('There have been no charging sessions');
+            document.getElementById('last_charging_table').innerHTML = 'No charging sessions found';
         }
-
     });
 
 }
@@ -1781,9 +1736,7 @@ function start_master_listener(user) {
                     data_obj.time.shift();
                     data_obj.time.push(moment(new_data.time, 'hhmmss'));
 
-                }
-
-                else {
+                } else {
                     data_obj.utility_p.push(new_data.utility_p);
                     data_obj.utility_c.push(new_data.utility_c);
                     data_obj.ac2p.push(new_data.ac2p);
@@ -1876,9 +1829,7 @@ function update_live_data_tables(data_obj, purpose) {
         evc_output += "<tr><td>" + "AC2 Current" + "</td><td>" + data_obj.ac2c + "A" + "</td>";
 
         document.getElementById("evc_table_body").innerHTML = evc_output;
-    }
-
-    else {
+    } else {
         let ac1_output = "";
         let dcp_output = "";
         let btp_output = "";
