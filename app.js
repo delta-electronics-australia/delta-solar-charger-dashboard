@@ -113,7 +113,7 @@ app.post('/delta_dashboard/archive_request', function (req, res) {
             fs.createReadStream(`C:\\Delta_AU_Services\\EVCS_portal\\logs\\${uid}\\inverter_logs\\${selected_date}.csv`)
                 .pipe(csv())
                 .on("data", function (data) {
-                    if (counter === 2) {
+                    if (counter === 1) {
                         data_obj.time.push(data[0]);
                         data_obj.ac2p.push(Number(data[4]));
                         data_obj.dcp.push(Number(data[7]) + Number(data[10]));
@@ -859,6 +859,8 @@ file_watcher.on('change', function (path) {
 });
 
 // analytics.calculate_inverter_analytics(db);
+// analytics.check_inverter_analytics_integrity(db, 'BjcYG0YUb9g4A1guYWMrkBulfTy1');
+
 
 function calculate_sankey_values(analytics_obj) {
     // This function takes an object with values about the power and returns arrays for google charts

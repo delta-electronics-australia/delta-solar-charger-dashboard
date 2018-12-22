@@ -48,7 +48,7 @@ function load_map(user, db) {
         let startLatLng = {
             lat: -37.8136,
             lng: 144.9631
-        }
+        };
 
         // Todo: check if undefined is the right check
         if (snapshot.val() !== undefined){
@@ -146,6 +146,22 @@ function start_profile_page(user) {
         // Send the new buffer aggressiveness mode to Firebase to be picked up by our Analyse process
         db.ref("users/" + user.uid + "/evc_inputs").update({
             buffer_aggro_mode: $(this).val()
+        })
+    });
+
+    // Get the current charging mode from Firebase and intialize our charging mode input box
+    db.ref("users/" + user.uid + "/evc_inputs/charging_modes/authentication_required").on('value', function (snapshot) {
+        $('#authentication_select').val(snapshot.val());
+        console.log(snapshot.val());
+        let authentication_select_elem = document.getElementById('authentication_select');
+        let authentication_select_instance = M.FormSelect.init(authentication_select_elem);
+    });
+
+    // Listen for a select in the battery buffer dropdown box
+    $('#authentication_select').on('change', function () {
+        // Send the new buffer aggressiveness mode to Firebase to be picked up by our Analyse process
+        db.ref("users/" + user.uid + "/evc_inputs/charging_modes").update({
+            authentication_required: $(this).val()
         })
     });
 
