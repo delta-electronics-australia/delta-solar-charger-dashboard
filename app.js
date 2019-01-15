@@ -854,13 +854,22 @@ let file_watcher = chokidar.watch('./logs/');
 
 // This watcher watches any files that goes into the log folder
 file_watcher.on('change', function (path) {
-    analytics.update_inverter_analytics(path, db)
+    analytics.update_analytics(path, db)
     // analytics.check_inverter_analytics_integrity(db, 'BjcYG0YUb9g4A1guYWMrkBulfTy1');
 });
 
 // analytics.calculate_inverter_analytics(db);
 // analytics.check_inverter_analytics_integrity(db, 'BjcYG0YUb9g4A1guYWMrkBulfTy1');
 
+// This watcher will watch when our Solar Charger version changes and update Firebase accordingly
+chokidar.watch('../Delta_SC_Advanced/version.txt').on('change', function(path){
+    let version_number = parseFloat(fs.readFileSync(path, 'utf8'));
+
+    console.log(`Solar Charger changed to ${version_number}`);
+
+    let version_ref = db.ref();
+    version_ref.update({'version': version_number})
+});
 
 function calculate_sankey_values(analytics_obj) {
     // This function takes an object with values about the power and returns arrays for google charts

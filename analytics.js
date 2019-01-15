@@ -100,7 +100,7 @@ function calculate_inverter_analytics(db) {
     })
 }
 
-function update_inverter_analytics(path, db) {
+async function update_analytics(path, db) {
     console.log('Detected a new file in the logs folder');
 
     let path_split = path.split('\\');
@@ -108,9 +108,9 @@ function update_inverter_analytics(path, db) {
 
     let uid = path_split[1];
     let log_type = path_split[2];
-    let file = path_split[3];
 
     if (log_type === "inverter_logs") {
+        let file = path_split[3];
 
         let inverter_analytics_obj = {
             dctp: 0,
@@ -137,6 +137,61 @@ function update_inverter_analytics(path, db) {
                 console.log(`Finished analysing ${file}. dctp: ${inverter_analytics_obj.dctp}, ac2tp: ${inverter_analytics_obj.ac2tp}`);
                 db.ref(`users/${uid}/analytics/inverter_history_analytics/${file.split('.')[0]}/`).update(inverter_analytics_obj)
             })
+    } else if (log_type === "charging_logs") {
+        console.log('charging log!');
+
+        let chargerID = path_split[3];
+        let charge_session_date = path_split[4].split('.')[0].split(' ')[0];
+        let charge_session_time = path_split[4].split('.')[0].split(' ')[1];
+
+        console.log(chargerID);
+        console.log(charge_session_date);
+        console.log(charge_session_time);
+
+        // First we need to check if the analytics for this charging session already exists
+        let analytics = await db.ref(`users/${uid}/analytics/charging_history_analytics/${chargerID}/${charge_session_date}/${charge_session_time}`)
+            .once('value');
+
+        console.log(analytics.val());
+
+        // If there are no analytics, then we must analyze it from the uploaded file
+        if (analytics.val() === null) {
+            let energy = 0;
+
+            let charging_start_time = null;
+            let charging_end_time = null;
+
+            // Read the csv file from the path
+            fs.createReadStream(path).pipe(csv()).on("data", function (data) {
+                energy = parseFloat(data[4]);
+                // If there has not been a start time defined, then define it if the data is not the header row
+                if (charging_start_time === null && data[0] !== 'time') {
+                    charging_start_time = data[0];
+                }
+
+                // If there has been a start time defined, just refine the end time
+                else {
+                    charging_end_time = data[0];
+                }
+            })
+                .on("end", function () {
+                    // Calculate the duration from the start and end times
+                    let duration = moment.duration(moment(charging_end_time, "YYYY-MM-DD HH:mm:ss")
+                        .diff(moment(charging_start_time, "YYYY-MM-DD HH:mm:ss"))).asSeconds();
+
+                    console.log(`Our duration is ${duration} seconds and our energy is ${energy} kWh`);
+
+                    // Now upload the analytics to Firebase
+                    db.ref(`users/${uid}/analytics/charging_history_analytics/${chargerID}/${charge_session_date}/${charge_session_time}`)
+                        .update({
+                                duration_seconds: duration,
+                                energy: energy
+                            }
+                        )
+                })
+        }
+
+
     }
 
 }
@@ -180,7 +235,7 @@ function average(chunk, data_type) {
 
 module.exports = {
     'calculate_inverter_analytics': calculate_inverter_analytics,
-    'update_inverter_analytics': update_inverter_analytics,
+    'update_analytics': update_analytics,
     'check_inverter_analytics_integrity': check_inverter_analytics_integrity,
     'reduce_data': reduce_data
 }
