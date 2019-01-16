@@ -8,16 +8,19 @@ function check_inverter_analytics_integrity(db, uid) {
     db.ref(`users/${uid}/history_keys`).once("value").then(function (snapshot) {
         if (snapshot.val !== null) {
             let validDates = Object.keys(snapshot.val());
+            validDates = validDates.sort().reverse();
 
-            // Loop through all of our valid dates
-            for (let index = 0; index < validDates.length; index++) {
+            // Loop through the latest 5 of our valid dates
+            for (let index = 1; index < 6; index++) {
                 let date = validDates[index];
+
+                console.log(`Looking at ${date}`);
 
                 db.ref(`users/${uid}/analytics/inverter_history_analytics/${date}`).once("value").then(function (snapshot) {
 
                     // If the inverter analytics is null for this date, then we need to analyze it
                     if (snapshot.val() === null) {
-                        console.log(`${date} null!`);
+                        console.log(`${date} has no analytics!`);
 
                         let inverter_analytics_obj = {
                             dctp: 0,
@@ -34,7 +37,6 @@ function check_inverter_analytics_integrity(db, uid) {
                                 dcp = Number(data[7]) + Number(data[10]);
 
                                 if (!isNaN(dcp)) {
-                                    // Todo: this has to change depending on the interval
                                     inverter_analytics_obj.ac2tp = inverter_analytics_obj.ac2tp + ((2 * ac2p) / 3600);
                                     inverter_analytics_obj.dctp = inverter_analytics_obj.dctp + ((2 * dcp) / 3600);
                                 }
@@ -43,7 +45,8 @@ function check_inverter_analytics_integrity(db, uid) {
                                 inverter_analytics_obj.dctp = (inverter_analytics_obj.dctp / 1000).toFixed(2);
                                 inverter_analytics_obj.ac2tp = (inverter_analytics_obj.ac2tp / 1000).toFixed(2);
                                 console.log(`Finished analysing ${filename}. dctp: ${inverter_analytics_obj.dctp}, ac2tp: ${inverter_analytics_obj.ac2tp}`);
-                                db.ref(`users/${uid}/analytics/inverter_history_analytics/${filename.split('.')[0]}/`).update(inverter_analytics_obj)
+                                db.ref(`users/${uid}/analytics/inverter_history_analytics/${filename.split('.')[0]}/`)
+                                    .update(inverter_analytics_obj);
                             })
 
                     }
@@ -57,7 +60,7 @@ function check_inverter_analytics_integrity(db, uid) {
 function calculate_inverter_analytics(db) {
     console.log('We are going to start calculating inverter analytics!');
 
-    // Loop through all of the Firebase UIDs in the logs folder
+    // Loop through ALL of the Firebase UIDs in the logs folder
     let uid_array = [];
     fs.readdirSync('./logs/').forEach(file => {
         uid_array.push(file);
@@ -100,6 +103,29 @@ function calculate_inverter_analytics(db) {
     })
 }
 
+function clear_temp_logs(uid) {
+    // This function is solely for clearing the temp_logs folder for a uid
+
+    console.log(`Clearing temp_logs for ${uid}`);
+
+    let directory = `./logs/${uid}/temp_logs`;
+
+    // Read the temp_logs directory of our uid
+    fs.readdir(directory, (err, files) => {
+        if (err) throw err;
+
+        // Loop through all of the files
+        for (const file of files) {
+            console.log(`Deleting ${file}`);
+
+            // Delete them
+            fs.unlinkSync(path.join(directory, file), err => {
+                if (err) throw err;
+            })
+        }
+    })
+}
+
 async function update_analytics(path, db) {
     console.log('Detected a new file in the logs folder');
 
@@ -109,6 +135,7 @@ async function update_analytics(path, db) {
     let uid = path_split[1];
     let log_type = path_split[2];
 
+    // If the log uploaded is a inverter log
     if (log_type === "inverter_logs") {
         let file = path_split[3];
 
@@ -119,6 +146,7 @@ async function update_analytics(path, db) {
         let dcp = 0;
         let ac2p = 0;
 
+        // Read the new inverter log
         fs.createReadStream(`./logs/${uid}/inverter_logs/${file}`)
             .pipe(csv())
             .on("data", function (data) {
@@ -134,8 +162,18 @@ async function update_analytics(path, db) {
             .on("end", function () {
                 inverter_analytics_obj.dctp = (inverter_analytics_obj.dctp / 1000).toFixed(2);
                 inverter_analytics_obj.ac2tp = (inverter_analytics_obj.ac2tp / 1000).toFixed(2);
+
                 console.log(`Finished analysing ${file}. dctp: ${inverter_analytics_obj.dctp}, ac2tp: ${inverter_analytics_obj.ac2tp}`);
-                db.ref(`users/${uid}/analytics/inverter_history_analytics/${file.split('.')[0]}/`).update(inverter_analytics_obj)
+
+                // Upload the inverter analytics to Firebase
+                db.ref(`users/${uid}/analytics/inverter_history_analytics/${file.split('.')[0]}/`)
+                    .update(inverter_analytics_obj);
+
+                // Now we need to clear the temp logs folder for this uid
+                clear_temp_logs(uid);
+
+                // Now we check the integrity of our inverter analytics
+                check_inverter_analytics_integrity(db, uid);
             })
     } else if (log_type === "charging_logs") {
         console.log('charging log!');
@@ -238,4 +276,4 @@ module.exports = {
     'update_analytics': update_analytics,
     'check_inverter_analytics_integrity': check_inverter_analytics_integrity,
     'reduce_data': reduce_data
-}
+};

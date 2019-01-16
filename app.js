@@ -14,12 +14,12 @@ const analytics = require('./analytics.js');
 
 let serviceAccount = require(__dirname + "/firebase.json");
 
-// Write all of the output logs into a file
-let access = fs.createWriteStream('C:\\Delta_AU_Services\\EVCS_portal\\output.log');
-process.stdout.write = process.stderr.write = access.write.bind(access);
-process.on('uncaughtException', function (err) {
-    console.error((err && err.stack) ? err.stack : err);
-});
+// // Write all of the output logs into a file
+// let access = fs.createWriteStream('C:\\Delta_AU_Services\\EVCS_portal\\output.log');
+// process.stdout.write = process.stderr.write = access.write.bind(access);
+// process.on('uncaughtException', function (err) {
+//     console.error((err && err.stack) ? err.stack : err);
+// });
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
@@ -34,6 +34,11 @@ app.set('view engine', 'ejs');
 // app.use(favicon('public/favicon.ico'));
 
 // Define our ejs routes
+app.use('/delta_dashboard/logs', express.static(__dirname + '/iisnode/'));
+app.get('/delta_dashboard/logs/', function(req,res){
+    res.sendFile(`${__dirname}/iisnode/index.html`)
+});
+
 app.get('/delta_dashboard/', function (req, res) {
     res.render('index')
 });
@@ -166,7 +171,8 @@ app.post('/delta_dashboard/archive_request', function (req, res) {
             let csvwriter = fs.createWriteStream(`${temp_csv_destination}${selected_date}.csv`);
             // This listener waits until the writing is finished, then sends that file out
             csvwriter.on('finish', () => {
-                // res.download(`C:\\Delta_AU_Services\\EVCS_portal\\logs\\${uid}\\${selected_date}.csv`);
+
+                // Send out the data_obj json object
                 res.json({
                     data_obj: data_obj
                 });
@@ -850,16 +856,12 @@ server.listen(process.env.PORT, function () {
     console.log('listening on *:3000');
 });
 
-let file_watcher = chokidar.watch('./logs/');
+let log_file_watcher = chokidar.watch('./logs/');
 
 // This watcher watches any files that goes into the log folder
-file_watcher.on('change', function (path) {
+log_file_watcher.on('change', function (path) {
     analytics.update_analytics(path, db)
-    // analytics.check_inverter_analytics_integrity(db, 'BjcYG0YUb9g4A1guYWMrkBulfTy1');
 });
-
-// analytics.calculate_inverter_analytics(db);
-// analytics.check_inverter_analytics_integrity(db, 'BjcYG0YUb9g4A1guYWMrkBulfTy1');
 
 // This watcher will watch when our Solar Charger version changes and update Firebase accordingly
 chokidar.watch('../Delta_SC_Advanced/version.txt').on('change', function(path){

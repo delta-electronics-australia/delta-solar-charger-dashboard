@@ -427,7 +427,7 @@ function openModal(chargerID, start_time, start_date, duration_string, charge_en
                 // let final_data_object = condition_data_for_chart(raw_charging_data['data_obj']);
 
                 // Todo: look at this
-                for (let index in raw_charging_data['data_obj'].labels){
+                for (let index in raw_charging_data['data_obj'].labels) {
                     raw_charging_data['data_obj'].labels[index] = moment(raw_charging_data['data_obj'].labels[index])
                 }
                 globals['charging_line_chart'] = create_charts2('line_chart', raw_charging_data['data_obj']);
