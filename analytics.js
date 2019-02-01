@@ -1,6 +1,7 @@
 let fs = require('fs');
 let csv = require("fast-csv");
 let moment = require('moment');
+let path = require('path');
 
 function check_inverter_analytics_integrity(db, uid) {
     // This function will check the integrity of inverter analytics for a certain uid and make sure it's all there
@@ -119,7 +120,7 @@ function clear_temp_logs(uid) {
             console.log(`Deleting ${file}`);
 
             // Delete them
-            fs.unlinkSync(path.join(directory, file), err => {
+            fs.unlink(path.join(directory, file), err => {
                 if (err) throw err;
             })
         }

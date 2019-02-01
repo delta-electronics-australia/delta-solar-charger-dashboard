@@ -396,6 +396,10 @@ function openModal(chargerID, start_time, start_date, duration_string, charge_en
         console.log('poof!')
     }
 
+    // First remove the previous charging history modal
+    $("#charging_history_modal").remove();
+
+    // Now append the new moadl with the new details
     $("#charge_sessions_row").append(`
                     <div id="charging_history_modal" class="modal">
                         <div class="modal-content">
@@ -413,9 +417,11 @@ function openModal(chargerID, start_time, start_date, duration_string, charge_en
                     </div>
                     `);
 
+    // Reinitialize the new modal
     let elem = document.querySelectorAll('.modal')[1];
     let instance = M.Modal.init(elem, {});
 
+    // Now we want to grab the chart data from our Node JS server
     firebase.auth().currentUser.getIdToken(true).then(function (idToken) {
         let url = "/delta_dashboard/charging_history_request2";
         let xhr = new XMLHttpRequest();
