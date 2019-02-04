@@ -53,8 +53,6 @@ function create_charts(data_obj, needed_charts) {
             //         // data: [
             //         //     // {x: moment("2017-07-08T06:15:02-0600"), y: 23.375},
             //         //     // {x: moment("2017-07-08T06:20:02-0600"),y: 23.312},
-            //         //     // {x: moment("2017-07-08T06:25:02-0600"),y: 23.312},
-            //         //     // {x: moment("2017-07-08T06:30:02-0600"),y: 23.25}
             //         //   ],
             //         data: data_obj,
             //         label: "Solar Power",
@@ -358,7 +356,7 @@ function create_charts(data_obj, needed_charts) {
                     enabled: true,
                     callbacks: {
                         title: function (tooltipItems, data) {
-                            let split_string = tooltipItems[0]['xLabel'].split(' ')
+                            let split_string = tooltipItems[0]['xLabel'].split(' ');
                             return `${split_string[0]} ${split_string[1]} ${split_string[2]}`
                         },
                         label: function (tooltipItems, data) {
@@ -567,6 +565,8 @@ async function get_latest_charging_time(user, db, chargerID) {
 
 async function start_charging_session_listeners(user, db, initial_charging_data_obj,
                                                 charging_chart_obj, isCharging_parent_node) {
+    // This function will start listeners to detect changes in EV charging sessions
+
     console.log('Starting listeners function');
 
     let inverter_data_keys = {
@@ -618,14 +618,15 @@ async function start_charging_session_listeners(user, db, initial_charging_data_
 
                 charging_chart_obj.update();
 
+                // Get the latest charging timestamp of this charger ID
                 let latest_charging_values = await get_latest_charging_time(user, db, chargerID);
                 let latest_charging_date = latest_charging_values['date'];
                 let latest_charging_time = latest_charging_values['time'];
 
-                console.log(`Our latest charging time is: ${latest_charging_date} ${latest_charging_time}`);
+                console.log(`Our latest charging time is: ${latest_charging_date} ${latest_charging_time} for chargerID: ${chargerID}`);
                 console.log(charging_chart_obj.data.datasets);
 
-                // Start a charge session listener for this charger ID
+                // Start a charge session listener for this charger ID's latest charging session
                 let charge_session_ref = db.ref(`users/${user.uid}/charging_history/${chargerID}/${latest_charging_date} ${latest_charging_time}`);
                 charge_session_ref.limitToLast(1).on("child_added", async function (snapshot) {
                     let new_data = snapshot.val();
@@ -644,12 +645,14 @@ async function start_charging_session_listeners(user, db, initial_charging_data_
             else if (charging_value === false) {
 
                 if (charging_status_object.hasOwnProperty(chargerID)) {
-                    console.log(charging_status_object)
+                    console.log(`${chargerID} has stopped charging. Our charging status object is: ${charging_status_object}`);
+
                     // Turn off the listener for that charging session
                     charging_status_object[chargerID].listener_ref.off();
+
                     // Delete this chargerID from the charging_status_object
                     delete charging_status_object[chargerID];
-                    console.log(charging_status_object)
+                    console.log(`charging status object is now: ${charging_status_object}`);
 
                     // Then we need to remove the chargerID from the data set completely
                     charging_chart_obj = delete_chargerID_from_dataset(chargerID, charging_chart_obj, charging_status_object, inverter_data_keys);
@@ -669,7 +672,7 @@ async function start_charging_session_listeners(user, db, initial_charging_data_
 }
 
 async function grab_initial_charging_data(user, db, isCharging_parent_node) {
-    // This function should grab all data from existing charging sessions as well as inverter/BT info
+    // This function grabs all data from existing charging sessions as well as inverter/BT info
 
     adjust_ev_charging_title_and_height({});
 
@@ -678,11 +681,14 @@ async function grab_initial_charging_data(user, db, isCharging_parent_node) {
         datasets: []
     };
 
+    // earliest_timestamp is the timestamp of the longest current charging session
     let earliest_timestamp;
+    // This will store the raw Firebase charging_history node of the longest current charging session
     let earliest_charge_session_obj;
 
     // Loop through all of the chargerIDs that are registered
     for (let chargerID in isCharging_parent_node) {
+
         // Double check if the chargerID exists and chargerID is currently charging
         if (isCharging_parent_node.hasOwnProperty(chargerID) && isCharging_parent_node[chargerID] === true) {
 
@@ -711,7 +717,6 @@ async function grab_initial_charging_data(user, db, isCharging_parent_node) {
                 data: temp_data_array,
                 label: chargerID,
                 borderColor: getRandomColour(),
-                // borderColor: "#ff3300",
                 yAxisID: 'A',
                 fill: false
             });
@@ -729,7 +734,8 @@ async function grab_initial_charging_data(user, db, isCharging_parent_node) {
         }
     }
 
-    // If the earliest charge session object is NOT undefined, then we know that we need to take the inverter values from this object
+    // If the earliest charge session object IS defined, then we know that we need to take the inverter values from this object
+    // If earliest charge session is NOT defined then we know there are no current charging sessions - so just skip this section
     if (earliest_charge_session_obj !== undefined) {
 
         // Define our object that will hold all of the arrays of data
@@ -741,7 +747,7 @@ async function grab_initial_charging_data(user, db, isCharging_parent_node) {
             "Grid_Power": []
         };
 
-        // Now we loop through all of the keys in our charge session object
+        // Now we loop through all of the entries in our earliest charge session object
         for (let key in earliest_charge_session_obj) {
             if (earliest_charge_session_obj.hasOwnProperty(key)) {
 
@@ -758,6 +764,7 @@ async function grab_initial_charging_data(user, db, isCharging_parent_node) {
             }
         }
 
+        // Define the variable colour_object that shows the colour of our inverter/BT data
         let colour_object = {
             'Solar_Power': "#ffcc00",
             "Battery_Power": "#33cc33",
@@ -765,12 +772,14 @@ async function grab_initial_charging_data(user, db, isCharging_parent_node) {
             "Battery_Temperature": "#6600cc",
             "Grid_Power": "#3366ff"
         };
+
         // Now that all of our arrays are finalised, we have to push him into the final charging_data_obj
         // Loop through all of our data keys (Solar_Power, Battery_Power etc...)
         for (let data_key in temp_data_object) {
             if (temp_data_object.hasOwnProperty(data_key)) {
-                // For each of the keys, our data will be the object[data_key], label will just be the key without _
+                // For each of the keys, our data will be temp_data_object[data_key], label will just be the key without _
                 // and the borderColor should be colour_array[data_key]
+                // Keep in mind that battery SOC and temperature has to be on yAxisID: B
                 if (data_key === "Battery_SOC" || data_key === "Battery_Temperature") {
                     charging_data_obj.datasets.push({
                         data: temp_data_object[data_key],
@@ -791,10 +800,9 @@ async function grab_initial_charging_data(user, db, isCharging_parent_node) {
                 }
             }
         }
-
     }
 
-    console.log('Finished grabbing initial data');
+    console.log('Finished grabbing initial charging data');
     return charging_data_obj
 }
 
@@ -919,40 +927,55 @@ function merge_chargerID_into_dataset(chargerID, charging_chart_obj) {
 }
 
 function delete_chargerID_from_dataset(chargerID, charging_chart_obj, charging_status_object, inverter_data_keys) {
+    // This function runs once a charger ID has stopped charging. It will delete this charger ID's charge session
+    // from the charging chart object
 
+    // First get the list of all chargers in our charging status object
+    // Keep a note that this charger list is AFTER the charger ID that has stopped charging has been removed from it
     let charger_list = Object.keys(charging_status_object);
 
     // If there is still a charging session left
     if (charger_list.length > 0) {
         let earliest_charger_moment_object = moment();
         let earliest_chargerID;
+
+        // Loop through all of the datasets in the charging chart object
         for (let [index, data_entry] of charging_chart_obj.data.datasets.entries()) {
 
-            // If the label of this entry is a charger
+            // If the label of this dataset entry is a charger in our charging status object
             if (charger_list.includes(data_entry.label)) {
-                // if (charger_list.hasOwnProperty(data_entry.label)) {
 
                 // Check if this charger's first timestamp is before the earliest one so far
                 if (data_entry.data[0].x.isBefore(earliest_charger_moment_object)) {
+
                     // If it is, the earliest gets replaced
                     earliest_charger_moment_object = data_entry.data[0].x;
                     earliest_chargerID = data_entry.label;
                 }
             }
         }
-        console.log(earliest_chargerID);
+
+        console.log(`The charger ID that has the earliest timestamp is ${earliest_chargerID}`);
+
         // Now that we have the earliest chargerID, check if it is the ID we are trying to delete
         if (chargerID === earliest_chargerID) {
-            // Now that we have the earliest charger AND the timestamp, we need to loop through and delete the data that are
-            // before this time
+            // Now that we have the earliest charger AND the timestamp, we need to loop through and delete all data
+            // that came before this time
+
             let delete_index;
+
+            // Loop through all of the dataset entries if the charging chart object
             for (let [index, data_entry] of charging_chart_obj.data.datasets.entries()) {
+
                 // If we found solar power
                 if (data_entry.label === "Solar Power") {
-                    // Loop through all of the data in it
+
+                    // Loop through all of the data within the Solar Power dataset
                     for (let [data_index, data] of data_entry['data'].entries()) {
+
                         // If the current timestamp is AFTER the earliest charger moment object
                         if (data.x.isAfter(earliest_charger_moment_object)) {
+
                             // We note this index and stop looping over this data array
                             delete_index = data_index;
                             break
@@ -965,33 +988,43 @@ function delete_chargerID_from_dataset(chargerID, charging_chart_obj, charging_s
 
             // Finally, loop through our charging chart object again
             for (let [index, data_entry] of charging_chart_obj.data.datasets.entries()) {
-                // If the label corresponds to a key in our inverter data keys
+
+                // If the label corresponds to a key in our inverter data keys - then the dataset is inverter/BT info
                 if (inverter_data_keys.hasOwnProperty(data_entry.label)) {
+
                     // We need to go into the data and delete all values in the array up to delete_index
                     charging_chart_obj.data.datasets[index].data = charging_chart_obj.data.datasets[index].data.slice(delete_index)
                 }
             }
         }
 
-        // If the chargerID we are trying to delete is not the earliest charging session
-        else {
+        // // If the chargerID we are trying to delete is not the earliest charging session
+        // else {
+
+            // Todo: test this!!
+
             // Then we just need to delete its own data
             for (let [index, data_entry] in charging_chart_obj.data.datasets) {
+
                 // Match the chargerID with the label
                 if (chargerID === data_entry['label']) {
+
                     //... delete the series object and update the chart
                     charging_chart_obj.data.datasets.splice(index, 1);
-                    // charging_chart_obj.data.datasets[index].data.length = 0;
+
                     console.log(`Deleted ${chargerID}!`);
                     break
                 }
             }
-        }
+        // }
     }
 
     // If this charging session is the last one, then we can just delete everything
     else {
+        console.log('There are no more charging sessions left, deleting everything...');
+
         charging_chart_obj.data.datasets.length = 0
+
         // for (let [index, value] of charging_chart_obj.data.datasets.entries()) {
         //     // Delete the first
         //     charging_chart_obj.data.datasets.splice(0, 1);
@@ -1003,7 +1036,7 @@ function delete_chargerID_from_dataset(chargerID, charging_chart_obj, charging_s
 }
 
 function append_new_data_to_charging_chart(chargerID, charging_chart_obj, new_data) {
-    // This function takes in some new data and appends it to our charging chart's data
+    // This function takes in charge session data and appends it to our charging chart's data
 
     let temp_data_object = {
         "Solar_Power": null,
@@ -1025,7 +1058,10 @@ function append_new_data_to_charging_chart(chargerID, charging_chart_obj, new_da
                     y: new_data['Power_Import']
                 });
 
-            } else if (charging_chart_obj.data.datasets[index]['label'] === "Solar Power") {
+            }
+
+            // Now append all of the inverter/BT info to the chart object
+            else if (charging_chart_obj.data.datasets[index]['label'] === "Solar Power") {
                 // Append the data into the charging chart
                 charging_chart_obj.data.datasets[index].data.push({
                     x: moment(new_data['Time'], 'YYYY-MM-DD hh:mm:ss'),
@@ -1243,8 +1279,9 @@ function update_last_charging_session(user, db) {
                 }
             }
         }
-        console.log(`${latest_chargerID} wins!`);
-        console.log(latest_date.format('YYYY-MM-DD HHmm'));
+
+        // console.log(`${latest_chargerID} wins!`);
+        // console.log(latest_date.format('YYYY-MM-DD HHmm'));
 
         // Now that we have the latest chargerID and date of charging session, we can grab the analytics
         let charging_analytics_obj = await db.ref(`users/${user.uid}/analytics/charging_history_analytics/${latest_chargerID}/${latest_date.format('YYYY-MM-DD')}/${latest_date.format('HHmm')}`)
@@ -1435,7 +1472,7 @@ function start_master_listener(user) {
         if (snapshot.val() !== "multiple") {
             window.location.replace("/delta_dashboard/");
         }
-    })
+    });
 
     let data_obj = {
         'utility_p': [],
