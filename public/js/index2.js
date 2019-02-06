@@ -652,7 +652,6 @@ async function start_charging_session_listeners(user, db, initial_charging_data_
 
                     // Delete this chargerID from the charging_status_object
                     delete charging_status_object[chargerID];
-                    console.log(`charging status object is now: ${charging_status_object}`);
 
                     // Then we need to remove the chargerID from the data set completely
                     charging_chart_obj = delete_chargerID_from_dataset(chargerID, charging_chart_obj, charging_status_object, inverter_data_keys);
@@ -955,68 +954,54 @@ function delete_chargerID_from_dataset(chargerID, charging_chart_obj, charging_s
             }
         }
 
-        console.log(`The charger ID that has the earliest timestamp is ${earliest_chargerID}`);
+        let delete_index;
 
-        // Now that we have the earliest chargerID, check if it is the ID we are trying to delete
-        if (chargerID === earliest_chargerID) {
-            // Now that we have the earliest charger AND the timestamp, we need to loop through and delete all data
-            // that came before this time
+        // Loop through all of the dataset entries if the charging chart object
+        for (let [index, data_entry] of charging_chart_obj.data.datasets.entries()) {
 
-            let delete_index;
+            // If we found solar power
+            if (data_entry.label === "Solar Power") {
 
-            // Loop through all of the dataset entries if the charging chart object
-            for (let [index, data_entry] of charging_chart_obj.data.datasets.entries()) {
+                // Loop through all of the data within the Solar Power dataset
+                for (let [data_index, data] of data_entry['data'].entries()) {
 
-                // If we found solar power
-                if (data_entry.label === "Solar Power") {
+                    // If the current timestamp is AFTER OR THE SAME as the earliest charger moment object
+                    if (data.x.isAfter(earliest_charger_moment_object) || data.x.format('HH:mm:ss') === earliest_charger_moment_object.format('HH:mm:ss')) {
 
-                    // Loop through all of the data within the Solar Power dataset
-                    for (let [data_index, data] of data_entry['data'].entries()) {
-
-                        // If the current timestamp is AFTER the earliest charger moment object
-                        if (data.x.isAfter(earliest_charger_moment_object)) {
-
-                            // We note this index and stop looping over this data array
-                            delete_index = data_index;
-                            break
-                        }
+                        // We note this index and stop looping over this data array
+                        delete_index = data_index;
+                        break
                     }
-                    // Stop looping over datasets
-                    break
                 }
+                // Stop looping over datasets
+                break
             }
+        }
+        // Finally, loop through our charging chart object again
+        for (let [index, data_entry] of charging_chart_obj.data.datasets.entries()) {
 
-            // Finally, loop through our charging chart object again
-            for (let [index, data_entry] of charging_chart_obj.data.datasets.entries()) {
+            // If the label corresponds to a key in our inverter data keys - then the dataset is inverter/BT info
+            // The labels don't have underscores in them, so we need to add them in
+            if (inverter_data_keys.hasOwnProperty(data_entry.label.replace(' ', '_'))) {
 
-                // If the label corresponds to a key in our inverter data keys - then the dataset is inverter/BT info
-                if (inverter_data_keys.hasOwnProperty(data_entry.label)) {
-
-                    // We need to go into the data and delete all values in the array up to delete_index
-                    charging_chart_obj.data.datasets[index].data = charging_chart_obj.data.datasets[index].data.slice(delete_index)
-                }
+                // We need to go into the data and delete all values in the array up to delete_index
+                charging_chart_obj.data.datasets[index].data = charging_chart_obj.data.datasets[index].data.slice(delete_index)
             }
         }
 
-        // // If the chargerID we are trying to delete is not the earliest charging session
-        // else {
+        // Then we just need to delete its own data
+        for (let [index, data_entry] of charging_chart_obj.data.datasets.entries()) {
 
-            // Todo: test this!!
+            // Match the chargerID with the label
+            if (chargerID === data_entry['label']) {
 
-            // Then we just need to delete its own data
-            for (let [index, data_entry] in charging_chart_obj.data.datasets) {
+                //... delete the series object and update the chart
+                charging_chart_obj.data.datasets.splice(index, 1);
 
-                // Match the chargerID with the label
-                if (chargerID === data_entry['label']) {
-
-                    //... delete the series object and update the chart
-                    charging_chart_obj.data.datasets.splice(index, 1);
-
-                    console.log(`Deleted ${chargerID}!`);
-                    break
-                }
+                console.log(`Deleted ${chargerID}!`);
+                break
             }
-        // }
+        }
     }
 
     // If this charging session is the last one, then we can just delete everything
