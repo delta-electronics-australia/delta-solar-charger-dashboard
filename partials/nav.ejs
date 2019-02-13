@@ -89,6 +89,13 @@
                 document.getElementById("charging_history_link").href = '/delta_dashboard/charging_history2'
             }
         })
+
+        db.ref(`users/${user.uid}/user_info/account_type`).once("value", function (snapshot) {
+            if (snapshot.val() === "admin") {
+                $("#nav-mobile").prepend(`<li><a href="/delta_dashboard/adminindex">Admin Dashboard</a></li>`)
+            }
+        })
     });
+
 
 </script>
