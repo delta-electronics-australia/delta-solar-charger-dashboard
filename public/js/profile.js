@@ -29,7 +29,8 @@ function load_map(user, db) {
     
         // Setup the click event listeners: simply set the map to Chicago.
         controlUI.addEventListener('click', function () {
-            console.log('button clicked!')
+            console.log('button clicked!');
+
             // Todo: put this location into Firebase
             db.ref(`users/${user.uid}/system_location`).update({
                 'lat': myMarker.position.lat(),
@@ -50,11 +51,11 @@ function load_map(user, db) {
             lng: 144.9631
         };
 
-        // Todo: check if undefined is the right check
-        if (snapshot.val() !== undefined){
+        if (snapshot.val() !== null){
             startLatLng = snapshot.val()
         }
-        console.log(startLatLng)
+
+        console.log(startLatLng);
         let map = new google.maps.Map(document.getElementById('map'), {
             zoom: 10,
             center: startLatLng
