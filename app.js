@@ -35,7 +35,7 @@ app.set('view engine', 'ejs');
 
 // Define our ejs routes
 app.use('/delta_dashboard/logs', express.static(__dirname + '/iisnode/'));
-app.get('/delta_dashboard/logs/', function(req,res){
+app.get('/delta_dashboard/logs/', function (req, res) {
     res.sendFile(`${__dirname}/iisnode/index.html`)
 });
 
@@ -108,7 +108,18 @@ app.post('/delta_dashboard/archive_request', function (req, res) {
 
     admin.auth().verifyIdToken(payload.idToken).then(async function (decodedToken) {
 
-        let uid = decodedToken.uid;
+        let uid = '';
+
+        // If there is a uid in our payload, then we take this uid
+        if (payload.hasOwnProperty('uid')) {
+            uid = payload['uid']
+        }
+
+        // If there is no uids in our payload, then we take the uid from the idToken
+        else {
+            uid = decodedToken.uid;
+        }
+
         let selected_date = payload.date;
 
         // If we have selected any other day besides today
@@ -513,15 +524,13 @@ app.post('/delta_dashboard/charging_history_request', function (req, res) {
 
                     if (btp >= 0) {
                         overview_data_obj.btp_discharge = overview_data_obj.btp_discharge + (btp / 3600);
-                    }
-                    else {
+                    } else {
                         overview_data_obj.btp_charge = overview_data_obj.btp_charge + (btp / 3600);
                     }
 
                     if (utility_p >= 0) {
                         overview_data_obj.utility_p_export = overview_data_obj.utility_p_export + (utility_p / 3600);
-                    }
-                    else {
+                    } else {
                         overview_data_obj.utility_p_import = overview_data_obj.utility_p_import + (utility_p / 3600);
                     }
                 }
@@ -623,36 +632,21 @@ app.post('/delta_dashboard/charging_history_request2', function (req, res) {
             hidden: true
         }]
     };
-    // let data_obj = {
-    //     'utility_p': [],
-    //     'utility_c': [],
-    //     'dcp': [],
-    //     'btp': [],
-    //     'btsoc': [],
-    //     'bt_module1_max_temp': [],
-    //     'bt_module1_min_temp': [],
-    //     'time': []
-    // };
-    //
-    // let analytics_obj = {
-    //     'utility_p': 0,
-    //     'dcp': 0,
-    //     'btp': 0,
-    //     'ac2p': 0
-    // };
-    //
-    // let overview_data_obj = {
-    //     ac2p: 0,
-    //     dcp: 0,
-    //     btp_discharge: 0,
-    //     btp_charge: 0,
-    //     utility_p_export: 0,
-    //     utility_p_import: 0
-    // };
 
     console.log(payload.idToken);
     admin.auth().verifyIdToken(payload.idToken).then(async function (decodedToken) {
-        let uid = decodedToken.uid;
+
+        let uid = '';
+
+        // If there is a uid in our payload, then we take this uid
+        if (payload.hasOwnProperty('uid')) {
+            uid = payload['uid']
+        }
+
+        // If there is no uids in our payload, then we take the uid from the idToken
+        else {
+            uid = decodedToken.uid;
+        }
 
         let dcp = 0;
         let utility_p = 0;
@@ -784,9 +778,7 @@ app.post('/delta_dashboard/last_charge_session_request', function (req, res) {
         res.json({
             'new_data': false
         })
-    }
-
-    else {
+    } else {
         let data_obj = {
             'utility_p': [],
             'dcp': [],
@@ -864,7 +856,7 @@ log_file_watcher.on('change', function (path) {
 });
 
 // This watcher will watch when our Solar Charger version changes and update Firebase accordingly
-chokidar.watch('../Delta_SC_Advanced/version.txt').on('change', function(path){
+chokidar.watch('../Delta_SC_Advanced/version.txt').on('change', function (path) {
     let version_number = parseFloat(fs.readFileSync(path, 'utf8'));
 
     console.log(`Solar Charger changed to ${version_number}`);
@@ -925,8 +917,7 @@ function calculate_sankey_values(analytics_obj) {
                 sankey_data_obj[2].push(([
                     ['Solar Power', 'AC Load', analytics_obj.ac2p]
                 ]));
-            }
-            else {
+            } else {
                 // If grid is on the left (import)
                 sankey_data_obj[0].push(([
                     ['Solar Power', 'Battery', (-1 * analytics_obj.btp)]
@@ -939,8 +930,7 @@ function calculate_sankey_values(analytics_obj) {
                 ]));
             }
         }
-    }
-    else {
+    } else {
         // We have less solar than our load, so all of our solar is consumed by load
         if (btp_left) {
             // If battery is a source (is discharging)
@@ -956,15 +946,13 @@ function calculate_sankey_values(analytics_obj) {
                     sankey_data_obj[2].push(([
                         ['Solar Power', 'AC Load', analytics_obj.dcp]
                     ]));
-                }
-                else {
+                } else {
                     sankey_data_obj[2].push(([
                         ['Solar Power', 'AC Load', analytics_obj.ac2p - analytics_obj.btp - (-1 * analytics_obj.utility_p)]
                     ]));
                 }
 
-            }
-            else {
+            } else {
                 // If grid is on the right (exporting)
                 sankey_data_obj[0].push(([
                     ['Battery', 'AC Load', analytics_obj.btp]
@@ -976,8 +964,7 @@ function calculate_sankey_values(analytics_obj) {
                     ['Solar Power', 'AC Load', analytics_obj.ac2p - analytics_obj.btp]
                 ]));
             }
-        }
-        else {
+        } else {
             // If battery is charging (on the right)
             if (utility_p_left === true) {
                 // If grid is importing (on the left)
@@ -990,8 +977,7 @@ function calculate_sankey_values(analytics_obj) {
                 sankey_data_obj[2].push(([
                     ['Solar Power', 'Battery', (-1 * analytics_obj.btp)]
                 ]));
-            }
-            else {
+            } else {
                 // If grid is on the right (exporting)
                 // Impossible because if we have less solar than load and battery is charging, then grid must be on left
 
