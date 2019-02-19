@@ -47,6 +47,10 @@ app.get('/delta_dashboard/index2', function (req, res) {
     res.render('index2')
 });
 
+app.get('/delta_dashboard/adminindex', function (req, res) {
+    res.render('admin_dashboard')
+});
+
 app.get('/delta_dashboard/login', function (req, res) {
     res.render('login')
 });

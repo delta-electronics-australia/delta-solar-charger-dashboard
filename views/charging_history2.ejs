@@ -52,7 +52,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script type="text/javascript" src="../delta_dashboard/public/js/materialize.min.js"></script>
     <script src="../delta_dashboard/public/js/moment.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/4.9.0/firebase.js"></script>
+
+    <!-- Firebase App is always required and must be first -->
+    <script src="https://www.gstatic.com/firebasejs/5.8.2/firebase-app.js"></script>
+
+    <!-- Add additional services that you want to use -->
+    <script src="https://www.gstatic.com/firebasejs/5.8.2/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/5.8.2/firebase-database.js"></script>
+
     <script>
         // Initialize Firebase
         let config = {

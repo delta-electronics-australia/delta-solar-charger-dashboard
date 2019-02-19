@@ -1105,7 +1105,7 @@ function update_weather(user, db) {
                     .split(' ')
                     .map((s) => s.charAt(0).toUpperCase() + s.substring(1))
                     .join(' ')
-                    } - ${json.main.temp}&deg;C`
+                    } ${json.main.temp}&deg;C`
             })
         }
 
