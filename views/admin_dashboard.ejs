@@ -70,6 +70,15 @@
             font-size: 3rem;
             padding: 15px
         }
+
+        /* Dot is for indicating if a system is online or not */
+        .dot {
+            height: 15px;
+            width: 15px;
+            /*background-color: #ff0000;*/
+            border-radius: 50%;
+            display: inline-block;
+        }
     </style>
 
     <script src="../delta_dashboard/public/js/jquery-3.3.1.js"></script>
@@ -194,8 +203,9 @@
     </div>
 
     <!------------------------------------------- TOP ROW----------------------------------------------------------->
-
 </div>
+
+<div class="row" id="system_row"></div>
 
 <script type="text/javascript" src="../delta_dashboard/public/js/materialize.min.js"></script>
 

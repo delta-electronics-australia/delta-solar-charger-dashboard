@@ -17,6 +17,171 @@ function generate_date() {
     date = yyyy + '-' + mm + '-' + dd;
 }
 
+async function checkSystemStatus(adminUIDObject, linkedUIDsObject) {
+    /// This function listens to whether or not our systems are online and changes the dot accordingly
+    let adminUID = Object.keys(adminUIDObject)[0];
+
+    let db = firebase.database();
+
+    let bool = true;
+
+    let latestHistoryNode = await db.ref()
+        .child(`users/${adminUID}/history/${date}`)
+        .limitToLast(1)
+        .once('value');
+
+    // First get the current time
+    let currentTime = moment();
+    console.log(latestHistoryNode.val());
+    let latestPayloadTime = moment(latestHistoryNode.val()['time']);
+    console.log(currentTime);
+    console.log(latestPayloadTime);
+    // if (bool) {
+    //     adminUIDObject[adminUID]['dotElement'].css('background-color', '#33CC33');
+    //     bool = false;
+    // } else {
+    //     adminUIDObject[adminUID]['dotElement'].css('background-color', '#ff0000');
+    //     bool = true;
+    // }
+
+    // for (let linkedUID of Object.keys(linkedUIDsObject)) {
+    //     linkedUIDsObject[linkedUID]['element'] = $(`#${linkedUID}`);
+    //     db.ref()
+    //         .child(`users/${linkedUID}/history/${date}`)
+    //         .limitToLast(1)
+    //         .on('child_added', function (snapshot) {
+    //         });
+    // }
+}
+
+
+function startSystemAnalyticsListeners(adminUIDObject, linkedUIDsObject) {
+    let adminUID = Object.keys(adminUIDObject)[0];
+
+    let db = firebase.database();
+
+    db.ref()
+        .child(`users/${adminUID}/analytics/live_analytics`)
+        .on("value", function (snapshot) {
+            let liveAnalyticsNode = snapshot.val();
+
+            // First empty the table
+            adminUIDObject[adminUID]['tableElement'].empty();
+
+            // Now append the new data to the table
+            adminUIDObject[adminUID]['tableElement'].append(
+                `<tr><td>Solar Generated Today</td><td>${liveAnalyticsNode['dcp_t'].toFixed(2)} kW</td>
+                <tr><td>Energy Consumed Today</td><td>${liveAnalyticsNode['ac2p_t'].toFixed(2)} kW</td>
+                <tr><td>Energy Exported Today</td><td>${liveAnalyticsNode['utility_p_export_t'].toFixed(2)} kWh</td>
+                <tr><td>Energy Imported Today</td><td>${-1 * liveAnalyticsNode['utility_p_import_t'].toFixed(2)} kWh</td>
+                <tr><td>Battery Consumed Today</td><td>${liveAnalyticsNode['btp_consumed_t'].toFixed(2)} kW</td>
+                <tr><td>Battery Charged Today</td><td>${-1 * liveAnalyticsNode['btp_charged_t'].toFixed(2)} kW</td>`
+            )
+        });
+
+    // Loop through all of our linkedUIDs and start listeners for the live analytics
+    for (let linkedUID of Object.keys(linkedUIDsObject)) {
+        db.ref()
+            .child(`users/${linkedUID}/analytics/live_analytics`)
+            .on("value", function (snapshot) {
+                let liveAnalyticsNode = snapshot.val();
+
+                // First empty the table
+                linkedUIDsObject[linkedUID]['tableElement'].empty();
+
+                // Now append the new data to the table
+                linkedUIDsObject[linkedUID]['tableElement'].append(
+                    `<tr><td>Solar Generated Today</td><td>${liveAnalyticsNode['dcp_t'].toFixed(2)} kW</td>
+                <tr><td>Energy Consumed Today</td><td>${liveAnalyticsNode['ac2p_t'].toFixed(2)} kW</td>
+                <tr><td>Energy Exported Today</td><td>${liveAnalyticsNode['utility_p_export_t'].toFixed(2)} kWh</td>
+                <tr><td>Energy Imported Today</td><td>${-1 * liveAnalyticsNode['utility_p_import_t'].toFixed(2)} kWh</td>
+                <tr><td>Battery Consumed Today</td><td>${liveAnalyticsNode['btp_consumed_t'].toFixed(2)} kW</td>
+                <tr><td>Battery Charged Today</td><td>${-1 * liveAnalyticsNode['btp_charged_t'].toFixed(2)} kW</td>`
+                )
+            });
+    }
+
+}
+
+function createSystemCards(adminUIDObject, linkedUIDsObject) {
+    /// This function will create cards that will show at a glance of all of the systems that are linked
+    /// to this admin account
+
+    // First we want to render the system that belongs to the admin account
+
+    let adminUID = Object.keys(adminUIDObject)[0];
+
+    // Select our system row
+    let systemRow = $('#system_row');
+
+    // First empty it
+    systemRow.empty();
+
+    // Now add some boilerplate code for the card
+    systemRow.append(`
+    <div class="col s12 m6 l4">
+        <div class="card blue-grey darken-1 hoverable">
+            <div class="card-content white-text blue-grey darken-1">
+                <span class="card-title center-align"><span class="dot" id="${adminUID}_dot" style="background-color:#ff0000"></span>   ${adminUIDObject[adminUID]['name']}</span>
+                    <table class="">
+                        <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="${adminUID}_table"></tbody>
+                    </table>
+            </div>
+        </div>
+    </div>
+    `);
+    adminUIDObject[adminUID]['element'] = $(`#${adminUID}`);
+    adminUIDObject[adminUID]['dotElement'] = $(`#${adminUID}_dot`);
+    adminUIDObject[adminUID]['tableElement'] = $(`#${adminUID}_table`);
+
+    /// Now we want to render cards for the systems that are linked to the admin account
+
+    // First loop through the keys of the linkedUIDsObject
+    for (let linkedUID of Object.keys(linkedUIDsObject)) {
+
+        // Now add some boilerplate code for the card
+        systemRow.append(`
+        <div class="col s12 m6 l4">
+            <div class="card blue-grey darken-1 hoverable">
+                <div class="card-content white-text blue-grey darken-1">
+                    <span class="card-title center-align">${linkedUIDsObject[linkedUID]['name']}</span>
+                    <table class="">
+                        <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="${linkedUID}_table"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        `);
+        linkedUIDsObject[linkedUID]['element'] = $(`#${linkedUID}`);
+        linkedUIDsObject[linkedUID]['dotElement'] = $(`#${linkedUID}_dot`);
+        linkedUIDsObject[linkedUID]['tableElement'] = $(`#${linkedUID}_table`);
+    }
+
+    // Now that we have created the system cards, we can start some listeners to display the data
+    startSystemAnalyticsListeners(adminUIDObject, linkedUIDsObject);
+
+    // Now that we have displayed all of the data, we now have to start listeners to update our indicator dot
+    // Check every 2 minutes to see if the system is online
+    checkSystemStatus(adminUIDObject, linkedUIDsObject);
+    setInterval(function () {
+        checkSystemStatus(adminUIDObject, linkedUIDsObject);
+    }, 120000);
+}
+
 function grabAggregateAnalytics(adminUIDObject, linkedUIDsObject) {
     /// This function will grab all of the analytics to display on our Admin Dashboard
 
@@ -45,7 +210,7 @@ function grabAggregateAnalytics(adminUIDObject, linkedUIDsObject) {
             })
     }
 
-    // Now start a listener with our admin UID
+    // Now start a listener for live analytics with our admin UID
     liveAnalyticsObject[user.uid] = {};
 
     db.ref().child(`users/${user.uid}/analytics/live_analytics`)
@@ -70,16 +235,13 @@ function grabAggregateAnalytics(adminUIDObject, linkedUIDsObject) {
 
             // First add all of our liveAnalyticsObjects into summedLiveAnalytics
             for (let linkedUID of Object.keys(liveAnalyticsObject)) {
-                console.log(linkedUID);
 
                 for (let dataString of Object.keys(liveAnalyticsObject[linkedUID])) {
                     summedLiveAnalytics[dataString] += liveAnalyticsObject[linkedUID][dataString];
                 }
             }
 
-            // Now convert them to strings
-            console.log(summedLiveAnalytics);
-
+            // Now convert all the summed live analytics into strings and post them to the webpage
             document.getElementById("dctp_card")
                 .innerText = summedLiveAnalytics['dcp_t'].toFixed(2) + "kWh";
 
@@ -164,6 +326,7 @@ function startAdminDashboard() {
             console.log(adminUIDObject);
 
             grabAggregateAnalytics(adminUIDObject, linkedUIDsObject);
+            createSystemCards(adminUIDObject, linkedUIDsObject);
         })
 }
 

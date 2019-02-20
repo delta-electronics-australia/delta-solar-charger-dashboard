@@ -1841,6 +1841,7 @@ function checkIfLoggedIn() {
 }
 
 function update_live_data_tables(data_obj, purpose) {
+    /// This function takes in a data object and updates the tables on the dashbaord
 
     if (purpose === "evc_table") {
 

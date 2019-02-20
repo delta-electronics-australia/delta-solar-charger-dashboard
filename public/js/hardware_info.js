@@ -21,8 +21,7 @@ function update_ev_charger_information(data_obj) {
             <div class="col s3">
                 <img class="materialboxed center-align" style="max-width: 80%; height: auto;" src="../delta_dashboard/public/img/acminiplus.jpg">
             </div>`);
-            }
-            else if (data_obj[key]['chargePointModel'].substring(0, 4) === 'EVDE') {
+            } else if (data_obj[key]['chargePointModel'].substring(0, 4) === 'EVDE') {
                 evc_info_row.append(`
             <div class="col s3">
                 <img class="materialboxed center-align" style="max-width: 80%; height: auto;" src="../delta_dashboard/public/img/acminiplus.jpg">
@@ -79,8 +78,7 @@ async function start_hardware_info_page(user) {
                 firmwareVersion: "Version Unknown",
                 "imsi": ""
             }
-        }
-        else {
+        } else {
             // If we have details on the charger AND the charger is online then we can append
             let alive_temp = await db.ref(`users/${user.uid}/evc_inputs/${ev_chargers[i]}/alive`).once("value");
             if (alive_temp.val()) {
@@ -136,7 +134,6 @@ async function start_hardware_info_page(user) {
                     <select id="firmware_type_select" class="center-align">
                         <option value="" disabled selected>Choose which component you would like to upgrade</option>
                         <option value="FileSystem">File System</option>
-                        <option value="FileSystem_Admin">File System Beta</option>
                         <option value="Kernal">Kernal</option>
                     </select>
                 </div>
@@ -144,8 +141,7 @@ async function start_hardware_info_page(user) {
             modal_body.append(`<a class="waves-effect waves-light btn" id="confirm_fw_type_btn">Update</a>`);
             let firmwareselect_elem = document.getElementById('firmware_type_select');
             let firmwareselect_instance = M.FormSelect.init(firmwareselect_elem);
-        }
-        else if (data_obj[selected_charger].chargePointModel === 'EVDE25D4DUM') {
+        } else if (data_obj[selected_charger].chargePointModel === 'EVDE25D4DUM') {
             console.log('We have chosen a DCWB!');
             // Todo: need more code here to select more options for the DCWB
 
@@ -178,7 +174,8 @@ async function start_hardware_info_page(user) {
                 update_firmware: {
                     'chargerID': selected_charger,
                     'firmwareType': firmwareType,
-                    'set': true
+                    'set': true,
+                    'fw_url': ''
                 }
             }).then(function () {
                 // Define our modal body div
@@ -202,31 +199,24 @@ async function start_hardware_info_page(user) {
                         <div class="determinate" style="width: 10%"></div>
                     </div>`
                             )
-                        }
-                        else if (fw_status === 'Downloaded') {
+                        } else if (fw_status === 'Downloaded') {
                             modal_body.append(
                                 `<div class="progress">
                         <div class="determinate" style="width: 50%"></div>
                     </div>`
                             )
-                        }
-
-                        else if (fw_status === 'Installing') {
+                        } else if (fw_status === 'Installing') {
                             modal_body.append(
                                 `<div class="progress">
                         <div class="determinate" style="width: 70%"></div>
                     </div>`
                             )
-                        }
-
-                        else if (fw_status === 'InstallationFailed') {
+                        } else if (fw_status === 'InstallationFailed') {
                             modal_body.append(
                                 `Installation Failed, please close and try again`
                             );
                             modal_footer.append(`<a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>`)
-                        }
-
-                        else if (fw_status === 'Installed') {
+                        } else if (fw_status === 'Installed') {
                             modal_body.append(
                                 `<div class="progress">
                                 <div class="determinate" style="width: 100%"></div>
@@ -268,9 +258,7 @@ function checkIfLoggedIn() {
 
             // Start our code for the page
             start_hardware_info_page(user)
-        }
-
-        else {
+        } else {
             //... or go to login
             window.location.replace("/delta_dashboard/login")
         }
