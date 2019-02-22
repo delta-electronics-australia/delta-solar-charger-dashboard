@@ -135,15 +135,21 @@ function createSystemCards(adminUIDObject, linkedUIDsObject) {
 
                         <tbody id="${adminUID}_table"></tbody>
                     </table>
+                <div class="btn" id="${adminUID}_button">View dashboard</div>
             </div>
         </div>
     </div>
     `);
 
+    document.getElementById(`${adminUID}_button`).addEventListener('click', function () {
+        window.location.replace(`/delta_dashboard/index2/`);
+    });
+
     // Append our selected elements to the UIDObject
     adminUIDObject[adminUID]['element'] = $(`#${adminUID}`);
     adminUIDObject[adminUID]['dotElement'] = $(`#${adminUID}_dot`);
     adminUIDObject[adminUID]['tableElement'] = $(`#${adminUID}_table`);
+    adminUIDObject[adminUID]['buttonElement'] = $(`#${adminUID}_button`);
 
     /// Now we want to render cards for the systems that are linked to the admin account
 
@@ -155,7 +161,7 @@ function createSystemCards(adminUIDObject, linkedUIDsObject) {
         <div class="col s12 m6 l4">
             <div class="card blue-grey darken-1 hoverable">
                 <div class="card-content white-text blue-grey darken-1">
-                    <span class="card-title center-align"><span class="admin_dashboard_dot" id="${linkedUID}_dot" style="background-color:#ff0000"></span>   ${linkedUIDsObject[linkedUID]['name']}</span>
+                    <span class="card-title center-align"><span class="admin_dashboard_dot" id="${linkedUID}_dot"></span>   ${linkedUIDsObject[linkedUID]['name']}</span>
                     <table class="">
                         <thead>
                             <tr>
@@ -166,15 +172,21 @@ function createSystemCards(adminUIDObject, linkedUIDsObject) {
 
                         <tbody id="${linkedUID}_table"></tbody>
                     </table>
+                    <div class="btn" id="${linkedUID}_button">View dashboard</div>
                 </div>
             </div>
         </div>
         `);
 
+        document.getElementById(`${linkedUID}_button`).addEventListener('click', function () {
+            window.location.replace(`/delta_dashboard/index2/${linkedUID}`);
+        });
+
         // Append our selected elements to the UIDObject
         linkedUIDsObject[linkedUID]['element'] = $(`#${linkedUID}`);
         linkedUIDsObject[linkedUID]['dotElement'] = $(`#${linkedUID}_dot`);
         linkedUIDsObject[linkedUID]['tableElement'] = $(`#${linkedUID}_table`);
+        linkedUIDsObject[linkedUID]['buttonElement'] = $(`#${linkedUID}_button`);
     }
 
     // Now that we have created the system cards, we can start some listeners to display the data

@@ -233,9 +233,9 @@ app.post('/delta_dashboard/archive_request', function (req, res) {
             let data = snapshot.val();
 
             let temp_csv_destination = `C:\\Delta_AU_Services\\EVCS_portal\\logs\\${uid}\\temp_logs\\`;
+
             mkdirp(temp_csv_destination, function (err) {
                 if (err) console.error(err);
-                else console.log('pow!')
             });
 
             let csvwriter = fs.createWriteStream(`${temp_csv_destination}${selected_date}.csv`);
@@ -330,12 +330,21 @@ app.post('/delta_dashboard/download_data', function (req, res) {
 
     req.setTimeout(0);
     let payload = req.body;
-    console.log(payload);
 
     admin.auth().verifyIdToken(payload.idToken)
         .then(async function (decodedToken) {
 
-                let uid = decodedToken.uid;
+                let uid = '';
+
+                // If there is a uid in our payload, then we take this uid
+                if (payload.hasOwnProperty('uid')) {
+                    uid = payload['uid']
+                }
+
+                // If there is no uids in our payload, then we take the uid from the idToken
+                else {
+                    uid = decodedToken.uid;
+                }
 
                 let selected_date = payload.date;
 
@@ -354,66 +363,6 @@ app.post('/delta_dashboard/download_data', function (req, res) {
                         if (selected_date === available_dates[available_dates.length - 1]) {
                             console.log('User has selected today');
                             res.download(`C:\\Delta_AU_Services\\EVCS_portal\\logs\\${uid}\\temp_logs\\${selected_date}.csv`);
-                            //
-                            // // If the selected day is today, then we need to grab data from Firebase history
-                            // let history_ref = db.ref("users/" + uid + "/history/" + selected_date);
-                            // let writer = csvWriter();
-                            //
-                            // // Grab today's data
-                            // let snapshot = await history_ref.orderByKey().once("value");
-                            // let data = snapshot.val();
-                            //
-                            // let csvwriter = fs.createWriteStream(`C:\\Delta_AU_Services\\EVCS_portal\\logs\\${uid}\\temp_logs\\${selected_date}.csv`);
-                            //
-                            // // This listener waits until the writing is finished, then sends that file out
-                            // csvwriter.on('finish', () => {
-                            //     res.download(`C:\\Delta_AU_Services\\EVCS_portal\\logs\\${uid}\\temp_logs\\${selected_date}.csv`);
-                            //     console.log('file sent out!')
-                            // });
-                            //
-                            // // Go through each 2 second entry and write a new line in the csv file
-                            // writer.pipe(csvwriter);
-                            // for (let key in data) {
-                            //     if (data.hasOwnProperty(key)) {
-                            //         writer.write({
-                            //             time: chunk(data[key]['time'], 2).join(':'),
-                            //
-                            //             ac1p: data[key]['ac1p'],
-                            //             ac1v: data[key]['ac1v'],
-                            //             ac1c: data[key]['ac1c'],
-                            //
-                            //             ac2p: data[key]['ac2p'],
-                            //             ac2v: data[key]['ac2v'],
-                            //             ac2c: data[key]['ac2c'],
-                            //
-                            //             dc1p: data[key]['dc1p'],
-                            //             dc1v: data[key]['dc1v'],
-                            //             dc1c: data[key]['dc1c'],
-                            //
-                            //             dc2p: data[key]['dc2p'],
-                            //             dc2v: data[key]['dc2v'],
-                            //             dc2c: data[key]['dc2c'],
-                            //
-                            //             dctp: data[key]['dctp'],
-                            //
-                            //             btp: data[key]['btp'],
-                            //             btv: data[key]['btv'],
-                            //             btc: data[key]['btc'],
-                            //
-                            //             btsoc: data[key]['btsoc'],
-                            //
-                            //             utility_p: data[key]['utility_p'],
-                            //             utility_c: data[key]['utility_c'],
-                            //
-                            //             ac1_freq: data[key]['ac1_freq']
-                            //
-                            //         })
-                            //     }
-                            // }
-                            //
-                            // // Tell the program that writing to csv file has ended
-                            // writer.end('This is the end of writing\n');
-
                         }
 
                         // If the selected date is not today, then we can just send out the csv file from our server
@@ -519,7 +468,18 @@ app.post('/delta_dashboard/download_charge_session2', function (req, res) {
     let chargerID = payload['chargerID'];
 
     admin.auth().verifyIdToken(payload.idToken).then(function (decodedToken) {
-        let uid = decodedToken.uid;
+        let uid = '';
+
+        // If there is a uid in our payload, then we take this uid
+        if (payload.hasOwnProperty('uid')) {
+            uid = payload['uid']
+        }
+
+        // If there is no uids in our payload, then we take the uid from the idToken
+        else {
+            uid = decodedToken.uid;
+        }
+
         res.download(`C:\\Delta_AU_Services\\EVCS_portal\\logs\\${uid}\\charging_logs\\${chargerID}\\${selected_charging_session}.csv`);
     })
 

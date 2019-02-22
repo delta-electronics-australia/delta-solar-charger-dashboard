@@ -225,7 +225,7 @@ function update_cards(overview_data_obj) {
 
 }
 
-function download_charging_session_data(chargerID, start_time, start_date) {
+function download_charging_session_data(uid, chargerID, start_time, start_date) {
     // This function is called when the user wants to download a charging session's data
     $('#data_request_button').removeClass("waves-effect waves-light").addClass('disabled');
 
@@ -259,7 +259,8 @@ function download_charging_session_data(chargerID, start_time, start_date) {
             'chargerID': chargerID,
             'date': start_date,
             'time': start_time,
-            'idToken': idToken
+            'idToken': idToken,
+            'uid': uid
         }));
         console.log('sent!')
     })
@@ -388,7 +389,7 @@ function condition_data_for_chart(raw_data) {
     return raw_data
 }
 
-function openModal(chargerID, start_time, start_date, duration_string, charge_energy) {
+function openModal(uid, chargerID, start_time, start_date, duration_string, charge_energy) {
     let formatted_start_time = moment(start_time, "hhmm").format('h:mm A');
 
     if (globals.hasOwnProperty('charging_line_chart')) {
@@ -407,7 +408,7 @@ function openModal(chargerID, start_time, start_date, duration_string, charge_en
                                 <canvas id="charging_graph"></canvas>
                             </div>
                             <div style="text-align: center">
-                                <a class="waves-effect waves-green btn" id="data_request_button" onclick="download_charging_session_data('${chargerID}', '${start_time}', '${start_date}')">DOWNLOAD DATA</a>
+                                <a class="waves-effect waves-green btn" id="data_request_button">DOWNLOAD DATA</a>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -415,6 +416,10 @@ function openModal(chargerID, start_time, start_date, duration_string, charge_en
                         </div>
                     </div>
                     `);
+
+    document.getElementById('data_request_button').addEventListener('click', function () {
+        download_charging_session_data(uid, `${chargerID}`, `${start_time}`, `${start_date}`)
+    });
 
     // Reinitialize the new modal
     let elem = document.querySelectorAll('.modal')[1];
@@ -443,7 +448,8 @@ function openModal(chargerID, start_time, start_date, duration_string, charge_en
             'chargerID': chargerID,
             'start_date': start_date,
             'start_time': start_time,
-            'idToken': idToken
+            'idToken': idToken,
+            'uid': uid
         }));
 
     });
@@ -533,13 +539,16 @@ async function create_charge_session_cards(uid, selected_date, ev_chargers) {
                                             </tbody>
                                         </table>
                                         <a class="right-align">
-                                            <!--<a class="waves-effect waves-light btn modal-trigger" href="#charging_history_modal">More Info</a>-->
-                                            <a class="waves-effect waves-light btn" onclick="openModal('${chargerID}', '${charging_time}', '${selected_date}', '${duration_string}', '${temp_charging_analytics[charging_time]['energy'].toFixed(2)}')">More Info</a>
-
+                                            <a class="waves-effect waves-light btn" id="${chargerID}_${selected_date}_${charging_time}_button">More Info</a>
                                         </div>
                                     </div>
                                 </div>
                             `)
+
+                        document.getElementById(`${chargerID}_${selected_date}_${charging_time}_button`).addEventListener('click', function () {
+                            openModal(uid, `${chargerID}`, `${charging_time}`, `${selected_date}`,
+                                `${duration_string}`, `${temp_charging_analytics[charging_time]['energy'].toFixed(2)}`)
+                        })
                     }
                 }
             }

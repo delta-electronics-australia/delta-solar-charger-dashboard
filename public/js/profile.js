@@ -182,11 +182,10 @@ function start_profile_page(uid) {
             });
         }
 
-    })
+    });
 
     // Start a listener for the change password button
     $("#change_pw_button").click(change_pw_button_pressed)
-
 }
 
 

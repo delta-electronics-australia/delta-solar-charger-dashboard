@@ -1498,13 +1498,25 @@ function initialiseUIElements() {
         }
     });
 
-    // Link the more info button to the hardware_info page
-    document.getElementById('more_info_button').addEventListener('click', function () {
-        location.href = '/delta_dashboard/hardware_info';
-    });
+
 }
 
 function startDashboard(uid) {
+
+    if (uid !== firebase.auth().currentUser.uid) {
+        $(".title_pinned").css({'background-color':'rgba(239, 231, 35, 0.8)'});
+
+        // Link the more info button to the hardware_info page
+        document.getElementById('more_info_button').addEventListener('click', function () {
+            location.href = `/delta_dashboard/hardware_info/${uid}`;
+        });
+    }
+    else {
+        // Link the more info button to the hardware_info page
+        document.getElementById('more_info_button').addEventListener('click', function () {
+            location.href = `/delta_dashboard/hardware_info/`;
+        });
+    }
 
     // Initialise our UI elements
     initialiseUIElements();

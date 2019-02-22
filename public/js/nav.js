@@ -15,7 +15,7 @@ function initialiseNavUIElements() {
     });
 }
 
-async function test123(user) {
+async function initialiseNavBar(user) {
     /** This function checks if we have a custom UID and if so, checks if we are logged into an
      * admin account and we have the relevant permissions **/
 
@@ -35,7 +35,7 @@ async function test123(user) {
         $nav_wrapper_div.removeClass('blue');
         $nav_wrapper_div.addClass('red');
 
-        // If there is, we use the custom UID as our final UID
+        // If we have detected a custom UID, we use the custom UID as our final UID
         finalUID = $customUIDDiv.attr('custom-uid');
 
         // Now check if this account has the custom UID in it's linked accounts node
@@ -54,24 +54,40 @@ async function test123(user) {
                 .child(`users/${finalUID}/user_info/nickname`)
                 .once("value");
 
+            // If we have a custom UID, then we need to have an open to return the admin dashboard
+            $("#nav-mobile").prepend(`<li><a href="/delta_dashboard/adminindex">Return to Admin Dashboard</a></li>`);
+
+            // Have a string that lets the admin user know which system they are viewing
             $("#nav-mobile").prepend(`<li><b>Viewing ${systemName.val()}'s System</b></li>`);
 
             // Get the user's displayname and put it in the nav bar
             $("#displayName").append(`<b>${systemName.val()}</b>`);
 
-            // Modify all of our navigation links
+            // Modify all of our navigation links to ones with the custom UID
             document.getElementById("dashboard_link").href = `/delta_dashboard/index2/${finalUID}`;
             document.getElementById("charging_history_link").href = `/delta_dashboard/charging_history2/${finalUID}`;
             document.getElementById("archive_link").href = `/delta_dashboard/history/${finalUID}`;
             document.getElementById("hardware_info_link").href = `/delta_dashboard/hardware_info/${finalUID}`;
             document.getElementById("settings_link").href = `/delta_dashboard/profile/${finalUID}`;
-
         }
 
-    } else {
+    }
+
+    // If there is no custom UID, then we are in a normal link
+    else {
+
+        // Check if this is an admin account
+        firebase.database().ref(`users/${user.uid}/user_info/account_type`).once("value", function (snapshot) {
+            if (snapshot.val() === "admin") {
+                // If this account is an admin account, then we need to give the user the option of accessing
+                // the admin dashbaord
+                $("#nav-mobile").prepend(`<li><a href="/delta_dashboard/adminindex">Admin Dashboard</a></li>`)
+            }
+        });
         // Get the user's displayname and put it in the nav bar
         $("#displayName").append(`<b>${user.displayName}</b>`);
 
+        // Our finalUID will just be the uid of the normal user
         finalUID = user.uid;
     }
     return finalUID
@@ -81,7 +97,7 @@ $(function () {
     initialiseNavUIElements();
 
     firebase.auth().onAuthStateChanged(function (user) {
-        test123(user);
+        initialiseNavBar(user);
 
         // Now we need to determine what kind of system this account is running
         let db = firebase.database();
@@ -94,13 +110,6 @@ $(function () {
             }
         });
 
-        db.ref(`users/${user.uid}/user_info/account_type`).once("value", function (snapshot) {
-            if (snapshot.val() === "admin") {
-                $("#nav-mobile").prepend(`<li><a href="/delta_dashboard/adminindex">Admin Dashboard</a></li>`)
-
-            }
-
-        })
     });
 
     /// Add a listener for the signOut button

@@ -301,7 +301,6 @@ async function date_chosen(selected_date, chart_obj, uid) {
             let data = JSON.stringify({"idToken": idToken, 'date': selected_date, "uid": uid});
 
             xhr.send(data);
-            console.log('sent!')
         }
     })
 }
@@ -345,7 +344,7 @@ function startArchivePage(uid) {
 
         // Activate the tabs
         let tabs_elem = document.querySelector('.tabs');
-        let tabs_instance = M.Tabs.init(tabs_elem);
+        M.Tabs.init(tabs_elem);
 
         // Listen to see if the reset zoom button was pressed
         $('#reset_zoom_button').click(function () {
@@ -355,21 +354,18 @@ function startArchivePage(uid) {
         // Listen to see if the data request button has been sent
         $('#data_request_button').on('click', function () {
             $(this).removeClass("waves-effect waves-light").addClass('disabled');
-            request_data(this.id);
+            request_data(uid, this.id);
         });
     })
 
 }
 
-function request_data(clicked_id) {
+function request_data(uid, clicked_id) {
     // request_data sends a request to the backend to compile a csv file with all of the day's data
 
     console.log(download_date);
-    console.log(clicked_id);
 
     $('#data_request_button').removeClass("waves-effect waves-light").addClass('disabled');
-    // $('#all_data_request_button').removeClass("waves-effect waves-light").addClass('disabled');
-
 
     // Check the uid of the user pressing the button
     firebase.auth().currentUser.getIdToken(true).then(function (idToken) {
@@ -406,11 +402,11 @@ function request_data(clicked_id) {
         if (clicked_id === 'data_request_button') {
             M.toast({html: 'Data request sent. Please wait...'});
             // Package our payload including the idToken and the date
-            data = JSON.stringify({"idToken": idToken, 'date': download_date});
+            data = JSON.stringify({"idToken": idToken, 'date': download_date, 'uid': uid});
         } else if (clicked_id === 'all_data_request_button') {
             M.toast({html: 'Data request sent. This might take a while, please be patient...'});
 
-            data = JSON.stringify({"idToken": idToken, 'date': 'all'});
+            data = JSON.stringify({"idToken": idToken, 'date': 'all', 'uid': uid});
         }
 
         xhr.send(data);
