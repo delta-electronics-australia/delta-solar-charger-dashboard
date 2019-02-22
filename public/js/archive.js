@@ -242,7 +242,7 @@ function drawSankeyChart(data_obj, reduce_factor) {
     sankeyChart.draw(data, options);
 }
 
-async function date_chosen(selected_date, chart_obj, db, user) {
+async function date_chosen(selected_date, chart_obj, uid) {
     // This function is called once the user has chosen a date from the datepicker
     // We want to hide all of our charts and reveal our preloader
     document.getElementById('preloader').style.display = 'block';
@@ -251,9 +251,6 @@ async function date_chosen(selected_date, chart_obj, db, user) {
     document.getElementById('sankey_tab').style.visibility = 'hidden';
     document.getElementById('download_tab').style.visibility = 'hidden';
     document.getElementById('reset_zoom_button_div').style.visibility = 'hidden';
-
-    // document.getElementById('data_request_button_div').style.display = 'block';
-
 
     // Define the object that will hold all of our charting information
     let data_obj = {
@@ -270,7 +267,7 @@ async function date_chosen(selected_date, chart_obj, db, user) {
 
     selected_date = selected_date.date.yyyymmdd();
     download_date = selected_date;
-    let history_key_ref = db.ref("users/" + user.uid + "/history_keys");
+    let history_key_ref = firebase.database().ref("users/" + uid + "/history_keys");
     history_key_ref.orderByKey().once("value", function (snapshot) {
         console.log(selected_date);
         let history_keys = snapshot.val();
@@ -291,8 +288,7 @@ async function date_chosen(selected_date, chart_obj, db, user) {
                         data_obj['time'].forEach(function (value, key, time_array) {
                             time_array[key] = moment(time_array[key], "HH:mm:ss")
                         });
-                    }
-                    else {
+                    } else {
                         data_obj['time'].forEach(function (value, key, time_array) {
                             time_array[key] = moment(time_array[key], "YYYY-MM-DD HH:mm:ss.SSSSSS")
                         });
@@ -302,30 +298,23 @@ async function date_chosen(selected_date, chart_obj, db, user) {
                 }
             };
 
-            let data = JSON.stringify({"idToken": idToken, 'date': selected_date});
+            let data = JSON.stringify({"idToken": idToken, 'date': selected_date, "uid": uid});
 
             xhr.send(data);
             console.log('sent!')
         }
     })
-
 }
 
-function start_archive_page(user) {
+function startArchivePage(uid) {
     // Define firebase database object
     let db = firebase.database();
 
     // Initialize our charts
     let chart_obj = create_charts();
 
-    // let charging_history_ref = db.ref("users/" + user.uid + "/charging_history/");
-    // charging_history_ref.orderByKey().once("value", function(snapshot){
-    //     console.log(snapshot.val());
-    //     console.log('done!');
-    // });
-
     // Grab a list of the available dates we have data for
-    let history_ref = db.ref("users/" + user.uid + "/history_keys/");
+    let history_ref = db.ref("users/" + uid + "/history_keys/");
     history_ref.orderByKey().once("value", function (snapshot) {
         let startDate = Object.keys(snapshot.val())[0];
         let available_dates = Object.keys(snapshot.val());
@@ -340,7 +329,7 @@ function start_archive_page(user) {
                 autoClose: true,
                 format: 'mmm dd, yyyy',
                 onClose: function () {
-                    date_chosen(datepicker_instance, chart_obj, db, user)
+                    date_chosen(datepicker_instance, chart_obj, uid)
                 },
 
                 onSelect: function (test) {
@@ -358,12 +347,15 @@ function start_archive_page(user) {
         let tabs_elem = document.querySelector('.tabs');
         let tabs_instance = M.Tabs.init(tabs_elem);
 
+        // Listen to see if the reset zoom button was pressed
         $('#reset_zoom_button').click(function () {
             chart_obj.history_chart.resetZoom()
-        })
+        });
+
         // Listen to see if the data request button has been sent
         $('#data_request_button').on('click', function () {
             $(this).removeClass("waves-effect waves-light").addClass('disabled');
+            request_data(this.id);
         });
     })
 
@@ -399,8 +391,7 @@ function request_data(clicked_id) {
                 a.href = window.URL.createObjectURL(xhr.response);
                 if (clicked_id === 'data_request_button') {
                     a.download = download_date + '.csv';
-                }
-                else if (clicked_id === 'all_data_request_button') {
+                } else if (clicked_id === 'all_data_request_button') {
                     a.download = 'data.zip';
                 }
                 a.style.display = 'none';
@@ -416,15 +407,13 @@ function request_data(clicked_id) {
             M.toast({html: 'Data request sent. Please wait...'});
             // Package our payload including the idToken and the date
             data = JSON.stringify({"idToken": idToken, 'date': download_date});
-        }
-        else if (clicked_id === 'all_data_request_button') {
+        } else if (clicked_id === 'all_data_request_button') {
             M.toast({html: 'Data request sent. This might take a while, please be patient...'});
 
             data = JSON.stringify({"idToken": idToken, 'date': 'all'});
         }
 
         xhr.send(data);
-        console.log('sent!')
     });
 }
 
@@ -440,32 +429,18 @@ function checkIfLoggedIn() {
     document.getElementById('download_tab').style.visibility = 'hidden';
     document.getElementById('reset_zoom_button_div').style.visibility = 'hidden';
 
-    // document.getElementById('data_request_button_div').style.display = 'none';
-
     // Check if we are logged in
     firebase.auth().onAuthStateChanged(function (user) {
         if (user) {
             // Start our code for the page
-            start_archive_page(user);
-            console.log('yay')
+            startArchivePage(getPageUID(user));
 
-        }
-
-        else {
+        } else {
             //... or go to login
             window.location.replace("/delta_dashboard/login")
         }
     });
 
-}
-
-function signOut() {
-    firebase.auth().signOut().then(function () {
-        console.log("Signout Successful")
-        // window.location.reload()
-    }).catch(function (error) {
-        console.log("error", error)
-    })
 }
 
 

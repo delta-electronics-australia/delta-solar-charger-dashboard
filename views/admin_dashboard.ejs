@@ -1,113 +1,18 @@
 <!DOCTYPE html>
-<html>
+<html lang="en-AU">
 
 <head>
-    <style>
-        /*#master_row {*/
-        /*opacity: 0;*/
-        /*-webkit-transition: opacity 0.7s ease-in;*/
-        /*-moz-transition: opacity 0.7s ease-in;*/
-        /*-o-transition: opacity 0.7s ease-in;*/
-        /*transition: opacity 0.7s ease-in;*/
-        /*}*/
+    <title>DSC Admin Dashboard</title>
 
-        /*#master_row.load {*/
-        /*opacity: 1;*/
-        /*}*/
+    <link rel="stylesheet" type="text/css" href="/delta_dashboard/public/css/style.css">
 
-        #btp_title {
-            font-size: 24px;
-            font-weight: 500;
-        }
+    <script src="/delta_dashboard/public/js/jquery-3.3.1.js"></script>
+    <script src="/delta_dashboard/public/js/moment.js"></script>
 
-        #loading_id {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            margin: auto;
-        }
-
-        .top_row_card {
-            height: 200px;
-        }
-
-        .second_row_card {
-            height: 325px;
-        }
-
-        /*   Class for when element is pinned */
-        .pinned {
-            position: fixed !important;
-            z-index: 10;
-        }
-
-        /* Default style of the title */
-        #title {
-            margin: 0;
-            width: 100%;
-            padding: 20px;
-        }
-
-        #title_wrapper {
-            height: 100px;
-        }
-
-        /* Style of the title when unpinned */
-        .title_unpinned {
-            background-color: white;
-            color: black;
-            font-size: 4.2rem;
-            padding: 20px;
-            margin: 0;
-        }
-
-        /* Style of the title when pinned */
-        .title_pinned {
-            background-color: rgba(100, 181, 246, 0.85);
-            color: white;
-            font-size: 3rem;
-            padding: 15px
-        }
-
-        /* Dot is for indicating if a system is online or not */
-        .dot {
-            height: 15px;
-            width: 15px;
-            /*background-color: #ff0000;*/
-            border-radius: 50%;
-            display: inline-block;
-        }
-    </style>
-
-    <script src="../delta_dashboard/public/js/jquery-3.3.1.js"></script>
-    <script src="../delta_dashboard/public/js/moment.js"></script>
-
-    <!--Let browser know website is optimized for mobile-->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
-    <!-- Firebase App is always required and must be first -->
     <script src="https://www.gstatic.com/firebasejs/5.8.2/firebase-app.js"></script>
-
-    <!-- Add additional services that you want to use -->
     <script src="https://www.gstatic.com/firebasejs/5.8.2/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/5.8.2/firebase-database.js"></script>
-
-    <script>
-        // Initialize Firebase
-        let config = {
-            apiKey: "AIzaSyCaxTOBofd7qrnbas5gGsZcuvy_zNSi_ik",
-            authDomain: "smart-charging-app.firebaseapp.com",
-            databaseURL: "https://smart-charging-app.firebaseio.com",
-            projectId: "smart-charging-app",
-            storageBucket: "",
-            messagingSenderId: "896921007938"
-        };
-        firebase.initializeApp(config);
-    </script>
-    <!--<script src="../delta_dashboard/public/bower_components/chart.js/dist/Chart.min.js"></script>-->
-
+    <script src="/delta_dashboard/public/js/initialiseFirebase.js"></script>
 </head>
 
 <% include ../partials/nav.ejs %>
@@ -132,7 +37,7 @@
 </div>
 
 <div id="master_row" class="row">
-    <script type="application/javascript" src="../delta_dashboard/public/js/admin_dashboard.js"></script>
+    <script type="application/javascript" src="/delta_dashboard/public/js/admin_dashboard.js"></script>
 
     <!-- ----------------------------------------- TOP ROW--------------------------------------------------------- -->
     <div class="col s12 m6 l3">
@@ -207,7 +112,7 @@
 
 <div class="row" id="system_row"></div>
 
-<script type="text/javascript" src="../delta_dashboard/public/js/materialize.min.js"></script>
+<script type="text/javascript" src="/delta_dashboard/public/js/materialize.min.js"></script>
 
 </body>
 

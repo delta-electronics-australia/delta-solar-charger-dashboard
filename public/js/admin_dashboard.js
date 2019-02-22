@@ -1,59 +1,61 @@
-let date;
-
 function generate_date() {
-    let today = new Date();
-    let dd = today.getDate();
-    let mm = today.getMonth() + 1; //January is 0!
-    let yyyy = today.getFullYear();
-
-    if (dd < 10) {
-        dd = '0' + dd
-    }
-
-    if (mm < 10) {
-        mm = '0' + mm
-    }
-
-    date = yyyy + '-' + mm + '-' + dd;
+    return moment().format('YYYY-MM-DD');
 }
 
 async function checkSystemStatus(adminUIDObject, linkedUIDsObject) {
     /// This function listens to whether or not our systems are online and changes the dot accordingly
+
     let adminUID = Object.keys(adminUIDObject)[0];
 
     let db = firebase.database();
 
-    let bool = true;
-
     let latestHistoryNode = await db.ref()
-        .child(`users/${adminUID}/history/${date}`)
+        .child(`users/${adminUID}/history/${generate_date()}`)
         .limitToLast(1)
         .once('value');
 
+    let latestPayloadTime = moment(`${generate_date()} ${latestHistoryNode.val()[Object.keys(latestHistoryNode.val())[0]]['time']}`, 'YYYY-MM-DD HHmmss');
+
     // First get the current time
     let currentTime = moment();
-    console.log(latestHistoryNode.val());
-    let latestPayloadTime = moment(latestHistoryNode.val()['time']);
-    console.log(currentTime);
-    console.log(latestPayloadTime);
-    // if (bool) {
-    //     adminUIDObject[adminUID]['dotElement'].css('background-color', '#33CC33');
-    //     bool = false;
-    // } else {
-    //     adminUIDObject[adminUID]['dotElement'].css('background-color', '#ff0000');
-    //     bool = true;
-    // }
 
-    // for (let linkedUID of Object.keys(linkedUIDsObject)) {
-    //     linkedUIDsObject[linkedUID]['element'] = $(`#${linkedUID}`);
-    //     db.ref()
-    //         .child(`users/${linkedUID}/history/${date}`)
-    //         .limitToLast(1)
-    //         .on('child_added', function (snapshot) {
-    //         });
-    // }
+    let minutesDifference = moment.duration(currentTime.diff(latestPayloadTime));
+    minutesDifference = minutesDifference.asMinutes();
+
+    // If it has been 15 minutes since the last history message then we display a red dot
+    if (minutesDifference > 15) {
+        adminUIDObject[adminUID]['dotElement'].css('background-color', '#ff0000');
+    }
+
+    // Else, we display a green dot
+    else {
+        adminUIDObject[adminUID]['dotElement'].css('background-color', '#33CC33');
+
+    }
+
+    /// Now we loop through our linkedUIDs and do the same
+    for (let linkedUID of Object.keys(linkedUIDsObject)) {
+        let latestHistoryNode = await db.ref()
+            .child(`users/${linkedUID}/history/${generate_date()}`)
+            .limitToLast(1)
+            .once('value');
+
+        let latestPayloadTime = moment(`${generate_date()} ${latestHistoryNode.val()[Object.keys(latestHistoryNode.val())[0]]['time']}`, 'YYYY-MM-DD HHmmss');
+
+        let minutesDifference = moment.duration(currentTime.diff(latestPayloadTime));
+        minutesDifference = minutesDifference.asMinutes();
+
+        // If it has been 15 minutes since the last history message then we display a red dot
+        if (minutesDifference > 15) {
+            linkedUIDsObject[linkedUID]['dotElement'].css('background-color', '#ff0000');
+        }
+
+        // If not, we display a green dot
+        else {
+            linkedUIDsObject[linkedUID]['dotElement'].css('background-color', '#33CC33');
+        }
+    }
 }
-
 
 function startSystemAnalyticsListeners(adminUIDObject, linkedUIDsObject) {
     let adminUID = Object.keys(adminUIDObject)[0];
@@ -122,7 +124,7 @@ function createSystemCards(adminUIDObject, linkedUIDsObject) {
     <div class="col s12 m6 l4">
         <div class="card blue-grey darken-1 hoverable">
             <div class="card-content white-text blue-grey darken-1">
-                <span class="card-title center-align"><span class="dot" id="${adminUID}_dot" style="background-color:#ff0000"></span>   ${adminUIDObject[adminUID]['name']}</span>
+                <span class="card-title center-align"><span class="admin_dashboard_dot" id="${adminUID}_dot" style="background-color:#ff0000"></span>   ${adminUIDObject[adminUID]['name']}</span>
                     <table class="">
                         <thead>
                             <tr>
@@ -137,6 +139,8 @@ function createSystemCards(adminUIDObject, linkedUIDsObject) {
         </div>
     </div>
     `);
+
+    // Append our selected elements to the UIDObject
     adminUIDObject[adminUID]['element'] = $(`#${adminUID}`);
     adminUIDObject[adminUID]['dotElement'] = $(`#${adminUID}_dot`);
     adminUIDObject[adminUID]['tableElement'] = $(`#${adminUID}_table`);
@@ -151,7 +155,7 @@ function createSystemCards(adminUIDObject, linkedUIDsObject) {
         <div class="col s12 m6 l4">
             <div class="card blue-grey darken-1 hoverable">
                 <div class="card-content white-text blue-grey darken-1">
-                    <span class="card-title center-align">${linkedUIDsObject[linkedUID]['name']}</span>
+                    <span class="card-title center-align"><span class="admin_dashboard_dot" id="${linkedUID}_dot" style="background-color:#ff0000"></span>   ${linkedUIDsObject[linkedUID]['name']}</span>
                     <table class="">
                         <thead>
                             <tr>
@@ -166,6 +170,8 @@ function createSystemCards(adminUIDObject, linkedUIDsObject) {
             </div>
         </div>
         `);
+
+        // Append our selected elements to the UIDObject
         linkedUIDsObject[linkedUID]['element'] = $(`#${linkedUID}`);
         linkedUIDsObject[linkedUID]['dotElement'] = $(`#${linkedUID}_dot`);
         linkedUIDsObject[linkedUID]['tableElement'] = $(`#${linkedUID}_table`);
@@ -197,7 +203,6 @@ function grabAggregateAnalytics(adminUIDObject, linkedUIDsObject) {
 
         db.ref().child(`users/${linkedUID}/analytics/live_analytics`)
             .on('value', function (snapshot) {
-                console.log(snapshot.val());
                 let liveAnalyticsNode = snapshot.val();
 
                 liveAnalyticsObject[linkedUID]['btp_charged_t'] = liveAnalyticsNode['btp_charged_t'] * -1;
@@ -256,11 +261,10 @@ function grabAggregateAnalytics(adminUIDObject, linkedUIDsObject) {
             document.getElementById("energy_consumed_card")
                 .innerText = (summedLiveAnalytics['ac2p_t'].toFixed(2)) + "kWh";
 
+            // Now that the data has been displayed, we can how make our master row visible
             document.getElementById("master_row").style.visibility = 'initial';
             document.getElementById("loading_id").style.display = 'none';
-
         })
-
 }
 
 function initialiseUIElements() {
@@ -314,7 +318,6 @@ function startAdminDashboard() {
 
                 }
             }
-            console.log(linkedUIDsObject);
 
             // Now we get information about our admin UID
             adminUIDObject[user.uid] = {};
@@ -323,9 +326,10 @@ function startAdminDashboard() {
                 .once('value');
             adminUIDObject[user.uid]['name'] = adminUIDName.val();
 
-            console.log(adminUIDObject);
-
+            // First grab our aggregate analytics
             grabAggregateAnalytics(adminUIDObject, linkedUIDsObject);
+
+            // Then we create the cards that display information about our linked systems
             createSystemCards(adminUIDObject, linkedUIDsObject);
         })
 }
@@ -355,9 +359,6 @@ function checkIfLoggedIn() {
             // First check if this is an admin account
             checkAdminStatus();
 
-            // This will update our global date variable
-            generate_date();
-
             // Start the main js script
             startAdminDashboard(user);
         } else {
@@ -365,15 +366,6 @@ function checkIfLoggedIn() {
         }
     });
 
-}
-
-function signOut() {
-    firebase.auth().signOut().then(function () {
-        console.log("Signout Successful")
-        // window.location.reload()
-    }).catch(function (error) {
-        console.log("error", error)
-    })
 }
 
 

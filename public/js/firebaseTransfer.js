@@ -104,9 +104,9 @@ function create_charts(data_obj, needed_charts) {
                         }
                     }],
                     yAxes: [{
-                            id: 'A',
-                            position: 'left'
-                        },
+                        id: 'A',
+                        position: 'left'
+                    },
                         {
                             id: 'B',
                             type: 'linear',
@@ -178,9 +178,9 @@ function create_charts(data_obj, needed_charts) {
                         }
                     }],
                     yAxes: [{
-                            id: 'A',
-                            position: 'left'
-                        },
+                        id: 'A',
+                        position: 'left'
+                    },
                         {
                             id: 'B',
                             position: 'right'
@@ -263,9 +263,9 @@ function create_charts(data_obj, needed_charts) {
                         }
                     }],
                     yAxes: [{
-                            id: 'A',
-                            position: 'left'
-                        },
+                        id: 'A',
+                        position: 'left'
+                    },
                         {
                             id: 'B',
                             type: 'linear',
@@ -314,7 +314,7 @@ function create_charts(data_obj, needed_charts) {
                     // backgroundColor: '#ffc107',
                     backgroundColor: colour_array,
                     fill: false
-                }, ]
+                },]
             },
             options: {
                 title: {
@@ -1239,16 +1239,6 @@ function start_master_listener(user) {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-}
-
-
-function signOut() {
-    firebase.auth().signOut().then(function () {
-        console.log("Signout Successful")
-        // window.location.reload()
-    }).catch(function (error) {
-        console.log("error", error)
-    })
 }
 
 

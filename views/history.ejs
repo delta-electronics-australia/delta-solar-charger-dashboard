@@ -1,72 +1,23 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <style>
-        #preloader_wrapper_wrapper {
-            /*position: absolute;*/
-            /*top: 0;*/
-            /*left: 0;*/
-            /*right: 0;*/
-            /*bottom: 0;*/
-            /*margin: auto;*/
-            width: 100%;
-            display: flex;
-        }
+    <title>Delta Solar Charger System History</title>
 
-        #loading_id {
-            margin: auto;
-            text-align: center;
-        }
+    <link rel="stylesheet" type="text/css" href="/delta_dashboard/public/css/style.css">
 
-        .tab a.active {
-            color: rgb(252, 234, 37) !important;
-            background-color: #FFFFFF !important;
-        }
+    <script src="/delta_dashboard/public/js/jquery-3.3.1.js"></script>
+    <script src="/delta_dashboard/public/js/moment.js"></script>
 
-        .tabs .tab a:hover {
-            background-color: #FFFFFF !important;
-            color: #64b4f6 !important;
-        }
-
-        .tabs .tab a {
-            color: #64b4f6 !important;
-        }
-
-        .tabs .indicator {
-            background-color: #64b4f6 !important;
-        }
-    </style>
-
-    <!--Let browser know website is optimized for mobile-->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
-    <script src="../delta_dashboard/public/js/jquery-3.3.1.js"></script>
-    <script src="../delta_dashboard/public/js/moment.js"></script>
-
-    <!-- Firebase App is always required and must be first -->
     <script src="https://www.gstatic.com/firebasejs/5.8.2/firebase-app.js"></script>
-
-    <!-- Add additional services that you want to use -->
     <script src="https://www.gstatic.com/firebasejs/5.8.2/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/5.8.2/firebase-database.js"></script>
+    <script src="/delta_dashboard/public/js/initialiseFirebase.js"></script>
 
-    <script>
-        // Initialize Firebase
-        let config = {
-            apiKey: "AIzaSyCaxTOBofd7qrnbas5gGsZcuvy_zNSi_ik",
-            authDomain: "smart-charging-app.firebaseapp.com",
-            databaseURL: "https://smart-charging-app.firebaseio.com",
-            projectId: "smart-charging-app",
-            storageBucket: "",
-            messagingSenderId: "896921007938"
-        };
-        firebase.initializeApp(config);
-    </script>
-    <script src="../delta_dashboard/public/js/hammer.min.js"></script>
-    <script src="../delta_dashboard/public/bower_components/chart.js/dist/Chart.min.js"></script>
+    <script src="/delta_dashboard/public/js/hammer.min.js"></script>
+    <script src="/delta_dashboard/public/bower_components/chart.js/dist/Chart.min.js"></script>
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-    <script src="../delta_dashboard/public/bower_components/chartjs-plugin-zoom/chartjs-plugin-zoom.js"></script>
+    <script src="/delta_dashboard/public/bower_components/chartjs-plugin-zoom/chartjs-plugin-zoom.js"></script>
 
 </head>
 
@@ -77,16 +28,6 @@
     <h1 class="center-align">Archive</h1>
 
     <div id="master_row">
-        <!--<div class="row">-->
-        <!--<div class="col s6 offset-s3">-->
-
-        <!--<p class=center-align>-->
-        <!--<a class="waves-effect waves-light btn" onclick="request_data(this.id)"-->
-        <!--id="all_data_request_button">Download All Data</a>-->
-        <!--</p>-->
-
-        <!--</div>-->
-        <!--</div>-->
 
         <div class="divider"></div>
 
@@ -101,18 +42,16 @@
             </div>
 
             <div class="col s12" id="preloader">
-                <div id="preloader_wrapper_wrapper">
-                    <div class="preloader-wrapper big active" id="loading_id">
-                        <div class="spinner-layer spinner-blue-only">
-                            <div class="circle-clipper left">
-                                <div class="circle"></div>
-                            </div>
-                            <div class="gap-patch">
-                                <div class="circle"></div>
-                            </div>
-                            <div class="circle-clipper right">
-                                <div class="circle"></div>
-                            </div>
+                <div class="preloader-wrapper big active" id="loading_id">
+                    <div class="spinner-layer spinner-blue-only">
+                        <div class="circle-clipper left">
+                            <div class="circle"></div>
+                        </div>
+                        <div class="gap-patch">
+                            <div class="circle"></div>
+                        </div>
+                        <div class="circle-clipper right">
+                            <div class="circle"></div>
                         </div>
                     </div>
                 </div>
@@ -149,21 +88,20 @@
     </div>
     <div class="row" id="sankey_tab">
         <div class="col s12">
-            <div id="sankey_basic" style="width: 800px; height: 500px;"></div>
+            <div id="sankey_basic"></div>
         </div>
     </div>
     <div class="row" id="download_tab">
         <div class="col s6 offset-s3" id="data_request_button_div">
             <p class="center-align">
-                <a class="waves-effect waves-light btn" onclick="request_data(this.id)" id="data_request_button">Download
-                    This Day's Data</a>
+                <a class="waves-effect waves-light btn" id="data_request_button">Download This Day's Data</a>
             </p>
         </div>
     </div>
 
 </div>
-<script type="text/javascript" src="../delta_dashboard/public/js/materialize.min.js"></script>
-<script type="application/javascript" src="../delta_dashboard/public/js/archive.js"></script>
+<script type="text/javascript" src="/delta_dashboard/public/js/materialize.min.js"></script>
+<script type="application/javascript" src="/delta_dashboard/public/js/archive.js"></script>
 
 
 </body>

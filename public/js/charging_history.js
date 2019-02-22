@@ -292,7 +292,7 @@ async function start_charging_history_page(user) {
             $.each(charging_session_keys, function (i, val) {
                 display_value = (val.slice(0, 13) + ":" + val.slice(13)).replace("T", " ");
 
-                if (_isCharging && val === charging_session_keys[charging_session_keys.length - 1]){
+                if (_isCharging && val === charging_session_keys[charging_session_keys.length - 1]) {
                     console.log('We have reached the one that should be disabled...');
                     console.log(val);
                     console.log(options + "<option value='" + val + "' ' + disabled'>" + display_value + "</option>")
@@ -403,15 +403,6 @@ function checkIfLoggedIn() {
         }
     });
 
-}
-
-function signOut() {
-    firebase.auth().signOut().then(function () {
-        console.log("Signout Successful")
-        // window.location.reload()
-    }).catch(function (error) {
-        console.log("error", error)
-    })
 }
 
 

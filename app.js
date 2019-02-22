@@ -33,6 +33,32 @@ app.set('view engine', 'ejs');
 
 // app.use(favicon('public/favicon.ico'));
 
+let sources = {
+    'default-src': ['\'self\''],
+    'script-src': ['\'self\'', 'https://www.gstatic.com', 'https://*.firebaseio.com', 'https://cdnjs.cloudflare.com',
+        'https://*.googleapis.com', 'https://cdn.firebase.com'],
+    'frame-src': ['https://*.firebaseio.com'],
+    'img-src': ['\'self\'', 'https:', 'data:'],
+    'style-src': ['\'self\'', 'https://fonts.googleapis.com', '\'unsafe-inline\'', 'https://www.gstatic.com',
+        '\'unsafe-inline\'', 'https://cdn.firebase.com'],
+    'font-src': ['\'self\'', 'https:'],
+    'connect-src': ['\'self\'', 'wss://*.googleapis.com', 'http://api.openweathermap.org', 'https://*.firebaseio.com',
+        'wss://s-usc1c-nss-252.firebaseio.com', 'https://www.googleapis.com', 'https://*.googleapis.com',],
+};
+
+let csp = Object.keys(sources).map(function (key) {
+    return `${key} ${sources[key].join(' ')};`
+});
+
+app.use(function (req, res, next) {
+
+    if (req.method === "GET" && !(req.url.split('/')[2] === "logs")) {
+        res.setHeader('Content-Security-Policy', csp.join(' '))
+    }
+
+    next();
+});
+
 // Define our ejs routes
 app.use('/delta_dashboard/logs', express.static(__dirname + '/iisnode/'));
 app.get('/delta_dashboard/logs/', function (req, res) {
@@ -43,8 +69,20 @@ app.get('/delta_dashboard/', function (req, res) {
     res.render('index')
 });
 
+app.get('/delta_dashboard/test/', function (req, res) {
+    res.render('test')
+});
+
+app.get('/delta_dashboard/test/:uid', function (req, res) {
+    res.render('test', {custom_uid: req.params.uid})
+});
+
 app.get('/delta_dashboard/index2', function (req, res) {
-    res.render('index2')
+    res.render('index2', {})
+});
+
+app.get('/delta_dashboard/index2/:uid', function (req, res) {
+    res.render('index2', {custom_uid: req.params.uid})
 });
 
 app.get('/delta_dashboard/adminindex', function (req, res) {
@@ -59,6 +97,10 @@ app.get('/delta_dashboard/history', function (req, res) {
     res.render('history')
 });
 
+app.get('/delta_dashboard/history/:uid', function (req, res) {
+    res.render('history', {custom_uid: req.params.uid})
+});
+
 app.get('/delta_dashboard/charging_history', function (req, res) {
     res.render('charging_history')
 });
@@ -67,16 +109,29 @@ app.get('/delta_dashboard/charging_history2', function (req, res) {
     res.render('charging_history2')
 });
 
+app.get('/delta_dashboard/charging_history2/:uid', function (req, res) {
+    res.render('charging_history2', {custom_uid: req.params.uid})
+});
+
 app.get('/delta_dashboard/hardware_info', function (req, res) {
     res.render('hardware_info')
+});
+
+app.get('/delta_dashboard/hardware_info/:uid', function (req, res) {
+    res.render('hardware_info', {custom_uid: req.params.uid})
 });
 
 app.get('/delta_dashboard/profile', function (req, res) {
     res.render('profile')
 });
 
+app.get('/delta_dashboard/profile/:uid', function (req, res) {
+    res.render('profile', {custom_uid: req.params.uid})
+});
+
 app.use('/delta_dashboard/public', express.static(__dirname + '/public'));
 app.use(express.json());
+
 
 // Define our POST requests
 app.post('/delta_dashboard/archive_request', function (req, res) {

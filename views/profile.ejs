@@ -1,54 +1,16 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <style>
-        #preloader_wrapper_wrapper {
-            /*position: absolute;*/
-            /*top: 0;*/
-            /*left: 0;*/
-            /*right: 0;*/
-            /*bottom: 0;*/
-            /*margin: auto;*/
-            width: 100%;
-            display: flex;
-        }
+    <title>Delta Solar Charger Settings</title>
 
-        #loading_id {
-            margin: auto;
-            text-align: center;
-        }
+    <script src="/delta_dashboard/public/js/jquery-3.3.1.js"></script>
+    <script src="/delta_dashboard/public/js/moment.js"></script>
 
-        /* #map {
-            height: 100%;
-        } */
-    </style>
-
-    <!--Let browser know website is optimized for mobile-->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
-    <script src="../delta_dashboard/public/js/jquery-3.3.1.js"></script>
-    <script src="../delta_dashboard/public/js/moment.js"></script>
-
-    <!-- Firebase App is always required and must be first -->
     <script src="https://www.gstatic.com/firebasejs/5.8.2/firebase-app.js"></script>
-
-    <!-- Add additional services that you want to use -->
     <script src="https://www.gstatic.com/firebasejs/5.8.2/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/5.8.2/firebase-database.js"></script>
-
-    <script>
-        // Initialize Firebase
-        let config = {
-            apiKey: "AIzaSyCaxTOBofd7qrnbas5gGsZcuvy_zNSi_ik",
-            authDomain: "smart-charging-app.firebaseapp.com",
-            databaseURL: "https://smart-charging-app.firebaseio.com",
-            projectId: "smart-charging-app",
-            storageBucket: "",
-            messagingSenderId: "896921007938"
-        };
-        firebase.initializeApp(config);
-    </script>
+    <script src="/delta_dashboard/public/js/initialiseFirebase.js"></script>
 </head>
 
 <% include ../partials/nav.ejs %>
@@ -64,7 +26,7 @@
                 <div class="collapsible-body">
                     <div class="row">
                         <div class="col s12 m6 l6">
-                            <div class="card blue-grey darken-1 hoverable" style="height: 300px">
+                            <div class="card blue-grey darken-1 hoverable user_settings">
                                 <div class="card-content white-text">
                                     <span class="card-title center-align">Change Display Name</span>
                                     <h6>Your current display name is: </h6>
@@ -86,7 +48,7 @@
                         </div>
 
                         <div class="col s12 m6 l6">
-                            <div class="card blue-grey darken-1 hoverable" style="height: 300px">
+                            <div class="card blue-grey darken-1 hoverable user_settings">
                                 <div class="card-content white-text">
                                     <span class="card-title center-align">Change Password</span>
                                     <div class="row">
@@ -103,8 +65,7 @@
                                     </div>
 
                                     <div class="right-align">
-                                        <div class="waves-effect waves-light btn" id="change_pw_button"
-                                             onclick="change_pw_button_pressed()">
+                                        <div class="waves-effect waves-light btn" id="change_pw_button">
                                             <span>Change</span><i class="material-icons">keyboard_arrow_right</i></div>
                                     </div>
                                 </div>
@@ -121,7 +82,7 @@
                 <div class="collapsible-body">
                     <div class="row">
                         <div class="col s12 m6 l6">
-                            <div class="card blue-grey darken-1 hoverable" style="height: 250px">
+                            <div class="card blue-grey darken-1 hoverable charging_settings">
                                 <div class="card-content white-text">
                                     <span class="card-title center-align">Charging Mode</span>
                                     <p class="center-align">Your current charging mode is</p>
@@ -142,7 +103,7 @@
                         </div>
 
                         <div class="col s12 m6 l6">
-                            <div class="card blue-grey darken-1 hoverable second_row_card" style="height: 250px">
+                            <div class="card blue-grey darken-1 hoverable second_row_card charging_settings">
                                 <div class="card-content white-text">
                                     <span class="card-title center-align">Battery Buffering Usage</span>
                                     <p class="center-align">How aggressive should we be in using the battery. The
@@ -169,7 +130,7 @@
                             </div>
                         </div>
                         <div class="col s12 m6 l6">
-                            <div class="card blue-grey darken-1 hoverable" style="height: 250px">
+                            <div class="card blue-grey darken-1 hoverable charging_settings">
                                 <div class="card-content white-text">
                                     <span class="card-title center-align">Authentication Requirements</span>
                                     <p class="center-align">Will the solar charger require RFID card authentication?</p>
@@ -190,7 +151,7 @@
             <li id="map_collapsible">
                 <div class="collapsible-header"><i class="material-icons">map</i>Set System Location</div>
                 <div class="collapsible-body">
-                    <div id="map" style="height:450px;"></div>
+                    <div id="map"></div>
                 </div>
             </li>
         </ul>
@@ -198,8 +159,8 @@
 
     </div>
 </div>
-<script type="text/javascript" src="../delta_dashboard/public/js/materialize.min.js"></script>
-<script type="application/javascript" src="../delta_dashboard/public/js/profile.js"></script>
+<script type="text/javascript" src="/delta_dashboard/public/js/materialize.min.js"></script>
+<script type="application/javascript" src="/delta_dashboard/public/js/profile.js"></script>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDua0AtpkUdGyeS5W5sJ4bjdgMThSAzYFs"></script>
 
 </body>

@@ -1,38 +1,161 @@
-body {
-    background: white;
-    font-family: Verdana;
-    color: black
+#index2_master_row {
+    opacity: 0;
+    -webkit-transition: opacity 0.7s ease-in;
+    -moz-transition: opacity 0.7s ease-in;
+    -o-transition: opacity 0.7s ease-in;
+    transition: opacity 0.7s ease-in;
 }
 
-h1 {
-    font-size: 48px;
-    text-transform: uppercase;
-    text-align: center
+#index2_master_row.load {
+    opacity: 1;
 }
 
-h2 {
-    text-transform: uppercase;
-    text-align: left;
-    display: inline-block
+#btp_title {
+    font-size: 24px;
+    font-weight: 500;
 }
 
-p {
-    font-size: 16px;
-    text-align: center
+#loading_id {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
 }
 
-ul {
+.top_row_card {
+    height: 200px;
+}
+
+.second_row_card {
+    height: 325px;
+}
+
+.without_carousel_chart {
+    height: 215px;
+}
+
+.with_carousel_chart {
+    height: 172px;
+}
+
+/*   Class for when element is pinned */
+.pinned {
+    position: fixed !important;
+    z-index: 10;
+}
+
+/* Default style of the title */
+#title {
     margin: 0;
-    padding: 0 0 0 15px
+    width: 100%;
+    padding: 20px;
 }
 
-li {
-    margin: 10px;
-    padding: 0 0 0 15px
+#title_wrapper {
+    height: 100px;
 }
 
-.column {
-    float: left;
-    margin: 0 20px 0 0;
-    /*text-align: center;*/
+/* Style of the title when unpinned */
+.title_unpinned {
+    background-color: white;
+    color: black;
+    font-size: 4.2rem;
+    padding: 20px;
+    margin: 0;
+}
+
+/* Style of the title when pinned */
+.title_pinned {
+    background-color: rgba(100, 181, 246, 0.85);
+    color: white;
+    font-size: 3rem;
+    padding: 15px
+}
+
+/* Dot is for indicating if a system is online or not */
+.admin_dashboard_dot {
+    height: 15px;
+    width: 15px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+/* Dot is for indicating if a system is online or not */
+.hardware_info_dot {
+    height: 20px;
+    width: 20px;
+    /*background-color: #ff0000;*/
+    border-radius: 50%;
+    display: inline-block;
+}
+
+/* These styles are for the logo */
+#logo {
+    width: 25%;
+    /*height: 7%;*/
+    /*margin: auto;*/
+    padding-left: 10px;
+    /*display: inline-block;*/
+}
+
+/* These styles are for the logo */
+#logoImgWrapper {
+    /*max-width: 0px;*/
+    display: inline-block;
+    width: 25%
+}
+
+/* Defines the dimensions of the FW update modal in settings */
+#update_fw_modal {
+    width: 70% !important;
+    max-height: 50% !important;
+}
+
+/* Defines the dimensions of the charging_history modal in settings */
+#update_fw_modal {
+    width: 70% !important;
+    max-height: 50% !important;
+}
+
+.tab a.active {
+    color: rgb(252, 234, 37) !important;
+    background-color: #FFFFFF !important;
+}
+
+.tabs .tab a:hover {
+    background-color: #FFFFFF !important;
+    color: #64b4f6 !important;
+}
+
+.tabs .tab a {
+    color: #64b4f6 !important;
+
+}
+
+.tabs .indicator {
+    background-color: #64b4f6 !important;
+}
+
+#charging_history_modal {
+    width: 70% !important;
+    max-height: 80% !important;
+}
+
+#sankey_basic {
+    width: 800px;
+    height: 500px;
+}
+
+.user_settings {
+    height: 300px;
+}
+
+.charging_settings {
+    height: 250px;
+}
+
+#map {
+    height: 450px;
 }

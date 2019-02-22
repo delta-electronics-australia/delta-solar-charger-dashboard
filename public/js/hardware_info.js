@@ -5,7 +5,7 @@ function update_ev_charger_information(data_obj) {
         if (data_obj.hasOwnProperty(key)) {
 
             evc_info_row.append(`<div class="col s12">
-            <h5><span class="dot" style="background-color: ${data_obj[key]['alive'] ? '#33cc33' : '#ff0000'}"></span> Charger ${charger_number} - ${key}${data_obj[key]['primary_charger'] ? " - Primary Charger" : ''}</h5></div>`);
+            <h5><span class="hardware_info_dot" style="background-color: ${data_obj[key]['alive'] ? '#33cc33' : '#ff0000'}"></span> Charger ${charger_number} - ${key}${data_obj[key]['primary_charger'] ? " - Primary Charger" : ''}</h5></div>`);
 
             evc_info_row.append(`<div class="col s9">
             <table><thead><tr><th>Description</th><th>Value</th></tr></thead><tbody>
@@ -19,12 +19,12 @@ function update_ev_charger_information(data_obj) {
             if (data_obj[key]['chargePointModel'].substring(0, 4) === 'EVPE') {
                 evc_info_row.append(`
             <div class="col s3">
-                <img class="materialboxed center-align" style="max-width: 80%; height: auto;" src="../delta_dashboard/public/img/acminiplus.jpg">
+                <img class="materialboxed center-align" style="max-width: 80%; height: auto;" src="/delta_dashboard/public/img/acminiplus.jpg">
             </div>`);
             } else if (data_obj[key]['chargePointModel'].substring(0, 4) === 'EVDE') {
                 evc_info_row.append(`
             <div class="col s3">
-                <img class="materialboxed center-align" style="max-width: 80%; height: auto;" src="../delta_dashboard/public/img/acminiplus.jpg">
+                <img class="materialboxed center-align" style="max-width: 80%; height: auto;" src="/delta_dashboard/public/img/acminiplus.jpg">
             </div>`);
             }
 
@@ -39,7 +39,7 @@ function update_ev_charger_information(data_obj) {
 
 }
 
-async function start_hardware_info_page(user) {
+async function start_hardware_info_page(uid) {
     let db = firebase.database();
 
     let elems = document.querySelectorAll('.modal');
@@ -53,11 +53,11 @@ async function start_hardware_info_page(user) {
 
     // Todo: In the future we need to change this for
     // Get the list of EV chargers that we have connected to this E5
-    let ev_charger_keys = db.ref(`users/${user.uid}/ev_chargers`);
+    let ev_charger_keys = db.ref(`users/${uid}/ev_chargers`);
     let ev_chargers = await ev_charger_keys.once("value");
     ev_chargers = Object.keys(ev_chargers.val());
 
-    let primary_charger_ref = db.ref(`users/${user.uid}/evc_inputs/primary_charger_id`);
+    let primary_charger_ref = db.ref(`users/${uid}/evc_inputs/primary_charger_id`);
     let primary_charger = await primary_charger_ref.once("value");
     primary_charger = primary_charger.val();
 
@@ -66,7 +66,7 @@ async function start_hardware_info_page(user) {
     for (let i = 0; i < ev_chargers.length; i++) {
         console.log(ev_chargers[i]);
 
-        let temp_evc_data = await db.ref(`users/${user.uid}/evc_inputs/${ev_chargers[i]}/charger_info`).once("value");
+        let temp_evc_data = await db.ref(`users/${uid}/evc_inputs/${ev_chargers[i]}/charger_info`).once("value");
         temp_evc_data = temp_evc_data.val();
         // Just in case a boot notification has not come yet, we have an empty Object
         if (temp_evc_data === null) {
@@ -80,16 +80,16 @@ async function start_hardware_info_page(user) {
             }
         } else {
             // If we have details on the charger AND the charger is online then we can append
-            let alive_temp = await db.ref(`users/${user.uid}/evc_inputs/${ev_chargers[i]}/alive`).once("value");
+            let alive_temp = await db.ref(`users/${uid}/evc_inputs/${ev_chargers[i]}/alive`).once("value");
             if (alive_temp.val()) {
                 charger_select_html = charger_select_html + "<option value='" + ev_chargers[i] + "'>" + ev_chargers[i] + "</option>"
             }
         }
 
-        let temp_evc_alive = await db.ref(`users/${user.uid}/evc_inputs/${ev_chargers[i]}/alive`).once("value");
+        let temp_evc_alive = await db.ref(`users/${uid}/evc_inputs/${ev_chargers[i]}/alive`).once("value");
         temp_evc_alive = temp_evc_alive.val();
 
-        let temp_evc_primary_charger = await db.ref(`users/${user.uid}/evc_inputs/${ev_chargers[i]}/primary_charger`).once("value");
+        let temp_evc_primary_charger = await db.ref(`users/${uid}/evc_inputs/${ev_chargers[i]}/primary_charger`).once("value");
         temp_evc_primary_charger = temp_evc_primary_charger.val();
 
 
@@ -170,7 +170,7 @@ async function start_hardware_info_page(user) {
             let firmwareType = $('#firmware_type_select').val();
             console.log(firmwareType);
             // Send the package that will enable the RemoteUpdate message in the backend
-            db.ref(`users/${user.uid}/evc_inputs/`).update({
+            db.ref(`users/${uid}/evc_inputs/`).update({
                 update_firmware: {
                     'chargerID': selected_charger,
                     'firmwareType': firmwareType,
@@ -187,7 +187,7 @@ async function start_hardware_info_page(user) {
                 modal_body.append('<h6>We vibing</h6>');
 
                 // Start a listener for any FirmwareStatusNotification updates
-                db.ref(`users/${user.uid}/evc_inputs/temp_remote_fw_update_info/firmware_update_status`).on('value', function (snapshot) {
+                db.ref(`users/${uid}/evc_inputs/temp_remote_fw_update_info/firmware_update_status`).on('value', function (snapshot) {
 
                     if (snapshot.val() !== null) {
                         let fw_status = snapshot.val();
@@ -224,7 +224,7 @@ async function start_hardware_info_page(user) {
                             );
 
                             // Remove the entry in evc_inputs
-                            db.ref(`users/${user.uid}/evc_inputs/temp_remote_fw_update_info`).remove()
+                            db.ref(`users/${uid}/evc_inputs/temp_remote_fw_update_info`).remove()
                                 .then(function () {
                                     setTimeout(function () {
                                         modal_body.empty();
@@ -243,36 +243,32 @@ async function start_hardware_info_page(user) {
 
 }
 
+function initialiseUIElements() {
+    // Initialize our collapsable
+    let elems = document.querySelectorAll('.collapsible');
+    let instances = M.Collapsible.init(elems, {
+        accordion: false
+    });
+}
+
 function checkIfLoggedIn() {
     document.getElementById('master_row').style.visibility = 'hidden';
     document.getElementById('preloader').style.display = 'inline';
 
+    initialiseUIElements();
+
     // Check if we are logged in
     firebase.auth().onAuthStateChanged(function (user) {
         if (user) {
-            // Initialize our collapsable
-            let elems = document.querySelectorAll('.collapsible');
-            let instances = M.Collapsible.init(elems, {
-                accordion: false
-            });
 
             // Start our code for the page
-            start_hardware_info_page(user)
+            start_hardware_info_page(getPageUID(user))
         } else {
             //... or go to login
             window.location.replace("/delta_dashboard/login")
         }
     });
 
-}
-
-function signOut() {
-    firebase.auth().signOut().then(function () {
-        console.log("Signout Successful")
-        // window.location.reload()
-    }).catch(function (error) {
-        console.log("error", error)
-    })
 }
 
 

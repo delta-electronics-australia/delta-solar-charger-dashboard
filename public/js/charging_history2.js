@@ -393,7 +393,6 @@ function openModal(chargerID, start_time, start_date, duration_string, charge_en
 
     if (globals.hasOwnProperty('charging_line_chart')) {
         globals.charging_line_chart.destroy();
-        console.log('poof!')
     }
 
     // First remove the previous charging history modal
@@ -453,8 +452,8 @@ function openModal(chargerID, start_time, start_date, duration_string, charge_en
 
 }
 
-async function get_ev_charger_list(user, db) {
-    let ev_chargers = await db.ref(`users/${user.uid}/ev_chargers`).once("value");
+async function get_ev_charger_list(uid) {
+    let ev_chargers = await firebase.database().ref(`users/${uid}/ev_chargers`).once("value");
     return Object.keys(ev_chargers.val())
 }
 
@@ -485,7 +484,7 @@ function convert_seconds_into_words(duration_seconds) {
     return final_duration_string
 }
 
-async function create_charge_session_cards(user, db, selected_date, ev_chargers) {
+async function create_charge_session_cards(uid, selected_date, ev_chargers) {
 
     let charge_session_row = $("#charge_sessions_row");
     charge_session_row.empty();
@@ -493,7 +492,7 @@ async function create_charge_session_cards(user, db, selected_date, ev_chargers)
         if (ev_chargers.hasOwnProperty(index)) {
             let chargerID = ev_chargers[index];
             // Now we have the selected date, we have to bring up all of the charging sessions that occurred on that date
-            let temp_charging_analytics = await db.ref(`users/${user.uid}/analytics/charging_history_analytics/${chargerID}/${selected_date}`).once("value");
+            let temp_charging_analytics = await firebase.database().ref(`users/${uid}/analytics/charging_history_analytics/${chargerID}/${selected_date}`).once("value");
 
             temp_charging_analytics = temp_charging_analytics.val();
             // If this charger has charging sessions on this day, then there will be an object returned
@@ -548,23 +547,23 @@ async function create_charge_session_cards(user, db, selected_date, ev_chargers)
     }
 }
 
-function date_chosen(selected_date, user, db) {
+function date_chosen(selected_date, uid) {
     selected_date = selected_date.date.yyyymmdd();
     console.log(selected_date);
 
     // First get a list of ev_chargers
-    get_ev_charger_list(user, db)
+    get_ev_charger_list(uid)
         .then(function (ev_chargers) {
-            create_charge_session_cards(user, db, selected_date, ev_chargers)
+            create_charge_session_cards(uid, selected_date, ev_chargers)
                 .then(function () {
                 })
         })
 }
 
-async function get_valid_charging_dates(user, db) {
+async function get_valid_charging_dates(uid) {
     let valid_dates = [];
 
-    let charging_history_keys_obj = await db.ref(`users/${user.uid}/analytics/charging_history_analytics`).once("value");
+    let charging_history_keys_obj = await firebase.database().ref(`users/${uid}/analytics/charging_history_analytics`).once("value");
     charging_history_keys_obj = charging_history_keys_obj.val();
 
     let earliest_date = moment('2050-01-01', 'YYYY-MM-DD');
@@ -601,12 +600,7 @@ async function get_valid_charging_dates(user, db) {
     }
 }
 
-function start_charging_history_page(user) {
-    let db = firebase.database();
-
-    // // Initialize our charts
-    // let chart_obj = await create_charts();
-
+function initialiseUIElements() {
     let media_options = {
         height: 150,
         interval: 30000
@@ -620,6 +614,14 @@ function start_charging_history_page(user) {
     let media_elem3 = document.getElementById('dctp_slider');
     M.Slider.init(media_elem3, media_options);
 
+    let elems = document.querySelectorAll('.modal');
+    let instance = M.Modal.init(elems);
+}
+
+function start_charging_history_page(uid) {
+
+    initialiseUIElements();
+
     // Define the object that will hold all of our charting information
     let data_obj = {
         'utility_p': [],
@@ -630,24 +632,8 @@ function start_charging_history_page(user) {
         'time': []
     };
 
-    let elems = document.querySelectorAll('.modal');
-    let instance = M.Modal.init(elems);
-
-    let analytics_obj = {};
-
-    ////////////////////////////////////////////////////////////////////////////////////
-    // db.ref(`users/${user.uid}/history/2018-10-08`)
-    //     .orderByChild('time')
-    //     .startAt('011516')
-    //     .endAt('131807')
-    //     .once('value')
-    //     .then(function (snapshot) {
-    //         console.log(snapshot.val());
-    //     });
-    ////////////////////////////////////////////////////////////////////////////////////
-
     // First we grab our valid charging dates
-    get_valid_charging_dates(user, db).then(function (valid_charging_dates_payload) {
+    get_valid_charging_dates(uid).then(function (valid_charging_dates_payload) {
         let valid_dates = valid_charging_dates_payload['valid_dates'];
         let earliest_date = valid_charging_dates_payload['earliest_date'];
 
@@ -657,7 +643,7 @@ function start_charging_history_page(user) {
             autoClose: true,
             format: 'mmm dd, yyyy',
             onClose: function () {
-                date_chosen(datepicker_instance, user, db)
+                date_chosen(datepicker_instance, uid)
             },
             minDate: new Date(earliest_date),
 
@@ -670,7 +656,6 @@ function start_charging_history_page(user) {
         });
         document.getElementById('preloader').style.display = 'none';
         document.getElementById('master_row').style.visibility = 'visible';
-
     })
 
 }
@@ -685,22 +670,13 @@ function checkIfLoggedIn() {
     firebase.auth().onAuthStateChanged(function (user) {
         if (user) {
             // Start our code for the page
-            start_charging_history_page(user);
+            start_charging_history_page(getPageUID(user));
         } else {
             //... or go to login
             window.location.replace("/delta_dashboard/login")
         }
     });
 
-}
-
-function signOut() {
-    firebase.auth().signOut().then(function () {
-        console.log("Signout Successful")
-        // window.location.reload()
-    }).catch(function (error) {
-        console.log("error", error)
-    })
 }
 
 
