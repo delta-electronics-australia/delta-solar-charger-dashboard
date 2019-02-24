@@ -1,3 +1,5 @@
+/** archive.js is the js file for the inverter history page **/
+
 let download_date = "";
 
 function create_charts() {

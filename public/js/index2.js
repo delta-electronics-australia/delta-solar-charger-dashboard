@@ -1448,7 +1448,7 @@ function update_daily_charger_breakdown(uid, db) {
 
 }
 
-function initialiseUIElements() {
+function initialiseUIElements(isCustomUID) {
     /** This function initializes all of our Materialize UI elements **/
 
         // Define the first row of sliders
@@ -1488,12 +1488,26 @@ function initialiseUIElements() {
 
             // If the title is at the top, revert to big, black font with white background
             if (state === "pin-top") {
-                title.addClass("title_unpinned").removeClass("title_pinned")
+                title.addClass("title_unpinned").removeClass("title_pinned");
+
+                // Revert to our original state
+                $(".title_unpinned").css({'background-color': ''});
+                $(".title_pinned").css({'background-color': ''});
             }
 
             // If title is pinned, make the text smaller, white and have a blue background
             else {
-                title.addClass("title_pinned").removeClass("title_unpinned")
+                title.addClass("title_pinned").removeClass("title_unpinned");
+
+                // If we have a custom UID, then we have to set the pinned bar as light red
+                if (isCustomUID) {
+                    $(".title_pinned").css({'background-color': 'rgba(246, 137, 132, 0.65)'});
+                }
+
+                // If we don't have a custom UID, then we have to use light blue as the pinned bar's colour
+                else {
+                    $(".title_pinned").css({'background-color': 'rgba(100, 181, 246, 0.85)'});
+                }
             }
         }
     });
@@ -1503,15 +1517,19 @@ function initialiseUIElements() {
 
 function startDashboard(uid) {
 
+    let isCustomUID;
+
+    // First check if the uid of page matches with our user's uid
     if (uid !== firebase.auth().currentUser.uid) {
-        $(".title_pinned").css({'background-color':'rgba(239, 231, 35, 0.8)'});
+        isCustomUID = true;
 
         // Link the more info button to the hardware_info page
         document.getElementById('more_info_button').addEventListener('click', function () {
             location.href = `/delta_dashboard/hardware_info/${uid}`;
         });
-    }
-    else {
+    } else {
+        isCustomUID = false;
+
         // Link the more info button to the hardware_info page
         document.getElementById('more_info_button').addEventListener('click', function () {
             location.href = `/delta_dashboard/hardware_info/`;
@@ -1519,7 +1537,7 @@ function startDashboard(uid) {
     }
 
     // Initialise our UI elements
-    initialiseUIElements();
+    initialiseUIElements(isCustomUID);
 
     let db = firebase.database();
 

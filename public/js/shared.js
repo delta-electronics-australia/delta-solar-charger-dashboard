@@ -1,6 +1,8 @@
+/** shared.js includes functions that will be shared across ALL pages **/
+
 function getPageUID(user) {
-    /** This function checks if we have a custom UID and if so, checks if we are logged into an
-     * admin account and we have the relevant permissions **/
+    /* This function checks if we have a custom UID and if so, checks if we are logged into an
+     * admin account and we have the relevant permissions */
 
         // First check if we have any injected custom UIDs
     let finalUID = "";

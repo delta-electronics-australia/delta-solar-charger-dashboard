@@ -68,7 +68,7 @@
 
 /* Style of the title when pinned */
 .title_pinned {
-    background-color: rgba(100, 181, 246, 0.85);
+    /*background-color: rgba(246, 137, 132, 0.85);*/
     color: white;
     font-size: 3rem;
     padding: 15px
