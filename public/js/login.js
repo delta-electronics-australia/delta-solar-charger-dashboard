@@ -1,7 +1,9 @@
+// Initialize the FirebaseUI Widget using Firebase.
 let ui = new firebaseui.auth.AuthUI(firebase.auth());
+
 let uiConfig = {
     callbacks: {
-        signInSuccess: function (currentUser, credential, redirectUrl) {
+        signInSuccessWithAuthResult: function (authResult, redirectUrl) {
             // User successfully signed in.
             // Return type determines whether we continue the redirect automatically
             // or whether we leave that to developer to handle.
@@ -10,7 +12,7 @@ let uiConfig = {
         uiShown: function () {
             // The widget is rendered.
             // Hide the loader.
-            document.getElementById('loader').style.display = 'none';
+            document.getElementById('loading_id').style.display = 'none';
         }
     },
     // Disable AccountChooser - annoying! Accounts should already be made in the app

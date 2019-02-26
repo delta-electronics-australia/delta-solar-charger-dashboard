@@ -4,7 +4,7 @@ let moment = require('moment');
 let path = require('path');
 
 function check_inverter_analytics_integrity(db, uid) {
-    // This function will check the integrity of inverter analytics for a certain uid and make sure it's all there
+    /** This function will check the integrity of inverter analytics for a certain uid and make sure it's all there **/
 
     db.ref(`users/${uid}/history_keys`).once("value").then(function (snapshot) {
         if (snapshot.val !== null) {
@@ -54,7 +54,6 @@ function check_inverter_analytics_integrity(db, uid) {
                 })
             }
         }
-
     })
 }
 

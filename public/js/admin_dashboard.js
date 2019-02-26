@@ -14,22 +14,30 @@ async function checkSystemStatus(adminUIDObject, linkedUIDsObject) {
         .limitToLast(1)
         .once('value');
 
-    let latestPayloadTime = moment(`${generate_date()} ${latestHistoryNode.val()[Object.keys(latestHistoryNode.val())[0]]['time']}`, 'YYYY-MM-DD HHmmss');
-
     // First get the current time
     let currentTime = moment();
 
-    let minutesDifference = moment.duration(currentTime.diff(latestPayloadTime));
-    minutesDifference = minutesDifference.asMinutes();
+    // Check if our latest admin history node has data
+    if (latestHistoryNode !== null) {
+        let latestPayloadTime = moment(`${generate_date()} ${latestHistoryNode.val()[Object.keys(latestHistoryNode.val())[0]]['time']}`, 'YYYY-MM-DD HHmmss');
 
-    // If it has been 15 minutes since the last history message then we display a red dot
-    if (minutesDifference > 15) {
-        adminUIDObject[adminUID]['dotElement'].css('background-color', '#ff0000');
+        let minutesDifference = moment.duration(currentTime.diff(latestPayloadTime));
+        minutesDifference = minutesDifference.asMinutes();
+
+        // If it has been 15 minutes since the last history message then we display a red dot
+        if (minutesDifference > 15) {
+            adminUIDObject[adminUID]['dotElement'].css('background-color', '#ff0000');
+        }
+
+        // Else, we display a green dot
+        else {
+            adminUIDObject[adminUID]['dotElement'].css('background-color', '#33CC33');
+        }
     }
 
-    // Else, we display a green dot
+    // If it doesn't then we simply give our admin system a red dot
     else {
-        adminUIDObject[adminUID]['dotElement'].css('background-color', '#33CC33');
+        adminUIDObject[adminUID]['dotElement'].css('background-color', '#ff0000');
 
     }
 
@@ -40,19 +48,27 @@ async function checkSystemStatus(adminUIDObject, linkedUIDsObject) {
             .limitToLast(1)
             .once('value');
 
-        let latestPayloadTime = moment(`${generate_date()} ${latestHistoryNode.val()[Object.keys(latestHistoryNode.val())[0]]['time']}`, 'YYYY-MM-DD HHmmss');
+        // See if the node actually has data
+        if (latestHistoryNode !== null) {
+            let latestPayloadTime = moment(`${generate_date()} ${latestHistoryNode.val()[Object.keys(latestHistoryNode.val())[0]]['time']}`, 'YYYY-MM-DD HHmmss');
 
-        let minutesDifference = moment.duration(currentTime.diff(latestPayloadTime));
-        minutesDifference = minutesDifference.asMinutes();
+            let minutesDifference = moment.duration(currentTime.diff(latestPayloadTime));
+            minutesDifference = minutesDifference.asMinutes();
 
-        // If it has been 15 minutes since the last history message then we display a red dot
-        if (minutesDifference > 15) {
-            linkedUIDsObject[linkedUID]['dotElement'].css('background-color', '#ff0000');
+            // If it has been 15 minutes since the last history message then we display a red dot
+            if (minutesDifference > 15) {
+                linkedUIDsObject[linkedUID]['dotElement'].css('background-color', '#ff0000');
+            }
+
+            // If not, we display a green dot
+            else {
+                linkedUIDsObject[linkedUID]['dotElement'].css('background-color', '#33CC33');
+            }
         }
 
-        // If not, we display a green dot
+        // If there is no data then we simply give the system a red dot
         else {
-            linkedUIDsObject[linkedUID]['dotElement'].css('background-color', '#33CC33');
+            linkedUIDsObject[linkedUID]['dotElement'].css('background-color', '#ff0000');
         }
     }
 }
