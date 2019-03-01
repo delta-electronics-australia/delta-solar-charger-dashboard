@@ -3,7 +3,7 @@ function load_map(uid) {
     function CenterControl(controlDiv, map) {
 
         // Set CSS for the control border.
-        var controlUI = document.createElement('div');
+        let controlUI = document.createElement('div');
         controlUI.style.backgroundColor = '#fff';
         controlUI.style.border = '2px solid #fff';
         controlUI.style.borderRadius = '3px';
@@ -15,7 +15,7 @@ function load_map(uid) {
         controlDiv.appendChild(controlUI);
 
         // Set CSS for the control interior.
-        var controlText = document.createElement('div');
+        let controlText = document.createElement('div');
         controlText.style.color = 'rgb(25,25,25)';
         controlText.style.fontFamily = 'Roboto,Arial,sans-serif';
         controlText.style.fontSize = '16px';
@@ -100,10 +100,159 @@ function change_pw_button_pressed() {
         })
 }
 
-function start_profile_page(uid) {
+function addLinkedAccount(uid, otherApp, modalInstance) {
 
-    var elems = document.querySelectorAll('#main_collapsible');
-    var instances = M.Collapsible.init(elems, {
+    let linkedAccountUID = otherApp.auth().currentUser.uid;
+
+    let db = firebase.database();
+
+    db.ref()
+        .child(`users/${uid}/user_info/linked_accounts`)
+        .update({
+            [linkedAccountUID]: true
+        }).then(function () {
+            /// Show a toast for the user
+            M.toast({html: 'Account successfully linked. Reloading page in 3 seconds..'});
+
+            /// Close the modal
+            modalInstance.close();
+
+            /// Reload the page in 3 seconds
+            setTimeout(function () {
+                location.reload();
+            }, 3000)
+        }
+    )
+}
+
+function startSignInUI(uid, modalInstance) {
+    // Initialize Firebase
+    let config = {
+        apiKey: "AIzaSyCaxTOBofd7qrnbas5gGsZcuvy_zNSi_ik",
+        authDomain: "smart-charging-app.firebaseapp.com",
+        databaseURL: "https://smart-charging-app.firebaseio.com",
+        projectId: "smart-charging-app",
+        storageBucket: "",
+        messagingSenderId: "896921007938"
+    };
+    // Initialize another app with a different config
+    let otherApp = firebase.initializeApp(config, "other");
+
+    // Initialize the FirebaseUI Widget using Firebase.
+    let ui = new firebaseui.auth.AuthUI(otherApp.auth());
+
+    let uiConfig = {
+        callbacks: {
+            signInSuccessWithAuthResult: async function (authResult, redirectUrl) {
+                // User successfully signed in.
+                // Return type determines whether we continue the redirect automatically
+                // or whether we leave that to developer to handle.
+                console.log(authResult.user.uid);
+
+                if (authResult !== null) {
+                    let db = firebase.database();
+
+                    let systemName = authResult.user.displayName;
+                    let $addLinkedAccountModalBody = $("#addLinkedAccountModalBody");
+
+                    $addLinkedAccountModalBody.empty();
+                    $addLinkedAccountModalBody.append(`
+                        <h6>Sign In Successful! Are you sure you want to link ${systemName}
+                         to this account?</h6>
+                         <div class="row">
+                             <div class="col s6">                        
+                                <a class="btn" id="addLinkedAccountConfirmed">Yes</a>
+                             </div>                            
+                         </div>
+                        `)
+
+                }
+                $("#addLinkedAccountConfirmed").click(function () {
+                    addLinkedAccount(uid, otherApp, modalInstance);
+                });
+                return false;
+            },
+            uiShown: function () {
+                // The widget is rendered.
+                // Hide the loader.
+                // document.getElementById('loading_id').style.display = 'none';
+            }
+        },
+        // Disable AccountChooser - annoying! Accounts should already be made in the app
+        credentialHelper: firebaseui.auth.CredentialHelper.NONE,
+
+        signInOptions: [
+            firebase.auth.EmailAuthProvider.PROVIDER_ID,
+        ],
+        // Terms of service url.
+        tosUrl: '<your-tos-url>',
+
+    };
+    ui.start('#firebaseui-auth-container', uiConfig);
+
+}
+
+function openAddLinkedAccountModal(uid) {
+
+    let addLinkedAccountModalInstance = M.Modal.init(document.getElementById("addLinkedAccountModal"));
+
+    let $addLinkedAccountModalBody = $("#addLinkedAccountModalBody");
+
+    $addLinkedAccountModalBody.append(`
+        <div id="firebaseui-auth-container"></div>
+    `);
+
+    addLinkedAccountModalInstance.open();
+
+    startSignInUI(uid, addLinkedAccountModalInstance);
+
+}
+
+async function grabAccountTypeInformation(uid) {
+    /** This function will grab account information for the UID **/
+
+    let db = firebase.database();
+
+    /// First get the account type of the user
+    let accountType = await db.ref().child(`users/${uid}/user_info/account_type`).once('value')
+
+    if (accountType.val() === "admin") {
+        $("#current_account_type").append("<h6>Current Account Type: <b>Admin Account</b></h6>");
+
+        let linkedSystems = await db.ref().child(`users/${uid}/user_info/linked_accounts`).once("value");
+
+        $("#linked_systems").append(`<h6>Number of linked systems: ${Object.keys(linkedSystems.val()).length}</h6>`)
+
+        let $accountTypeRow = $('#account_type_row');
+        $accountTypeRow.append(`
+            
+            <div class="col s4">
+                <div class="btn" id="viewLinkedSystems">View Currently Linked Systems</div>
+            </div>            
+            
+            <div class="col s4">
+                <div class="btn" id="convertToStandardUserBtn">Convert back to standard user</div>
+            </div>
+
+            <div class="col s4">
+                <a class="btn" id="addLinkedAccount">Link another account</a>
+            </div>
+        `)
+
+        $('convertToStandardUserBtn').click()
+        document.getElementById("addLinkedAccount").addEventListener("click", function () {
+            openAddLinkedAccountModal(uid);
+        })
+
+    } else {
+        $("#current_account_type").append("Current Account Type: User")
+    }
+
+}
+
+function initialiseUIElements() {
+    let elems = document.querySelectorAll('#main_collapsible');
+    let instances = M.Collapsible.init(elems, {
         accordion: false,
         onOpenStart: function (test) {
 
@@ -114,6 +263,10 @@ function start_profile_page(uid) {
             }
         }
     });
+}
+
+function start_profile_page(uid) {
+    initialiseUIElements();
 
     let db = firebase.database();
     // Get the current charging mode from Firebase and intialize our charging mode input box
@@ -186,6 +339,8 @@ function start_profile_page(uid) {
 
     // Start a listener for the change password button
     $("#change_pw_button").click(change_pw_button_pressed)
+
+    grabAccountTypeInformation(uid);
 }
 
 

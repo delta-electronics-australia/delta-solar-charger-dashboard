@@ -33,6 +33,7 @@ app.set('view engine', 'ejs');
 
 // app.use(favicon('public/favicon.ico'));
 
+/** Define the sources that are allowed for the website **/
 let sources = {
     'default-src': ['\'self\''],
     'script-src': ['\'self\'', 'https://www.gstatic.com', 'https://*.firebaseio.com', 'https://cdnjs.cloudflare.com',
@@ -40,7 +41,7 @@ let sources = {
     'frame-src': ['https://*.firebaseio.com'],
     'img-src': ['\'self\'', 'https:', 'data:'],
     'style-src': ['\'self\'', 'https://fonts.googleapis.com', '\'unsafe-inline\'', 'https://www.gstatic.com',
-        '\'unsafe-inline\'', 'https://cdn.firebase.com'],
+        'https://cdn.firebase.com'],
     'font-src': ['\'self\'', 'https:'],
     'connect-src': ['\'self\'', 'wss://*.googleapis.com', 'http://api.openweathermap.org', 'https://*.firebaseio.com',
         'wss://s-usc1c-nss-252.firebaseio.com', 'https://www.googleapis.com', 'https://*.googleapis.com',],
@@ -50,8 +51,8 @@ let csp = Object.keys(sources).map(function (key) {
     return `${key} ${sources[key].join(' ')};`
 });
 
+/// Set our content security policy, using only sources that we have defined
 app.use(function (req, res, next) {
-
     if (req.method === "GET" && !(req.url.split('/')[2] === "logs")) {
         res.setHeader('Content-Security-Policy', csp.join(' '))
     }
@@ -667,10 +668,6 @@ app.post('/delta_dashboard/charging_history_request2', function (req, res) {
             uid = decodedToken.uid;
         }
 
-        let dcp = 0;
-        let utility_p = 0;
-        let btp = 0;
-        let ac2p = 0;
         let counter = 0;
         fs.createReadStream(`C:\\Delta_AU_Services\\EVCS_portal\\logs\\${uid}\\charging_logs\\${chargerID}\\${selected_charging_session}.csv`)
             .pipe(csv())

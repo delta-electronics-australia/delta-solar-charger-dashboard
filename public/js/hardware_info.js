@@ -19,7 +19,7 @@ function update_ev_charger_information(data_obj) {
             if (data_obj[key]['chargePointModel'].substring(0, 4) === 'EVPE') {
                 evc_info_row.append(`
             <div class="col s3">
-                <img class="materialboxed center-align" style="max-width: 80%; height: auto;" src="/delta_dashboard/public/img/acminiplus.jpg">
+                <img class="materialboxed center-align" style="max-width: 80%; height: autot;" src="/delta_dashboard/public/img/acminiplus.jpg">
             </div>`);
             } else if (data_obj[key]['chargePointModel'].substring(0, 4) === 'EVDE') {
                 evc_info_row.append(`

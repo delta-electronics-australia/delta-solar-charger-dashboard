@@ -7,6 +7,9 @@
     <script src="/delta_dashboard/public/js/jquery-3.3.1.js"></script>
     <script src="/delta_dashboard/public/js/moment.js"></script>
 
+    <script src="https://cdn.firebase.com/libs/firebaseui/3.5.2/firebaseui.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.firebase.com/libs/firebaseui/3.5.2/firebaseui.css"/>
+
     <script src="https://www.gstatic.com/firebasejs/5.8.2/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/5.8.2/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/5.8.2/firebase-database.js"></script>
@@ -75,6 +78,37 @@
                 </div>
             </li>
 
+            <li id="account_collapsible">
+                <div class="collapsible-header"><i class="material-icons">supervisor_account
+                    </i>Account Type Information
+                </div>
+                <div class="collapsible-body">
+                    <div class="row" id="account_type_row">
+                        <div class="col s6">
+                            <div id="current_account_type"></div>
+                        </div>
+
+                        <div class="col s6">
+                            <div id="linked_systems"></div>
+                        </div>
+
+                    </div>
+
+                    <!-- Modal Structure -->
+                    <div id="addLinkedAccountModal" class="modal">
+                        <div class="modal-content">
+                            <h4>Please Sign Into The Account You Wish To Link</h4>
+                            <div id="addLinkedAccountModalBody">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>
+                        </div>
+                    </div>
+
+                </div>
+            </li>
+
             <li>
                 <div class="collapsible-header"><i class="material-icons">battery_charging_full</i>Charging
                     Settings
@@ -117,7 +151,7 @@
                                             <option value="Aggressive">Aggressive</option>
                                             <option value="Balanced">Balanced</option>
                                             <option value="Conservative">Conservative</option>
-                                            <option value="Ultra Conservative">Ultra Conservative</option>
+                                            <!--<option value="Ultra Conservative">Ultra Conservative</option>-->
                                         </select>
                                     </div>
                                     <p class="center-align"><strong>Note: This mode will only work during
@@ -153,6 +187,7 @@
                     <div id="map"></div>
                 </div>
             </li>
+
         </ul>
 
 

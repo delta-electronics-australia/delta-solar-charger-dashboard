@@ -33,15 +33,6 @@ function generate_date() {
     date = yyyy + '-' + mm + '-' + dd;
 }
 
-function getRandomColour() {
-    let letters = '0123456789ABCDEF';
-    let color = '#';
-    for (let i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
-    }
-    return color;
-}
-
 function create_charts(data_obj, needed_charts) {
 
     if (needed_charts === "ev_charging_chart") {
@@ -715,7 +706,7 @@ async function grab_initial_charging_data(uid, db, isCharging_parent_node) {
             charging_data_obj.datasets.push({
                 data: temp_data_array,
                 label: chargerID,
-                borderColor: getRandomColour(),
+                borderColor: randomColor({luminosity: 'dark'}),
                 yAxisID: 'A',
                 fill: false
             });
@@ -917,7 +908,7 @@ function merge_chargerID_into_dataset(chargerID, charging_chart_obj) {
     charging_chart_obj.data.datasets.push({
         data: [],
         label: chargerID,
-        borderColor: getRandomColour(),
+        borderColor: randomColor({luminosity: 'dark'}),
         // borderColor: "#ff3300",
         fill: false
     });
@@ -1516,6 +1507,8 @@ function initialiseUIElements(isCustomUID) {
 }
 
 function startDashboard(uid) {
+    let test = randomColor({luminosity: 'dark'});
+    console.log(test)
 
     let isCustomUID;
 
