@@ -219,10 +219,13 @@ async function grabAccountTypeInformation(uid) {
     if (accountType.val() === "admin") {
         $("#current_account_type").append("<h6>Current Account Type: <b>Admin Account</b></h6>");
 
+        /// Get the node with all of our linked systems
         let linkedSystems = await db.ref().child(`users/${uid}/user_info/linked_accounts`).once("value");
 
-        $("#linked_systems").append(`<h6>Number of linked systems: ${Object.keys(linkedSystems.val()).length}</h6>`)
+        /// Show the number of the linked systems on the page
+        $("#linked_systems").append(`<h6>Number of linked systems: ${Object.keys(linkedSystems.val()).length}</h6>`);
 
+        /// Add a row of buttons if our account is an admin account
         let $accountTypeRow = $('#account_type_row');
         $accountTypeRow.append(`
             
@@ -237,12 +240,36 @@ async function grabAccountTypeInformation(uid) {
             <div class="col s4">
                 <a class="btn" id="addLinkedAccount">Link another account</a>
             </div>
-        `)
+        `);
 
-        $('convertToStandardUserBtn').click()
+        /// Add a listener for the view linked systems button
+        document.getElementById("viewLinkedSystems").addEventListener("click", function () {
+            window.location.replace("/delta_dashboard/adminindex");
+        });
+
+        /// Add a listener for the convert to standard user button
+        document.getElementById("convertToStandardUserBtn").addEventListener("click", async function () {
+            let db = firebase.database();
+
+            await db.ref()
+                .child(`users/${uid}/user_info/linked_accounts`)
+                .remove();
+            await db.ref()
+                .child(`users/${uid}/user_info/account_type`)
+                .remove();
+
+            M.toast({
+                html: 'Account Admin status revoked. Reloading in 3 seconds...'
+            });
+            setTimeout(function () {
+                window.location.replace("/delta_dashboard/index2")
+            }, 3000)
+        });
+
+        /// Add a listener for adding a new linked account button
         document.getElementById("addLinkedAccount").addEventListener("click", function () {
             openAddLinkedAccountModal(uid);
-        })
+        });
 
     } else {
         $("#current_account_type").append("Current Account Type: User")

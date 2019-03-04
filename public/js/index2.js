@@ -1329,9 +1329,8 @@ async function condition_analytics_values_for_daily_charger_breakdown(charger_an
         datasets: []
     };
 
-    // Todo: maybe make this as long as the amount of chargers in Firebase
     // Define a colour array that will be referenced each time
-    let colour_array = ['blue', 'pink', 'green', 'black'];
+    let colour_array = randomColor({hue: 'random', luminosity: 'light', count: ev_chargers.length});
 
     for (let index in ev_chargers) {
         if (ev_chargers.hasOwnProperty(index)) {
@@ -1507,8 +1506,6 @@ function initialiseUIElements(isCustomUID) {
 }
 
 function startDashboard(uid) {
-    let test = randomColor({luminosity: 'dark'});
-    console.log(test)
 
     let isCustomUID;
 

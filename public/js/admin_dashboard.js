@@ -49,9 +49,13 @@ async function checkSystemStatus(adminUIDObject, linkedUIDsObject) {
             .once('value');
 
         // See if the node actually has data
-        if (latestHistoryNode !== null) {
+        if (latestHistoryNode.val() !== null) {
             let latestPayloadTime = moment(`${generate_date()} ${latestHistoryNode.val()[Object.keys(latestHistoryNode.val())[0]]['time']}`, 'YYYY-MM-DD HHmmss');
 
+            if (latestPayloadTime === null) {
+                linkedUIDsObject[linkedUID]['dotElement'].css('background-color', '#33CC33');
+
+            }
             let minutesDifference = moment.duration(currentTime.diff(latestPayloadTime));
             minutesDifference = minutesDifference.asMinutes();
 
@@ -104,18 +108,22 @@ function startSystemAnalyticsListeners(adminUIDObject, linkedUIDsObject) {
             .on("value", function (snapshot) {
                 let liveAnalyticsNode = snapshot.val();
 
-                // First empty the table
-                linkedUIDsObject[linkedUID]['tableElement'].empty();
+                // Check if the analytics node is from today
+                if (moment(liveAnalyticsNode['time']).isSame(moment(), 'day')) {
 
-                // Now append the new data to the table
-                linkedUIDsObject[linkedUID]['tableElement'].append(
-                    `<tr><td>Solar Generated Today</td><td>${liveAnalyticsNode['dcp_t'].toFixed(2)} kW</td>
+                    // First empty the table
+                    linkedUIDsObject[linkedUID]['tableElement'].empty();
+
+                    // Now append the new data to the table
+                    linkedUIDsObject[linkedUID]['tableElement'].append(
+                        `<tr><td>Solar Generated Today</td><td>${liveAnalyticsNode['dcp_t'].toFixed(2)} kW</td>
                 <tr><td>Energy Consumed Today</td><td>${liveAnalyticsNode['ac2p_t'].toFixed(2)} kW</td>
                 <tr><td>Energy Exported Today</td><td>${liveAnalyticsNode['utility_p_export_t'].toFixed(2)} kWh</td>
                 <tr><td>Energy Imported Today</td><td>${-1 * liveAnalyticsNode['utility_p_import_t'].toFixed(2)} kWh</td>
                 <tr><td>Battery Consumed Today</td><td>${liveAnalyticsNode['btp_consumed_t'].toFixed(2)} kW</td>
                 <tr><td>Battery Charged Today</td><td>${-1 * liveAnalyticsNode['btp_charged_t'].toFixed(2)} kW</td>`
-                )
+                    )
+                }
             });
     }
 

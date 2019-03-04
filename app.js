@@ -44,7 +44,7 @@ let sources = {
         'https://cdn.firebase.com'],
     'font-src': ['\'self\'', 'https:'],
     'connect-src': ['\'self\'', 'wss://*.googleapis.com', 'http://api.openweathermap.org', 'https://*.firebaseio.com',
-        'wss://s-usc1c-nss-252.firebaseio.com', 'https://www.googleapis.com', 'https://*.googleapis.com',],
+        'wss://*.firebaseio.com', 'https://www.googleapis.com', 'https://*.googleapis.com',],
 };
 
 let csp = Object.keys(sources).map(function (key) {
