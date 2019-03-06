@@ -105,14 +105,6 @@ $(function () {
         document.getElementById("dashboard_link").href = '/delta_dashboard/index2';
         document.getElementById("charging_history_link").href = '/delta_dashboard/charging_history2';
 
-        // If this system is running a multiple charger system, then we need to change the links to index2 etc...
-        // db.ref(`users/${user.uid}/system_type`).once("value", function (snapshot) {
-        //     if (snapshot.val() === "multiple") {
-        //         document.getElementById("dashboard_link").href = '/delta_dashboard/index2';
-        //         document.getElementById("charging_history_link").href = '/delta_dashboard/charging_history2';
-        //     }
-        // });
-
     });
 
     /// Add a listener for the signOut button

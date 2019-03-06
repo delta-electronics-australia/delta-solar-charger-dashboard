@@ -130,8 +130,8 @@ function startSystemAnalyticsListeners(adminUIDObject, linkedUIDsObject) {
 }
 
 function createSystemCards(adminUIDObject, linkedUIDsObject) {
-    /// This function will create cards that will show at a glance of all of the systems that are linked
-    /// to this admin account
+    /** This function will create cards that will show at a glance of all of the systems that are linked
+     to this admin account **/
 
     // First we want to render the system that belongs to the admin account
 
