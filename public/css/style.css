@@ -159,3 +159,8 @@
 #map {
     height: 450px;
 }
+
+/* Defines the width of the security camera video frame*/
+video {
+    width: 1500px;
+}

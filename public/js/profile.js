@@ -214,7 +214,7 @@ async function grabAccountTypeInformation(uid) {
     let db = firebase.database();
 
     /// First get the account type of the user
-    let accountType = await db.ref().child(`users/${uid}/user_info/account_type`).once('value')
+    let accountType = await db.ref().child(`users/${uid}/user_info/account_type`).once('value');
 
     if (accountType.val() === "admin") {
         $("#current_account_type").append("<h6>Current Account Type: <b>Admin Account</b></h6>");
@@ -277,7 +277,34 @@ async function grabAccountTypeInformation(uid) {
 
 }
 
-function initialiseUIElements() {
+async function grabCameraInformation(uid){
+    /** This function will grab camera information from Firebase **/
+
+    let db = firebase.database();
+
+    /// First get the account type of the user
+    let camerasNode = await db
+        .ref()
+        .child(`users/${uid}/user_info/attached_devices/cameras`)
+        .once('value');
+
+    console.log(camerasNode.val().entries());
+    for ([index, data] of camerasNode.val().entries()){
+        console.log(index, data);
+
+        if (data !== undefined){
+            console.log(`Camera ${index}!`);
+            $("#security_camera_collapsible").append(
+                `<div class="col s3 card"></div>
+                `
+            )
+        }
+    }
+
+    console.log(camerasNode.val());
+}
+
+function initialiseUIElements(uid) {
     let elems = document.querySelectorAll('#main_collapsible');
     let instances = M.Collapsible.init(elems, {
         accordion: false,
@@ -293,7 +320,7 @@ function initialiseUIElements() {
 }
 
 function start_profile_page(uid) {
-    initialiseUIElements();
+    initialiseUIElements(uid);
 
     let db = firebase.database();
     // Get the current charging mode from Firebase and intialize our charging mode input box
@@ -368,6 +395,8 @@ function start_profile_page(uid) {
     $("#change_pw_button").click(change_pw_button_pressed)
 
     grabAccountTypeInformation(uid);
+
+    grabCameraInformation(uid);
 }
 
 
