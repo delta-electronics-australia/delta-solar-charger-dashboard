@@ -364,30 +364,6 @@ function create_charts2(purpose, data_obj) {
     }
 }
 
-function condition_data_for_chart(raw_data) {
-
-    // First we need to create a temporary time array (since the data has all the same timestamps)
-    let temp_time_array = [];
-    for (let index in raw_data.datasets[0].data) {
-        if (raw_data.datasets[0].data.hasOwnProperty(index)) {
-            temp_time_array.push(moment(raw_data.datasets[0].data[index].x, 'YYYY-MM-DD hh:mm:ss'));
-        }
-    }
-
-    // First loop through all of the entries in datasets
-    for (let data_index in raw_data.datasets) {
-        if (raw_data.datasets.hasOwnProperty(data_index)) {
-
-            // Now loop through all of the data entries in each dataset
-            for (let index in raw_data.datasets[data_index].data) {
-                if (raw_data.datasets[data_index].data.hasOwnProperty(index)) {
-                    raw_data.datasets[data_index].data[index].x = temp_time_array[index]
-                }
-            }
-        }
-    }
-    return raw_data
-}
 
 function openModal(uid, chargerID, start_time, start_date, duration_string, charge_energy) {
     let formatted_start_time = moment(start_time, "hhmm").format('h:mm A');
@@ -436,8 +412,7 @@ function openModal(uid, chargerID, start_time, start_date, duration_string, char
                 let raw_charging_data = JSON.parse(xhr.response);
                 // let final_data_object = condition_data_for_chart(raw_charging_data['data_obj']);
 
-                // Todo: look at this
-                for (let index in raw_charging_data['data_obj'].labels) {
+                for (let [index] of raw_charging_data['data_obj'].labels.entries()) {
                     raw_charging_data['data_obj'].labels[index] = moment(raw_charging_data['data_obj'].labels[index])
                 }
                 globals['charging_line_chart'] = create_charts2('line_chart', raw_charging_data['data_obj']);
@@ -494,7 +469,7 @@ async function create_charge_session_cards(uid, selected_date, ev_chargers) {
 
     let charge_session_row = $("#charge_sessions_row");
     charge_session_row.empty();
-    for (let index in ev_chargers) {
+    for (let [index] of ev_chargers.entries()) {
         if (ev_chargers.hasOwnProperty(index)) {
             let chargerID = ev_chargers[index];
             // Now we have the selected date, we have to bring up all of the charging sessions that occurred on that date
@@ -584,7 +559,7 @@ async function get_valid_charging_dates(uid) {
             let temp_dates = Object.keys(charging_history_keys_obj[chargerID]);
 
             // Loop through all of the charging dates within this chargerID
-            for (let index in temp_dates) {
+            for (let [index] of temp_dates.entries()) {
                 if (temp_dates.hasOwnProperty(index)) {
 
                     // First convert the current temp_date into UTC
