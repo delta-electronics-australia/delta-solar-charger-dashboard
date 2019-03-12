@@ -35,16 +35,19 @@ app.set('view engine', 'ejs');
 
 /** Define the sources that are allowed for the website **/
 let sources = {
-    'default-src': ['\'self\''],
-    'script-src': ['\'self\'', 'https://www.gstatic.com', 'https://*.firebaseio.com', 'https://cdnjs.cloudflare.com',
-        'https://*.googleapis.com', 'https://cdn.firebase.com'],
+    // 'default-src': ['\'self\''],
+    'default-src': ['*', 'blob: \'unsafe-inline\' \'unsafe-eval\''],
+    // 'script-src': ['\'self\'', 'https://www.gstatic.com', 'https://*.firebaseio.com', 'https://cdnjs.cloudflare.com',
+    //     'https://*.googleapis.com', 'https://cdn.firebase.com'],
+    'script-src': ['*', 'blob: \'unsafe-inline\' \'unsafe-eval\''],
     'frame-src': ['https://*.firebaseio.com'],
     'img-src': ['\'self\'', 'https:', 'data:'],
     'style-src': ['\'self\'', 'https://fonts.googleapis.com', '\'unsafe-inline\'', 'https://www.gstatic.com',
         'https://cdn.firebase.com'],
     'font-src': ['\'self\'', 'https:'],
-    'connect-src': ['\'self\'', 'wss://*.googleapis.com', 'http://api.openweathermap.org', 'https://*.firebaseio.com',
-        'wss://*.firebaseio.com', 'https://www.googleapis.com', 'https://*.googleapis.com',],
+    // 'connect-src': ['\'self\'', 'wss://*.googleapis.com', 'http://api.openweathermap.org', 'https://*.firebaseio.com',
+    //     'wss://*.firebaseio.com', 'https://www.googleapis.com', 'https://*.googleapis.com'],
+    'connect-src': ['*'],
 };
 
 let csp = Object.keys(sources).map(function (key) {
@@ -54,7 +57,7 @@ let csp = Object.keys(sources).map(function (key) {
 /// Set our content security policy, using only sources that we have defined
 app.use(function (req, res, next) {
     if (req.method === "GET" && !(req.url.split('/')[2] === "logs")) {
-        res.setHeader('Content-Security-Policy', csp.join(' '))
+        res.setHeader('Content-Security-Policy', csp.join(' '));
     }
 
     next();

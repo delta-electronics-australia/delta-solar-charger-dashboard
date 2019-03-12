@@ -1,7 +1,10 @@
 let date;
 
+/// Define an object for some global parameters
+let globals = {};
+
 /// Chart properties defines how many data points one chart will hold
-let chart_properties = {
+globals['chart_properties'] = {
     'utility_p': {
         length: 90
     },
@@ -30,6 +33,8 @@ function generate_date() {
     date = yyyy + '-' + mm + '-' + dd;
 }
 
+/**********************************************************************************************************************/
+/********************************************** CHARTING FUNCTIONS ****************************************************/
 function create_charts(data_obj, needed_charts) {
 
     if (needed_charts === "ev_charging_chart") {
@@ -377,7 +382,6 @@ function create_charts(data_obj, needed_charts) {
             }
         });
     } else if (needed_charts === "daily_charging_breakdown_bar") {
-        // console.log(data_obj);
         let daily_charging_breakdown_bar = new Chart(document.getElementById("daily_charging_breakdown_bar"), {
             type: 'bar',
             data: data_obj,
@@ -482,20 +486,6 @@ function update_charts(chart_obj, data_obj) {
         for (let i = 0; i < 6; i++) {
             chart_obj.ev_charging_chart.data.datasets[i].data = data_obj.evc_charging[i + 1]
         }
-        // chart_obj.ev_charging_chart.data.datasets[4].data = data_obj.evc_charging[5]
-
-        // // If we have a lot of data then we can turn off data points to optimize performance
-        // if (data_obj.evc_charging[0].length > 150) {
-        //     chart_obj.ev_charging_chart.options.elements.point.radius = 0;
-        //     chart_obj.ev_charging_chart.options.elements.point.hitRadius = 7;
-        //     chart_obj.ev_charging_chart.options.elements.point.hoverRadius = 7;
-        // }
-        //
-        // else {
-        //     chart_obj.ev_charging_chart.options.elements.point.radius = 3;
-        //     chart_obj.ev_charging_chart.options.elements.point.hitRadius = 1;
-        //     chart_obj.ev_charging_chart.options.elements.point.hoverRadius = 4;
-        // }
 
         // Now update the chart
         chart_obj.ev_charging_chart.update();
@@ -506,14 +496,12 @@ function update_charts(chart_obj, data_obj) {
 
         // let labels = chart_obj.solar_history_bar_chart.data.labels;
 
-        // console.log(chart_obj.solar_history_bar_chart.data.labels.length);
         let data_array = chart_obj['solar_history_bar_chart_today_update'].data.datasets[1].data;
         // Todo: we have to keep a track on this, to see if we need to update labels
         // chart_obj.solar_history_bar_chart.data.labels = data_obj.labels;
         data_array[data_array.length - 1] = data_obj['data'];
 
         chart_obj['solar_history_bar_chart_today_update'].update()
-
     }
 
     if (chart_obj.hasOwnProperty('solar_history_bar_chart')) {
@@ -523,14 +511,664 @@ function update_charts(chart_obj, data_obj) {
 
         chart_obj.solar_history_bar_chart.update()
     }
+}
 
-    if (chart_obj.hasOwnProperty('charging_history_bar_chart')) {
-        chart_obj.charging_history_bar_chart.data.labels = data_obj.labels;
-        chart_obj.charging_history_bar_chart.data.datasets[0].data = data_obj.charging_data;
-        chart_obj.charging_history_bar_chart.data.datasets[1].data = data_obj.charging_data;
+/********************************************** ***********************************************************************/
+/**********************************************************************************************************************/
 
-        chart_obj.charging_history_bar_chart.update()
+/**********************************************************************************************************************/
+/********************************************** ***********************************************************************/
+
+function update_weather(uid) {
+    /** This function gets the weather at the location of the system and updates the card **/
+
+    let db = firebase.database();
+
+    db.ref(`users/${uid}/system_location`).once("value").then(function (snapshot) {
+        let system_location_object = snapshot.val();
+        let weather_url;
+
+        let weather_card = document.getElementById('weather_card');
+        // If there is no location, then we go with the stock
+        if (system_location_object === null) {
+            // weather_url = "http://api.openweathermap.org/data/2.5/weather?q=Melbourne,au&APPID=4b7ee1f96bfd687f2fff4f7cdf1cd11c&units=metric"
+            weather_card.innerHTML = `Please set system location in the settings`
+        }
+        // If there is a location, we use that for our weather update
+        else {
+            weather_url = `http://api.openweathermap.org/data/2.5/weather?lat=${system_location_object.lat}&lon=${system_location_object.lng}&APPID=4b7ee1f96bfd687f2fff4f7cdf1cd11c&units=metric`
+
+            $.getJSON(weather_url, function (json) {
+                weather_card.innerHTML = `${json.weather[0].description.toLowerCase()
+                    .split(' ')
+                    .map((s) => s.charAt(0).toUpperCase() + s.substring(1))
+                    .join(' ')
+                    } ${json.main.temp}&deg;C`
+            })
+        }
+
+        // Re-run 30 minutes later
+        setTimeout(function () {
+            update_weather(uid)
+        }, 900000)
+    })
+}
+
+/**********************************************************************************************************************/
+/************************************** CHARGER STATUS PIE CHART FUNCTIONS ********************************************/
+function calculate_number_of_online_chargers(charger_status_obj) {
+    /** This function takes in a charger status object and outputs information for a status pie chart **/
+
+    let offline_chargers = 0;
+    let online_chargers = 0;
+    for (let key in charger_status_obj) {
+        if (charger_status_obj.hasOwnProperty(key)) {
+            if (charger_status_obj[key]) {
+                online_chargers = online_chargers + 1
+            } else {
+                offline_chargers = offline_chargers + 1
+            }
+        }
     }
+    return {
+        datasets: [{
+            data: [online_chargers, offline_chargers],
+            backgroundColor: ['#0e9826', '#ff0e18']
+        }],
+        labels: [
+            'Online',
+            'Offline'
+        ]
+    }
+}
+
+function update_charger_status(uid) {
+    /** This function updates our pie chart that shows how many of our chargers are online **/
+
+    let data_obj = {
+        datasets: [{
+            data: [0, 0]
+        }],
+        labels: [
+            'Online',
+            'Offline'
+        ]
+    };
+    let charger_status_pie = create_charts(data_obj, 'charger_status_pie');
+
+    let db = firebase.database();
+
+    // Start a listener for the ev chargers that are registered on the system
+    db.ref(`users/${uid}/ev_chargers`).on("value", async function (snapshot) {
+        let ev_chargers = Object.keys(snapshot.val());
+
+        // Define an object for the status of all of our chargers
+        let charger_status_obj = [];
+
+        for (let index in ev_chargers) {
+            let chargerID = ev_chargers[index];
+            charger_status_obj[chargerID] = await db.ref(`users/${uid}/evc_inputs/${chargerID}/alive`).once("value");
+            charger_status_obj[chargerID] = charger_status_obj[chargerID].val();
+        }
+
+        data_obj = calculate_number_of_online_chargers(charger_status_obj);
+        charger_status_pie.data = data_obj;
+        charger_status_pie.update();
+
+        for (let index in ev_chargers) {
+            let chargerID = ev_chargers[index];
+
+            // Start a listener for the alive status of the charger
+            db.ref(`users/${uid}/evc_inputs/${chargerID}/alive`).on("value", function (snapshot) {
+                let temp_status = snapshot.val();
+
+                // Check if our status has changed (to filter our first run)
+                if (temp_status !== charger_status_obj[chargerID]) {
+                    charger_status_obj[chargerID] = snapshot.val();
+                    data_obj = calculate_number_of_online_chargers(charger_status_obj);
+                    charger_status_pie.data = data_obj;
+                    charger_status_pie.update();
+                }
+            })
+        }
+    })
+
+}
+
+/********************************************** ***********************************************************************/
+
+/**********************************************************************************************************************/
+/************************************* LAST CHARGING SESSION TABLE FUNCTIONS ******************************************/
+
+function update_last_charging_session_table(chargerID, last_charge_session_obj) {
+    /** This function takes in the data from the latest charging session and then appends it to a table **/
+
+    let output_html = "";
+
+    output_html += `<tr><td><b>Charger ID</b></td><td>${chargerID}</td></tr>`;
+    output_html += `<tr><td><b>Energy</b></td><td>${last_charge_session_obj['energy'].toFixed(2)} kWh</td></tr>`;
+    output_html += `<tr><td><b>Started</b></td><td>${last_charge_session_obj['started']}</td></tr>`;
+
+    let total_seconds = last_charge_session_obj['duration_seconds'];
+    let hours = Math.floor(total_seconds / 3600);
+    total_seconds %= 3600;
+    let minutes = Math.floor(total_seconds / 60);
+    let seconds = total_seconds % 60;
+
+    let final_duration_string = "";
+
+    if (hours > 0) {
+        if (hours === 1) {
+            final_duration_string = `${hours}hr `
+        } else {
+            final_duration_string = `${hours}hrs `
+        }
+    }
+    if (minutes > 0) {
+        final_duration_string += `${minutes}min `;
+    }
+    if (seconds > 0) {
+        final_duration_string += `${seconds}sec`
+    }
+    output_html += `<tr><td><b>Duration</b></td><td>${final_duration_string}</td></tr>`;
+
+
+    document.getElementById('last_charging_table').innerHTML = output_html
+}
+
+function update_last_charging_session(uid) {
+
+    let db = firebase.database();
+
+    // Listen for any changes in ev_chargers registered
+    db.ref(`users/${uid}/ev_chargers`).on("value", async function (snapshot) {
+        let ev_chargers = Object.keys(snapshot.val());
+
+        // Define latest_date as the date that is the newest
+        let latest_date = moment('2000-01-01', 'YYYY-MM-DD');
+        let latest_chargerID = "";
+
+        // Loop through all of the ev chargers that are registered
+        for (let index in ev_chargers) {
+
+            // Define the charger ID
+            let chargerID = ev_chargers[index];
+
+            // Get the latest date in our analytics node
+            let temp_date = await db.ref(`users/${uid}/analytics/charging_history_analytics/${chargerID}`).orderByKey().limitToLast(1).once("value");
+            temp_date = temp_date.val();
+
+            // If the retrieved date is valid
+            if (temp_date !== null) {
+                temp_date = Object.keys(temp_date)[0];
+
+                // Get the latest time for that date
+                let temp_time = await db.ref(`users/${uid}/analytics/charging_history_analytics/${chargerID}/${temp_date}`).orderByKey().limitToLast(1).once("value");
+                temp_time = Object.keys(temp_time.val())[0];
+
+                // Then we convert the date to a moment object to compare
+                temp_date = moment(temp_date + ' ' + temp_time, "YYYY-MM-DD HHmm");
+
+                // Check if our date is the latest one so far
+                if (temp_date.isAfter(latest_date)) {
+                    // If it is then we record the date and the chargerID
+                    latest_date = temp_date;
+                    latest_chargerID = chargerID
+                }
+            }
+        }
+
+        // Now that we have the latest chargerID and date of charging session, we can grab the analytics
+        let charging_analytics_obj = await db.ref(`users/${uid}/analytics/charging_history_analytics/${latest_chargerID}/${latest_date.format('YYYY-MM-DD')}/${latest_date.format('HHmm')}`)
+            .orderByKey().once("value");
+
+        // Store all of the analytics in an object and add the start date/time into the object too
+        charging_analytics_obj = charging_analytics_obj.val();
+
+        if (charging_analytics_obj !== null) {
+            charging_analytics_obj['started'] = latest_date.format('DD/MM/YYYY HH:mm');
+
+            // Update the table
+            update_last_charging_session_table(latest_chargerID, charging_analytics_obj);
+
+            // Now that our table is updated, we loop through our ev chargers again
+            for (let index in ev_chargers) {
+                let chargerID = ev_chargers[index];
+
+                // Start a child removed listener to listen for any new completed charging sessions
+                db.ref(`users/${uid}/charging_history/${chargerID}`).on("child_removed", async function (snapshot) {
+                    // console.log(snapshot.key);
+                    // console.log(chargerID);
+
+                    // If there is a child removed, then we know this charge session just finished
+                    let latest_date_time = snapshot.key;
+
+                    console.log(`charging_history removed ${chargerID} ${latest_date_time}`);
+
+                    // Need to take the key of this and get the analytics
+                    let charging_analytics_obj = await db.ref(`users/${uid}/analytics/charging_history_analytics/${
+                        chargerID}/${latest_date_time.split(' ')[0]}/${latest_date_time.split(' ')[1]}`)
+                        .orderByKey().once("value");
+
+                    // Put the analytics in an object and add the start date/time of the charging session
+                    charging_analytics_obj = charging_analytics_obj.val();
+                    charging_analytics_obj['started'] = moment(latest_date_time, 'YYYY-MM-DD HHmm').format('DD/MM/YYYY HH:mm');
+
+                    // Update the table
+                    update_last_charging_session_table(chargerID, charging_analytics_obj)
+                });
+            }
+        } else {
+            console.log('There have been no charging sessions');
+            document.getElementById('last_charging_table').innerHTML = 'No charging sessions found';
+        }
+    });
+
+}
+
+/********************************************** ***********************************************************************/
+/**********************************************************************************************************************/
+
+/**********************************************************************************************************************/
+/************************************** DAILY CHARGER BREAKDOWN FUNCTIONS *********************************************/
+
+function append_new_data_to_daily_charging_breakdown(data_obj, chargerID, new_data) {
+    /** This function serves condition_analytics_values_for_daily_charger_breakdown and appends a single value
+     *  to the end of the data array for the chargerID **/
+
+    for (let index in data_obj.datasets) {
+        if (data_obj.datasets.hasOwnProperty(index)) {
+            if (chargerID === data_obj.datasets[index]['label']) {
+                data_obj.datasets[index].data.push(new_data.toFixed(2))
+            }
+        }
+    }
+    return data_obj
+}
+
+async function condition_analytics_values_for_daily_charger_breakdown(charger_analytics_values, ev_chargers) {
+    /** This function serves update_daily_charger_breakdown and should take all the analytics values and condition
+     *  them for chartJS update_daily_charger_breakdown stacked bar chart **/
+
+        // Initialize our conditioned analytics values object
+    let conditioned_charger_analytics_object = {
+            labels: [],
+            datasets: []
+        };
+
+    // Define a colour array that will be referenced each time
+    let colour_array = randomColor({hue: 'random', luminosity: 'light', count: ev_chargers.length});
+
+    for (let index in ev_chargers) {
+        if (ev_chargers.hasOwnProperty(index)) {
+            let chargerID = ev_chargers[index];
+
+            conditioned_charger_analytics_object.datasets.push({
+                type: 'bar',
+                label: chargerID,
+                data: [],
+                backgroundColor: colour_array[index],
+                fill: false
+            })
+        }
+
+    }
+
+    for (date in charger_analytics_values) {
+        if (charger_analytics_values.hasOwnProperty(date)) {
+            // Convert the dates to moment objects and append them to our labels
+            conditioned_charger_analytics_object.labels.push(moment(date, 'YYYY-MM-DD'));
+
+            // Now we have to go through all of the chargerIDs and find the total energy from each charge point for the day
+            for (let chargerID in charger_analytics_values[date]) {
+                let temp_charge_energy = 0;
+                if (charger_analytics_values[date].hasOwnProperty(chargerID)) {
+                    // If this chargerID has data for this particular date
+                    if (charger_analytics_values[date][chargerID] !== null) {
+                        // Then we loop through the charge sessions for that day for that charger ID and add up the energy
+                        for (let charge_session_time in charger_analytics_values[date][chargerID]) {
+                            if (charger_analytics_values[date][chargerID].hasOwnProperty(charge_session_time)) {
+                                temp_charge_energy = temp_charge_energy + parseFloat(charger_analytics_values[date][chargerID][charge_session_time].energy)
+                            }
+                        }
+                    }
+                    // Once we finished this loop, we append the total energy in our conditioned analytics obj
+                    conditioned_charger_analytics_object = append_new_data_to_daily_charging_breakdown(conditioned_charger_analytics_object, chargerID, temp_charge_energy)
+                }
+            }
+        }
+    }
+    return conditioned_charger_analytics_object
+}
+
+async function grab_charger_analytics_values(uid, db, ev_chargers, num_days) {
+    /** This function serves update_daily_charger_breakdown and grabs all of the analytics values for the
+     * for the past num_days days **/
+    let charger_analytics_values = {};
+
+    // Loop through all of the ev chargers
+    for (let index in ev_chargers) {
+        if (ev_chargers.hasOwnProperty(index)) {
+            let chargerID = ev_chargers[index];
+
+            // Grab the charging history analytics values for the last 15 days
+            let temp_data = await db.ref(`users/${uid}/analytics/charging_history_analytics/${chargerID}/`).limitToLast(num_days).once("value");
+            temp_data = temp_data.val();
+
+            // Loop through the past 15 dates
+            for (let i = num_days; i >= 0; i--) {
+                let day = moment().subtract(i, 'days').format('YYYY-MM-DD');
+
+                // Check if our final object has a field for the current day
+                if (!charger_analytics_values.hasOwnProperty(day)) {
+                    // If not, make a blank object for the current day
+                    charger_analytics_values[day] = {};
+                }
+
+                // If we have data for today then we append that data to the final object
+                if (temp_data !== null && temp_data.hasOwnProperty(day)) {
+                    charger_analytics_values[day][chargerID] = temp_data[day];
+                }
+
+                // If we do not have any data at all for the past 15 days OR if in our data, there is no data for the
+                // current day we append null
+                else {
+                    charger_analytics_values[day][chargerID] = null
+                }
+            }
+        }
+    }
+    return charger_analytics_values
+}
+
+function update_daily_charger_breakdown(uid) {
+    /** This function updates our daily charger breakdown bar chart **/
+
+    let db = firebase.database();
+
+    let ev_chargers = [];
+    let charging_ref = db.ref("users/" + uid + "/evc_inputs/charging/");
+
+    // Get a list of all of our ev chargers
+    charging_ref.once("value", function (snapshot) {
+        ev_chargers = Object.keys(snapshot.val())
+    })
+        .then(function () {
+            // Then we grab all of the analytics values for the past 15 days
+            grab_charger_analytics_values(uid, db, ev_chargers, 15)
+                .then(function (charger_analytics_values) {
+                    // Then we condition the data in the way that we need to chart
+                    condition_analytics_values_for_daily_charger_breakdown(charger_analytics_values, ev_chargers)
+                        .then(function (final_analytics_values) {
+                            // Then we plot it in a stacked bar chart
+                            create_charts(final_analytics_values, 'daily_charging_breakdown_bar')
+                        })
+                })
+
+        });
+}
+
+/**************************************************************************************************** *****************/
+/**********************************************************************************************************************/
+
+/**********************************************************************************************************************/
+/************************************** EV CHARGING LINE CHART FUNCTIONS **********************************************/
+
+function merge_inverter_info_into_dataset(inverter_data_keys, charging_chart_obj) {
+    /** This function ensures that there are inverter info arrays in the chart's data object **/
+
+        // Define our colour object which allows easy access to the colours each field is meant to be
+    let colour_object = {
+            'Solar_Power': "#ffcc00",
+            "Battery_Power": "#33cc33",
+            "Battery_SOC": "#ef2fac",
+            "Battery_Temperature": "#6600cc",
+            "Grid_Power": "#3366ff"
+        };
+
+    let entry_exists = false;
+    // Loop through all of our dataset entries
+    for (let [index, data_entry] of charging_chart_obj.data.datasets.entries()) {
+        if (data_entry.label === 'Solar Power') {
+            // If Solar_Power exists, then we assume the rest are there too
+            entry_exists = true
+        }
+    }
+
+    // But if there is no Solar_Power, we assume the rest of the inverter info is also not there
+    if (!entry_exists) {
+        // Loop through all of the keys in our temp_data_object
+        for (let data_key in inverter_data_keys) {
+            if (inverter_data_keys.hasOwnProperty(data_key)) {
+
+                // For each of the keys, our data will be the object[data_key], label will just be the key without _
+                // and the borderColor should be colour_array[data_key]
+                // Note: Battery SOC and temp need to be on the RIGHT hand axis
+                if (data_key === "Battery_SOC" || data_key === "Battery_Temperature") {
+                    charging_chart_obj.data.datasets.push({
+                        data: [],
+                        label: data_key.replace(/_/g, ' '),
+                        borderColor: colour_object[data_key],
+                        yAxisID: 'B',
+                        fill: false
+                    });
+                } else {
+                    charging_chart_obj.data.datasets.push({
+                        data: [],
+                        label: data_key.replace(/_/g, ' '),
+                        borderColor: colour_object[data_key],
+                        yAxisID: 'A',
+                        fill: false
+                    });
+                }
+            }
+        }
+    }
+
+    return charging_chart_obj
+}
+
+function merge_chargerID_into_dataset(chargerID, charging_chart_obj) {
+    /** This function checks whether or not our chargerID exists in the chart's data object **/
+
+    // Todo: have a look at this to see if it is an array
+    // Loop through our datasets to see if there exists a dataset
+    for (let index in charging_chart_obj.data.datasets) {
+
+        // Check if index exists in our datasets object
+        if (charging_chart_obj.data.datasets.hasOwnProperty(index)) {
+
+            // If chargerID = label, then there is already a data object
+            if (chargerID === charging_chart_obj.data.datasets[index]['label']) {
+                return charging_chart_obj
+            }
+        }
+    }
+
+    // If we looped through the whole dataset without returning then we need to add an entry
+    console.log('Dataset does not exist yet, need to create the structure');
+
+    charging_chart_obj.data.datasets.push({
+        data: [],
+        label: chargerID,
+        borderColor: randomColor({luminosity: 'dark'}),
+        // borderColor: "#ff3300",
+        fill: false
+    });
+
+    return charging_chart_obj
+}
+
+function delete_chargerID_from_dataset(chargerID, charging_chart_obj, charging_status_object, inverter_data_keys) {
+    /** This function runs once a charger ID has stopped charging. It will delete this charger ID's charge session
+     from the charging chart object **/
+
+        // First get the list of all chargers in our charging status object
+        // Keep a note that this charger list is AFTER the charger ID that has stopped charging has been removed from it
+    let charger_list = Object.keys(charging_status_object);
+
+    // If there is still a charging session left
+    if (charger_list.length > 0) {
+        let earliest_charger_moment_object = moment();
+        let earliest_chargerID;
+
+        // Loop through all of the datasets in the charging chart object
+        for (let [index, data_entry] of charging_chart_obj.data.datasets.entries()) {
+
+            // If the label of this dataset entry is a charger in our charging status object
+            if (charger_list.includes(data_entry.label)) {
+
+                // Check if this charger's first timestamp is before the earliest one so far
+                if (data_entry.data[0].x.isBefore(earliest_charger_moment_object)) {
+
+                    // If it is, the earliest gets replaced
+                    earliest_charger_moment_object = data_entry.data[0].x;
+                    earliest_chargerID = data_entry.label;
+                }
+            }
+        }
+
+        let delete_index;
+
+        // Loop through all of the dataset entries if the charging chart object
+        for (let [index, data_entry] of charging_chart_obj.data.datasets.entries()) {
+
+            // If we found solar power
+            if (data_entry.label === "Solar Power") {
+
+                // Loop through all of the data within the Solar Power dataset
+                for (let [data_index, data] of data_entry['data'].entries()) {
+
+                    // If the current timestamp is AFTER OR THE SAME as the earliest charger moment object
+                    if (data.x.isAfter(earliest_charger_moment_object) || data.x.format('HH:mm:ss') === earliest_charger_moment_object.format('HH:mm:ss')) {
+
+                        // We note this index and stop looping over this data array
+                        delete_index = data_index;
+                        break
+                    }
+                }
+                // Stop looping over datasets
+                break
+            }
+        }
+        // Finally, loop through our charging chart object again
+        for (let [index, data_entry] of charging_chart_obj.data.datasets.entries()) {
+
+            // If the label corresponds to a key in our inverter data keys - then the dataset is inverter/BT info
+            // The labels don't have underscores in them, so we need to add them in
+            if (inverter_data_keys.hasOwnProperty(data_entry.label.replace(' ', '_'))) {
+
+                // We need to go into the data and delete all values in the array up to delete_index
+                charging_chart_obj.data.datasets[index].data = charging_chart_obj.data.datasets[index].data.slice(delete_index)
+            }
+        }
+
+        // Then we just need to delete its own data
+        for (let [index, data_entry] of charging_chart_obj.data.datasets.entries()) {
+
+            // Match the chargerID with the label
+            if (chargerID === data_entry['label']) {
+
+                //... delete the series object and update the chart
+                charging_chart_obj.data.datasets.splice(index, 1);
+
+                console.log(`Deleted ${chargerID}!`);
+                break
+            }
+        }
+    }
+
+    // If this charging session is the last one, then we can just delete everything
+    else {
+        console.log('There are no more charging sessions left, deleting everything...');
+
+        charging_chart_obj.data.datasets.length = 0
+    }
+
+    charging_chart_obj.update();
+    return charging_chart_obj
+}
+
+function adjust_ev_charging_title_and_height(charging_status_object) {
+    /** This function takes in a charging status object and uses this information to display to users how many
+     * active charging sessions there are at the moment **/
+
+    let chargers_active = Object.keys(charging_status_object).length;
+    if (chargers_active === 0) {
+        // Before we do anything, set the heading to no active charging sessions
+        document.getElementById('ev_charging_chart_title').innerText = 'EV Charging - No Active Charging Sessions';
+        // Set the height of the graph to 0
+        document.getElementById('ev_charging_chart_div').style.height = '0px';
+    } else if (chargers_active === 1) {
+        // Before we do anything, set the heading to no active charging sessions
+        document.getElementById('ev_charging_chart_title').innerText = `EV Charging - There is ${chargers_active} Active Charging Session`;
+        // Set the height of the graph to 0
+        document.getElementById('ev_charging_chart_div').style.height = '250px';
+    } else {
+        // Before we do anything, set the heading to no active charging sessions
+        document.getElementById('ev_charging_chart_title').innerText = `EV Charging - There are ${chargers_active} Active Charging Sessions`;
+        // Set the height of the graph to 0
+        document.getElementById('ev_charging_chart_div').style.height = '250px';
+    }
+}
+
+function append_new_data_to_charging_chart(chargerID, charging_chart_obj, new_data) {
+    /** This function takes in new charge session data and appends it to our charging chart's data **/
+
+    for (let index in charging_chart_obj.data.datasets) {
+
+        // Check if index exists in our datasets object
+        if (charging_chart_obj.data.datasets.hasOwnProperty(index)) {
+
+            // If chargerID = label, then we have found the corresponding data object to modify
+            if (chargerID === charging_chart_obj.data.datasets[index]['label']) {
+                // Append the data into the charging chart
+                charging_chart_obj.data.datasets[index].data.push({
+                    x: moment(new_data['Time'], 'YYYY-MM-DD hh:mm:ss'),
+                    y: new_data['Power_Import']
+                });
+            }
+
+            // Now append all of the inverter/BT info to the chart object
+            else if (charging_chart_obj.data.datasets[index]['label'] === "Solar Power") {
+
+                charging_chart_obj.data.datasets[index].data.push({
+                    x: moment(new_data['Time'], 'YYYY-MM-DD hh:mm:ss'),
+                    y: new_data['Solar_Power']
+                });
+
+            } else if (charging_chart_obj.data.datasets[index]['label'] === "Battery Power") {
+
+                charging_chart_obj.data.datasets[index].data.push({
+                    x: moment(new_data['Time'], 'YYYY-MM-DD hh:mm:ss'),
+                    y: new_data['Battery_Power']
+                });
+
+            } else if (charging_chart_obj.data.datasets[index]['label'] === "Battery SOC") {
+
+                charging_chart_obj.data.datasets[index].data.push({
+                    x: moment(new_data['Time'], 'YYYY-MM-DD hh:mm:ss'),
+                    y: new_data['Battery_SOC']
+                });
+
+            } else if (charging_chart_obj.data.datasets[index]['label'] === "Battery Temperature") {
+
+                charging_chart_obj.data.datasets[index].data.push({
+                    x: moment(new_data['Time'], 'YYYY-MM-DD hh:mm:ss'),
+                    y: new_data['Battery_Temperature']
+                });
+
+            } else if (charging_chart_obj.data.datasets[index]['label'] === "Grid Power") {
+
+                charging_chart_obj.data.datasets[index].data.push({
+                    x: moment(new_data['Time'], 'YYYY-MM-DD hh:mm:ss'),
+                    y: new_data['Grid_Power']
+                });
+            }
+        }
+    }
+
+    charging_chart_obj.update();
 }
 
 async function get_latest_charging_time(uid, db, chargerID) {
@@ -630,7 +1268,7 @@ async function start_charging_session_listeners(uid, db, initial_charging_data_o
                     charging_chart_obj = delete_chargerID_from_dataset(chargerID, charging_chart_obj, charging_status_object, inverter_data_keys);
 
                     // We should also update our daily charger breakdown
-                    update_daily_charger_breakdown(uid, db)
+                    update_daily_charger_breakdown(uid)
 
                 }
             }
@@ -778,623 +1416,469 @@ async function grab_initial_charging_data(uid, db, isCharging_parent_node) {
     return charging_data_obj
 }
 
-function adjust_ev_charging_title_and_height(charging_status_object) {
-    /** This function takes in a charging status object and uses this information to display to users how many
-     * active charging sessions there are at the moment **/
+function update_ev_charging_graph(uid) {
+    /** This function will create our ev charging chart and update it over time **/
 
-    let chargers_active = Object.keys(charging_status_object).length;
-    if (chargers_active === 0) {
-        // Before we do anything, set the heading to no active charging sessions
-        document.getElementById('ev_charging_chart_title').innerText = 'EV Charging - No Active Charging Sessions';
-        // Set the height of the graph to 0
-        document.getElementById('ev_charging_chart_div').style.height = '0px';
-    } else if (chargers_active === 1) {
-        // Before we do anything, set the heading to no active charging sessions
-        document.getElementById('ev_charging_chart_title').innerText = `EV Charging - There is ${chargers_active} Active Charging Session`;
-        // Set the height of the graph to 0
-        document.getElementById('ev_charging_chart_div').style.height = '250px';
-    } else {
-        // Before we do anything, set the heading to no active charging sessions
-        document.getElementById('ev_charging_chart_title').innerText = `EV Charging - There are ${chargers_active} Active Charging Sessions`;
-        // Set the height of the graph to 0
-        document.getElementById('ev_charging_chart_div').style.height = '250px';
-    }
-}
+        // Initialise the database variable
+    let db = firebase.database();
 
-function merge_inverter_info_into_dataset(inverter_data_keys, charging_chart_obj) {
-    /** This function ensures that there are inverter info arrays in the chart's data object **/
+    // isCharging_parent_node is an object whose KEYS are all of the registered chargers
+    let isCharging_parent_node = null;
 
-        // Define our colour object which allows easy access to the colours each field is meant to be
-    let colour_object = {
-            'Solar_Power': "#ffcc00",
-            "Battery_Power": "#33cc33",
-            "Battery_SOC": "#ef2fac",
-            "Battery_Temperature": "#6600cc",
-            "Grid_Power": "#3366ff"
-        };
+    // charging_chart_obj is the object of the ev charging chart
+    let charging_chart_obj = null;
 
-    let entry_exists = false;
-    // Loop through all of our dataset entries
-    for (let [index, data_entry] of charging_chart_obj.data.datasets.entries()) {
-        if (data_entry.label === 'Solar Power') {
-            // If Solar_Power exists, then we assume the rest are there too
-            entry_exists = true
-        }
-    }
-
-    // But if there is no Solar_Power, we assume the rest of the inverter info is also not there
-    if (!entry_exists) {
-        // Loop through all of the keys in our temp_data_object
-        for (let data_key in inverter_data_keys) {
-            if (inverter_data_keys.hasOwnProperty(data_key)) {
-
-                // For each of the keys, our data will be the object[data_key], label will just be the key without _
-                // and the borderColor should be colour_array[data_key]
-                // Note: Battery SOC and temp need to be on the RIGHT hand axis
-                if (data_key === "Battery_SOC" || data_key === "Battery_Temperature") {
-                    charging_chart_obj.data.datasets.push({
-                        data: [],
-                        label: data_key.replace(/_/g, ' '),
-                        borderColor: colour_object[data_key],
-                        yAxisID: 'B',
-                        fill: false
-                    });
-                } else {
-                    charging_chart_obj.data.datasets.push({
-                        data: [],
-                        label: data_key.replace(/_/g, ' '),
-                        borderColor: colour_object[data_key],
-                        yAxisID: 'A',
-                        fill: false
-                    });
-                }
-            }
-        }
-    }
-
-    return charging_chart_obj
-}
-
-function merge_chargerID_into_dataset(chargerID, charging_chart_obj) {
-    /** This function checks whether or not our chargerID exists in the chart's data object **/
-
-    // Loop through our datasets to see if there exists a dataset
-    for (let index in charging_chart_obj.data.datasets) {
-
-        // Check if index exists in our datasets object
-        if (charging_chart_obj.data.datasets.hasOwnProperty(index)) {
-
-            // If chargerID = label, then there is already a data object
-            if (chargerID === charging_chart_obj.data.datasets[index]['label']) {
-                return charging_chart_obj
-            }
-        }
-    }
-
-    // If we looped through the whole dataset without returning then we need to add an entry
-    console.log('Dataset does not exist yet, need to create the structure');
-
-    charging_chart_obj.data.datasets.push({
-        data: [],
-        label: chargerID,
-        borderColor: randomColor({luminosity: 'dark'}),
-        // borderColor: "#ff3300",
-        fill: false
-    });
-
-    return charging_chart_obj
-}
-
-function delete_chargerID_from_dataset(chargerID, charging_chart_obj, charging_status_object, inverter_data_keys) {
-    /** This function runs once a charger ID has stopped charging. It will delete this charger ID's charge session
-     from the charging chart object **/
-
-        // First get the list of all chargers in our charging status object
-        // Keep a note that this charger list is AFTER the charger ID that has stopped charging has been removed from it
-    let charger_list = Object.keys(charging_status_object);
-
-    // If there is still a charging session left
-    if (charger_list.length > 0) {
-        let earliest_charger_moment_object = moment();
-        let earliest_chargerID;
-
-        // Loop through all of the datasets in the charging chart object
-        for (let [index, data_entry] of charging_chart_obj.data.datasets.entries()) {
-
-            // If the label of this dataset entry is a charger in our charging status object
-            if (charger_list.includes(data_entry.label)) {
-
-                // Check if this charger's first timestamp is before the earliest one so far
-                if (data_entry.data[0].x.isBefore(earliest_charger_moment_object)) {
-
-                    // If it is, the earliest gets replaced
-                    earliest_charger_moment_object = data_entry.data[0].x;
-                    earliest_chargerID = data_entry.label;
-                }
-            }
-        }
-
-        let delete_index;
-
-        // Loop through all of the dataset entries if the charging chart object
-        for (let [index, data_entry] of charging_chart_obj.data.datasets.entries()) {
-
-            // If we found solar power
-            if (data_entry.label === "Solar Power") {
-
-                // Loop through all of the data within the Solar Power dataset
-                for (let [data_index, data] of data_entry['data'].entries()) {
-
-                    // If the current timestamp is AFTER OR THE SAME as the earliest charger moment object
-                    if (data.x.isAfter(earliest_charger_moment_object) || data.x.format('HH:mm:ss') === earliest_charger_moment_object.format('HH:mm:ss')) {
-
-                        // We note this index and stop looping over this data array
-                        delete_index = data_index;
-                        break
-                    }
-                }
-                // Stop looping over datasets
-                break
-            }
-        }
-        // Finally, loop through our charging chart object again
-        for (let [index, data_entry] of charging_chart_obj.data.datasets.entries()) {
-
-            // If the label corresponds to a key in our inverter data keys - then the dataset is inverter/BT info
-            // The labels don't have underscores in them, so we need to add them in
-            if (inverter_data_keys.hasOwnProperty(data_entry.label.replace(' ', '_'))) {
-
-                // We need to go into the data and delete all values in the array up to delete_index
-                charging_chart_obj.data.datasets[index].data = charging_chart_obj.data.datasets[index].data.slice(delete_index)
-            }
-        }
-
-        // Then we just need to delete its own data
-        for (let [index, data_entry] of charging_chart_obj.data.datasets.entries()) {
-
-            // Match the chargerID with the label
-            if (chargerID === data_entry['label']) {
-
-                //... delete the series object and update the chart
-                charging_chart_obj.data.datasets.splice(index, 1);
-
-                console.log(`Deleted ${chargerID}!`);
-                break
-            }
-        }
-    }
-
-    // If this charging session is the last one, then we can just delete everything
-    else {
-        console.log('There are no more charging sessions left, deleting everything...');
-
-        charging_chart_obj.data.datasets.length = 0
-    }
-
-    charging_chart_obj.update();
-    return charging_chart_obj
-}
-
-function append_new_data_to_charging_chart(chargerID, charging_chart_obj, new_data) {
-    /** This function takes in new charge session data and appends it to our charging chart's data **/
-
-    for (let index in charging_chart_obj.data.datasets) {
-
-        // Check if index exists in our datasets object
-        if (charging_chart_obj.data.datasets.hasOwnProperty(index)) {
-
-            // If chargerID = label, then we have found the corresponding data object to modify
-            if (chargerID === charging_chart_obj.data.datasets[index]['label']) {
-                // Append the data into the charging chart
-                charging_chart_obj.data.datasets[index].data.push({
-                    x: moment(new_data['Time'], 'YYYY-MM-DD hh:mm:ss'),
-                    y: new_data['Power_Import']
-                });
-            }
-
-            // Now append all of the inverter/BT info to the chart object
-            else if (charging_chart_obj.data.datasets[index]['label'] === "Solar Power") {
-
-                charging_chart_obj.data.datasets[index].data.push({
-                    x: moment(new_data['Time'], 'YYYY-MM-DD hh:mm:ss'),
-                    y: new_data['Solar_Power']
-                });
-
-            } else if (charging_chart_obj.data.datasets[index]['label'] === "Battery Power") {
-
-                charging_chart_obj.data.datasets[index].data.push({
-                    x: moment(new_data['Time'], 'YYYY-MM-DD hh:mm:ss'),
-                    y: new_data['Battery_Power']
-                });
-
-            } else if (charging_chart_obj.data.datasets[index]['label'] === "Battery SOC") {
-
-                charging_chart_obj.data.datasets[index].data.push({
-                    x: moment(new_data['Time'], 'YYYY-MM-DD hh:mm:ss'),
-                    y: new_data['Battery_SOC']
-                });
-
-            } else if (charging_chart_obj.data.datasets[index]['label'] === "Battery Temperature") {
-
-                charging_chart_obj.data.datasets[index].data.push({
-                    x: moment(new_data['Time'], 'YYYY-MM-DD hh:mm:ss'),
-                    y: new_data['Battery_Temperature']
-                });
-
-            } else if (charging_chart_obj.data.datasets[index]['label'] === "Grid Power") {
-
-                charging_chart_obj.data.datasets[index].data.push({
-                    x: moment(new_data['Time'], 'YYYY-MM-DD hh:mm:ss'),
-                    y: new_data['Grid_Power']
-                });
-            }
-        }
-    }
-
-    charging_chart_obj.update();
-}
-
-function update_weather(uid, db) {
-    /** This function gets the weather at the location of the system and updates the card **/
-
-    db.ref(`users/${uid}/system_location`).once("value").then(function (snapshot) {
-        let system_location_object = snapshot.val();
-        let weather_url;
-
-        let weather_card = document.getElementById('weather_card');
-        // If there is no location, then we go with the stock
-        if (system_location_object === null) {
-            // weather_url = "http://api.openweathermap.org/data/2.5/weather?q=Melbourne,au&APPID=4b7ee1f96bfd687f2fff4f7cdf1cd11c&units=metric"
-            weather_card.innerHTML = `Please set system location in the settings`
-        }
-        // If there is a location, we use that for our weather update
-        else {
-            weather_url = `http://api.openweathermap.org/data/2.5/weather?lat=${system_location_object.lat}&lon=${system_location_object.lng}&APPID=4b7ee1f96bfd687f2fff4f7cdf1cd11c&units=metric`
-
-            $.getJSON(weather_url, function (json) {
-                weather_card.innerHTML = `${json.weather[0].description.toLowerCase()
-                    .split(' ')
-                    .map((s) => s.charAt(0).toUpperCase() + s.substring(1))
-                    .join(' ')
-                    } ${json.main.temp}&deg;C`
-            })
-        }
-
-        // Re-run 30 minutes later
-        setTimeout(function () {
-            update_weather(uid, db)
-        }, 900000)
-    })
-}
-
-function calculate_number_of_online_chargers(charger_status_obj) {
-    /** This function takes in a charger status object and outputs information for a status pie chart **/
-
-    let offline_chargers = 0;
-    let online_chargers = 0;
-    for (let key in charger_status_obj) {
-        if (charger_status_obj.hasOwnProperty(key)) {
-            if (charger_status_obj[key]) {
-                online_chargers = online_chargers + 1
-            } else {
-                offline_chargers = offline_chargers + 1
-            }
-        }
-    }
-    return {
-        datasets: [{
-            data: [online_chargers, offline_chargers],
-            backgroundColor: ['#0e9826', '#ff0e18']
-        }],
-        labels: [
-            'Online',
-            'Offline'
-        ]
-    }
-}
-
-function update_charger_status(uid, db) {
-    /** This function updates our pie chart that shows how many of our chargers are online **/
-
-    let data_obj = {
-        datasets: [{
-            data: [0, 0]
-        }],
-        labels: [
-            'Online',
-            'Offline'
-        ]
-    };
-    let charger_status_pie = create_charts(data_obj, 'charger_status_pie');
-    // Start a listener for the ev chargers that are registered on the system
-    db.ref(`users/${uid}/ev_chargers`).on("value", async function (snapshot) {
-        let ev_chargers = Object.keys(snapshot.val());
-
-        // Define an object for the status of all of our chargers
-        let charger_status_obj = [];
-
-        for (let index in ev_chargers) {
-            let chargerID = ev_chargers[index];
-            charger_status_obj[chargerID] = await db.ref(`users/${uid}/evc_inputs/${chargerID}/alive`).once("value");
-            charger_status_obj[chargerID] = charger_status_obj[chargerID].val();
-        }
-
-        data_obj = calculate_number_of_online_chargers(charger_status_obj);
-        charger_status_pie.data = data_obj;
-        charger_status_pie.update();
-
-        for (let index in ev_chargers) {
-            let chargerID = ev_chargers[index];
-
-            // Start a listener for the alive status of the charger
-            db.ref(`users/${uid}/evc_inputs/${chargerID}/alive`).on("value", function (snapshot) {
-                let temp_status = snapshot.val();
-
-                // Check if our status has changed (to filter our first run)
-                if (temp_status !== charger_status_obj[chargerID]) {
-                    charger_status_obj[chargerID] = snapshot.val();
-                    data_obj = calculate_number_of_online_chargers(charger_status_obj);
-                    charger_status_pie.data = data_obj;
-                    charger_status_pie.update();
-                }
-            })
-        }
-    })
-
-}
-
-function update_last_charging_session_table(chargerID, last_charge_session_obj) {
-    /** This function takes in the data from the latest charging session and then appends it to a table **/
-
-    let output_html = "";
-
-    output_html += `<tr><td><b>Charger ID</b></td><td>${chargerID}</td></tr>`;
-    output_html += `<tr><td><b>Energy</b></td><td>${last_charge_session_obj['energy'].toFixed(2)} kWh</td></tr>`;
-    output_html += `<tr><td><b>Started</b></td><td>${last_charge_session_obj['started']}</td></tr>`;
-
-    let total_seconds = last_charge_session_obj['duration_seconds'];
-    let hours = Math.floor(total_seconds / 3600);
-    total_seconds %= 3600;
-    let minutes = Math.floor(total_seconds / 60);
-    let seconds = total_seconds % 60;
-
-    let final_duration_string = "";
-
-    if (hours > 0) {
-        if (hours === 1) {
-            final_duration_string = `${hours}hr `
-        } else {
-            final_duration_string = `${hours}hrs `
-        }
-    }
-    if (minutes > 0) {
-        final_duration_string += `${minutes}min `;
-    }
-    if (seconds > 0) {
-        final_duration_string += `${seconds}sec`
-    }
-    output_html += `<tr><td><b>Duration</b></td><td>${final_duration_string}</td></tr>`;
-
-
-    document.getElementById('last_charging_table').innerHTML = output_html
-}
-
-function update_last_charging_session(uid, db) {
-    // Listen for any changes in ev_chargers registered
-    db.ref(`users/${uid}/ev_chargers`).on("value", async function (snapshot) {
-        let ev_chargers = Object.keys(snapshot.val());
-
-        // Define latest_date as the date that is the newest
-        let latest_date = moment('2000-01-01', 'YYYY-MM-DD');
-        let latest_chargerID = "";
-
-        // Loop through all of the ev chargers that are registered
-        for (let index in ev_chargers) {
-
-            // Define the charger ID
-            let chargerID = ev_chargers[index];
-
-            // Get the latest date in our analytics node
-            let temp_date = await db.ref(`users/${uid}/analytics/charging_history_analytics/${chargerID}`).orderByKey().limitToLast(1).once("value");
-            temp_date = temp_date.val();
-
-            // If the retrieved date is valid
-            if (temp_date !== null) {
-                temp_date = Object.keys(temp_date)[0];
-
-                // Get the latest time for that date
-                let temp_time = await db.ref(`users/${uid}/analytics/charging_history_analytics/${chargerID}/${temp_date}`).orderByKey().limitToLast(1).once("value");
-                temp_time = Object.keys(temp_time.val())[0];
-
-                // Then we convert the date to a moment object to compare
-                temp_date = moment(temp_date + ' ' + temp_time, "YYYY-MM-DD HHmm");
-
-                // Check if our date is the latest one so far
-                if (temp_date.isAfter(latest_date)) {
-                    // If it is then we record the date and the chargerID
-                    latest_date = temp_date;
-                    latest_chargerID = chargerID
-                }
-            }
-        }
-
-        // Now that we have the latest chargerID and date of charging session, we can grab the analytics
-        let charging_analytics_obj = await db.ref(`users/${uid}/analytics/charging_history_analytics/${latest_chargerID}/${latest_date.format('YYYY-MM-DD')}/${latest_date.format('HHmm')}`)
-            .orderByKey().once("value");
-
-        // Store all of the analytics in an object and add the start date/time into the object too
-        charging_analytics_obj = charging_analytics_obj.val();
-
-        if (charging_analytics_obj !== null) {
-            charging_analytics_obj['started'] = latest_date.format('DD/MM/YYYY HH:mm');
-
-            // Update the table
-            update_last_charging_session_table(latest_chargerID, charging_analytics_obj);
-
-            // Now that our table is updated, we loop through our ev chargers again
-            for (let index in ev_chargers) {
-                let chargerID = ev_chargers[index];
-
-                // Start a child removed listener to listen for any new completed charging sessions
-                db.ref(`users/${uid}/charging_history/${chargerID}`).on("child_removed", async function (snapshot) {
-                    // console.log(snapshot.key);
-                    // console.log(chargerID);
-
-                    // If there is a child removed, then we know this charge session just finished
-                    let latest_date_time = snapshot.key;
-
-                    console.log(`charging_history removed ${chargerID} ${latest_date_time}`);
-
-                    // Need to take the key of this and get the analytics
-                    let charging_analytics_obj = await db.ref(`users/${uid}/analytics/charging_history_analytics/${
-                        chargerID}/${latest_date_time.split(' ')[0]}/${latest_date_time.split(' ')[1]}`)
-                        .orderByKey().once("value");
-
-                    // Put the analytics in an object and add the start date/time of the charging session
-                    charging_analytics_obj = charging_analytics_obj.val();
-                    charging_analytics_obj['started'] = moment(latest_date_time, 'YYYY-MM-DD HHmm').format('DD/MM/YYYY HH:mm');
-
-                    // Update the table
-                    update_last_charging_session_table(chargerID, charging_analytics_obj)
-                });
-            }
-        } else {
-            console.log('There have been no charging sessions');
-            document.getElementById('last_charging_table').innerHTML = 'No charging sessions found';
-        }
-    });
-
-}
-
-function append_new_data_to_daily_charging_breakdown(data_obj, chargerID, new_data) {
-    // This function takes a single value and appends it to the end of the data array for the chargerID
-
-    for (let index in data_obj.datasets) {
-        if (data_obj.datasets.hasOwnProperty(index)) {
-            if (chargerID === data_obj.datasets[index]['label']) {
-                data_obj.datasets[index].data.push(new_data.toFixed(2))
-            }
-        }
-    }
-    return data_obj
-}
-
-async function condition_analytics_values_for_daily_charger_breakdown(charger_analytics_values, ev_chargers) {
-    // This function should take all the analytics values and condition them for chartJS stacked bar chart
-
-    // Initialize our conditioned analytics values object
-    let conditioned_charger_analytics_object = {
-        labels: [],
-        datasets: []
-    };
-
-    // Define a colour array that will be referenced each time
-    let colour_array = randomColor({hue: 'random', luminosity: 'light', count: ev_chargers.length});
-
-    for (let index in ev_chargers) {
-        if (ev_chargers.hasOwnProperty(index)) {
-            let chargerID = ev_chargers[index];
-
-            conditioned_charger_analytics_object.datasets.push({
-                type: 'bar',
-                label: chargerID,
-                data: [],
-                backgroundColor: colour_array[index],
-                fill: false
-            })
-        }
-
-    }
-
-    for (date in charger_analytics_values) {
-        if (charger_analytics_values.hasOwnProperty(date)) {
-            // Convert the dates to moment objects and append them to our labels
-            conditioned_charger_analytics_object.labels.push(moment(date, 'YYYY-MM-DD'));
-
-            // Now we have to go through all of the chargerIDs and find the total energy from each charge point for the day
-            for (let chargerID in charger_analytics_values[date]) {
-                let temp_charge_energy = 0;
-                if (charger_analytics_values[date].hasOwnProperty(chargerID)) {
-                    // If this chargerID has data for this particular date
-                    if (charger_analytics_values[date][chargerID] !== null) {
-                        // Then we loop through the charge sessions for that day for that charger ID and add up the energy
-                        for (let charge_session_time in charger_analytics_values[date][chargerID]) {
-                            if (charger_analytics_values[date][chargerID].hasOwnProperty(charge_session_time)) {
-                                temp_charge_energy = temp_charge_energy + parseFloat(charger_analytics_values[date][chargerID][charge_session_time].energy)
-                            }
-                        }
-                    }
-                    // Once we finished this loop, we append the total energy in our conditioned analytics obj
-                    conditioned_charger_analytics_object = append_new_data_to_daily_charging_breakdown(conditioned_charger_analytics_object, chargerID, temp_charge_energy)
-                }
-            }
-        }
-    }
-    return conditioned_charger_analytics_object
-}
-
-async function grab_charger_analytics_values(uid, db, ev_chargers, num_days) {
-    // This function serves update_daily_charger_breakdown and grabs all of the analytics values for the for the past num_days days
-    let charger_analytics_values = {};
-
-    // Loop through all of the ev chargers
-    for (let index in ev_chargers) {
-        if (ev_chargers.hasOwnProperty(index)) {
-            let chargerID = ev_chargers[index];
-
-            // Grab the charging history analytics values for the last 15 days
-            let temp_data = await db.ref(`users/${uid}/analytics/charging_history_analytics/${chargerID}/`).limitToLast(num_days).once("value");
-            temp_data = temp_data.val();
-
-            // Loop through the past 15 dates
-            for (let i = num_days; i >= 0; i--) {
-                let day = moment().subtract(i, 'days').format('YYYY-MM-DD');
-
-                // Check if our final object has a field for the current day
-                if (!charger_analytics_values.hasOwnProperty(day)) {
-                    // If not, make a blank object for the current day
-                    charger_analytics_values[day] = {};
-                }
-
-                // If we have data for today then we append that data to the final object
-                if (temp_data !== null && temp_data.hasOwnProperty(day)) {
-                    charger_analytics_values[day][chargerID] = temp_data[day];
-                }
-
-                // If we do not have any data at all for the past 15 days OR if in our data, there is no data for the
-                // current day we append null
-                else {
-                    charger_analytics_values[day][chargerID] = null
-                }
-            }
-        }
-    }
-    return charger_analytics_values
-}
-
-function update_daily_charger_breakdown(uid, db) {
-    let ev_chargers = [];
+    // Charging_ref is the Firebase reference to the parent of all charging statuses
     let charging_ref = db.ref("users/" + uid + "/evc_inputs/charging/");
 
-    // Get a list of all of our ev chargers
-    charging_ref.once("value", function (snapshot) {
-        ev_chargers = Object.keys(snapshot.val())
+    charging_ref
+        .once('value', async function (snapshot) {
+            isCharging_parent_node = snapshot.val();
+
+            // See if we have any current charging sessions and grab them
+            let charging_data_obj = await grab_initial_charging_data(uid, db, isCharging_parent_node);
+
+            // Now put them into a chart
+            charging_chart_obj = create_charts(charging_data_obj, 'ev_charging_chart');
+
+            // Finally start listeners for new charging sessions
+            await start_charging_session_listeners(uid, db, charging_data_obj, charging_chart_obj, isCharging_parent_node)
+        })
+        .catch(function (e) {
+            console.log(e);
+        });
+}
+
+/**************************************************************************************************** *****************/
+/**********************************************************************************************************************/
+
+/**********************************************************************************************************************/
+/******************************************** LIVE DATA CHART FUNCTIONS ***********************************************/
+
+function update_live_data_tables(data_obj, purpose) {
+    /// This function takes in a data object and updates the tables on the dashbaord
+
+    if (purpose === "evc_table") {
+
+        let evc_output = "";
+
+        evc_output += "<tr><td>" + "AC2 Power" + "</td><td>" + data_obj.ac2p + "W" + "</td>";
+        evc_output += "<tr><td>" + "AC2 Voltage" + "</td><td>" + data_obj.ac2v + "V" + "</td>";
+        evc_output += "<tr><td>" + "AC2 Current" + "</td><td>" + data_obj.ac2c + "A" + "</td>";
+
+        document.getElementById("evc_table_body").innerHTML = evc_output;
+    } else {
+        let ac1_output = "";
+        let dcp_output = "";
+        let btp_output = "";
+        ac1_output += "<tr><td>" + "Utility AC Current" + "</td><td>" + data_obj.utility_c[data_obj.utility_c.length - 1] + "A" + "</td>";
+        ac1_output += "<tr><td>" + "Utility AC Power" + "</td><td>" + data_obj.utility_p[data_obj.utility_p.length - 1] + "W" + "</td>";
+
+        // document.getElementById("utility_reveal_table").innerHTML = ac1_output;
+        let $utility_reveal_table = $("#utility_reveal_table");
+        $utility_reveal_table.empty();
+        $utility_reveal_table.append(ac1_output);
+
+        dcp_output += "<tr><td>" + "DC Total Power" + "</td><td>" + data_obj.dcp[data_obj.dcp.length - 1] + "W" + "</td>";
+        dcp_output += "<tr><td>" + "DC1 Voltage" + "</td><td>" + data_obj.dc1v[data_obj.dc1v.length - 1] + "V" + "</td>";
+        dcp_output += "<tr><td>" + "DC1 Current" + "</td><td>" + data_obj.dc1c[data_obj.dc1c.length - 1] + "A" + "</td>";
+        dcp_output += "<tr><td>" + "DC1 Power" + "</td><td>" + data_obj.dc1p[data_obj.dc1p.length - 1] + "W" + "</td>";
+        dcp_output += "<tr><td>" + "DC2 Voltage" + "</td><td>" + data_obj.dc2v[data_obj.dc2v.length - 1] + "V" + "</td>";
+        dcp_output += "<tr><td>" + "DC2 Current" + "</td><td>" + data_obj.dc2c[data_obj.dc2c.length - 1] + "A" + "</td>";
+        dcp_output += "<tr><td>" + "DC2 Power" + "</td><td>" + data_obj.dc2p[data_obj.dc2p.length - 1] + "W" + "</td>";
+
+        // document.getElementById("dcp_reveal_table").innerHTML = dcp_output;
+        let $dcp_reveal_table = $("#dcp_reveal_table");
+        $dcp_reveal_table.empty();
+        $dcp_reveal_table.append(dcp_output);
+
+        btp_output += "<tr><td>" + "Battery Power" + "</td><td>" + data_obj.btp[data_obj.btp.length - 1] + "W" + "</td>";
+        btp_output += "<tr><td>" + "Battery Voltage" + "</td><td>" + data_obj.btv[data_obj.btv.length - 1] + "V" + "</td>";
+        btp_output += "<tr><td>" + "Battery Current" + "</td><td>" + data_obj.btc[data_obj.btc.length - 1] + "A" + "</td>";
+        btp_output += "<tr><td>" + "Battery SOC" + "</td><td>" + data_obj.btsoc[data_obj.btsoc.length - 1] + "%" + "</td>";
+        btp_output += "<tr><td>" + "Battery Temperature" + "</td><td>" + data_obj.bt_module_temp[data_obj.bt_module_temp.length - 1] + "C" + "</td>";
+        document.getElementById("btp_reveal_table").innerHTML = btp_output;
+        document.getElementById('btsoc_card').innerText = data_obj.btsoc[data_obj.btsoc.length - 1] + '%';
+
+    }
+}
+
+function update_live_data_charts(uid) {
+    /** This function will update our live data charts (solar power, grid power and battery power) **/
+
+    let db = firebase.database();
+
+    // Initialise our data object
+    let data_obj = {
+        'utility_p': [],
+        'utility_c': [],
+        'ac2p': [],
+        'ac2v': [],
+        'ac2c': [],
+        'dcp': [],
+        'dc1v': [],
+        'dc1c': [],
+        'dc1p': [],
+        'dc2v': [],
+        'dc2c': [],
+        'dc2p': [],
+        'btp': [],
+        'btv': [],
+        'btc': [],
+        'btsoc': [],
+        'bt_module_temp': [],
+        'time': []
+    };
+
+    // Todo: add some charging data into a table somewhere
+    let charging_table_data_obj = {
+        'ac2p': 0,
+        'ac2v': 0,
+        'ac2c': 0
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////// LIVE INVERTER AND BATTERY GRAPHS ///////////////////////////////////////////////////
+    // Now grab all of the historical values for today
+    let history_ref = db.ref("users/" + uid + "/history/" + date);
+    history_ref.orderByKey().limitToLast(70).once("value", function (snapshot) {
+        let data = snapshot.val();
+
+        /// Make sure there is actually data from today.
+        if (data !== null) {
+            $('.fourth_row_card').show();
+
+            // Grab the whole history
+            for (let key in data) {
+                if (data.hasOwnProperty(key)) {
+                    data_obj.utility_p.push(data[key]['utility_p']);
+                    data_obj.utility_c.push(data[key]['utility_c']);
+                    data_obj.ac2p.push(data[key]['ac2p']);
+                    data_obj.dcp.push(data[key]['dc1p'] + data[key]['dc2p']);
+                    data_obj.dc1v.push(data[key].dc1v);
+                    data_obj.dc1c.push(data[key].dc1c);
+                    data_obj.dc1p.push(data[key].dc1p);
+                    data_obj.dc2v.push(data[key].dc2v);
+                    data_obj.dc2c.push(data[key].dc2c);
+                    data_obj.dc2p.push(data[key].dc2p);
+                    data_obj.btp.push(data[key]['btp']);
+                    data_obj.btv.push(data[key].btv);
+                    data_obj.btc.push(data[key].btc);
+                    data_obj.btsoc.push(data[key].btsoc);
+                    data_obj.bt_module_temp.push(data[key].bt_module1_temp_max);
+
+                    data_obj.time.push(data[key]['time']);
+                }
+            }
+            // Cut it so that we only have the amount we want
+            data_obj.utility_p = data_obj.utility_p.slice(globals['chart_properties']['utility_p']['length'] * -1);
+            data_obj.utility_c = data_obj.utility_c.slice(globals['chart_properties']['utility_p']['length'] * -1);
+            data_obj.ac2p = data_obj.ac2p.slice(globals['chart_properties']['utility_p']['length'] * -1);
+            data_obj.dcp = data_obj.dcp.slice(globals['chart_properties']['dcp']['length'] * -1);
+            data_obj.dc1v = data_obj.dc1v.slice(globals['chart_properties']['dcp']['length'] * -1);
+            data_obj.dc1c = data_obj.dc1c.slice(globals['chart_properties']['dcp']['length'] * -1);
+            data_obj.dc1p = data_obj.dc1p.slice(globals['chart_properties']['dcp']['length'] * -1);
+            data_obj.dc2v = data_obj.dc2v.slice(globals['chart_properties']['dcp']['length'] * -1);
+            data_obj.dc2c = data_obj.dc2c.slice(globals['chart_properties']['dcp']['length'] * -1);
+            data_obj.dc2p = data_obj.dc2p.slice(globals['chart_properties']['dcp']['length'] * -1);
+            data_obj.btp = data_obj.btp.slice(globals['chart_properties']['btp']['length'] * -1);
+            data_obj.btv = data_obj.btv.slice(globals['chart_properties']['btp']['length'] * -1);
+            data_obj.btc = data_obj.btc.slice(globals['chart_properties']['btp']['length'] * -1);
+            data_obj.btsoc = data_obj.btsoc.slice(globals['chart_properties']['btp']['length'] * -1);
+            data_obj.bt_module_temp = data_obj.bt_module_temp.slice(globals['chart_properties']['btp']['length'] * -1);
+
+            data_obj.time = data_obj.time.slice(globals['chart_properties']['dcp']['length'] * -1);
+
+            data_obj.time.forEach(function (value, key, time_array) {
+                time_array[key] = moment(time_array[key], 'hhmmss');
+            });
+        }
+
+        // If there isn't any data from today, then we hide the fourth row
+        else {
+            $('.fourth_row_card').hide();
+        }
     })
         .then(function () {
-            // Then we grab all of the analytics values for the past 15 days
-            grab_charger_analytics_values(uid, db, ev_chargers, 15)
-                .then(function (charger_analytics_values) {
-                    // Then we condition the data in the way that we need to chart
-                    condition_analytics_values_for_daily_charger_breakdown(charger_analytics_values, ev_chargers)
-                        .then(function (final_analytics_values) {
-                            // Then we plot it in a stacked bar chart
-                            create_charts(final_analytics_values, 'daily_charging_breakdown_bar')
-                        })
-                })
+            document.getElementById("index2_master_row").style.visibility = 'initial';
+            document.getElementById("loading_id").style.display = 'none';
+
+            $("#index2_master_row").addClass("load");
+
+            // Now create the charts
+            let chart_obj = create_charts(data_obj, 'live_charts');
+
+            // Start listening to any NEW ADDITIONS and only grab the newest addition - THEN push to chart/tables
+            history_ref.orderByKey().limitToLast(1).on("child_added", async function (snapshot) {
+                // new_data is the newest secondly data that has come in
+                let new_data = snapshot.val();
+                let new_time = moment(new_data.time, 'hhmmss');
+
+                $('.fourth_row_card').show();
+
+                // If there is no data, then we just add to array
+                if (data_obj.time.length === 0) {
+                    data_obj.utility_p.push(new_data.utility_p);
+                    data_obj.utility_c.push(new_data.utility_c);
+                    data_obj.ac2p.push(new_data.ac2p);
+                    data_obj.ac2v.push(new_data.ac2v);
+                    data_obj.ac2c.push(new_data.ac2c);
+                    data_obj.dcp.push(new_data.dctp);
+                    data_obj.dc1v.push(new_data.dc1v);
+                    data_obj.dc1c.push(new_data.dc1c);
+                    data_obj.dc1p.push(new_data.dc1p);
+                    data_obj.dc2v.push(new_data.dc2v);
+                    data_obj.dc2c.push(new_data.dc2c);
+                    data_obj.dc2p.push(new_data.dc2p);
+                    data_obj.btp.push(new_data.btp);
+                    data_obj.btv.push(new_data.btv);
+                    data_obj.btc.push(new_data.btc);
+                    data_obj.btsoc.push(new_data.btsoc);
+                    data_obj.bt_module_temp.push(new_data.bt_module1_temp_max);
+
+                    data_obj.time.push(moment(new_data.time, 'hhmmss'));
+                }
+
+                // Check if the incoming data is more up to date than our most up to date value
+                if (data_obj.time[data_obj.time.length - 1].isBefore(new_time)) {
+                    // Shift the data over if we are past our time threshold
+                    if (data_obj.utility_p.length >= globals['chart_properties'].utility_p.length) {
+                        data_obj.utility_p.shift();
+                        data_obj.utility_p.push(new_data.utility_p);
+                        data_obj.utility_c.shift();
+                        data_obj.utility_c.push(new_data.utility_c);
+                        data_obj.ac2p.shift();
+                        data_obj.ac2p.push(new_data.ac2p);
+                        data_obj.ac2v.shift();
+                        data_obj.ac2v.push(new_data.ac2v);
+                        data_obj.ac2c.shift();
+                        data_obj.ac2c.push(new_data.ac2c);
+                        data_obj.dcp.shift();
+                        data_obj.dcp.push(new_data.dctp);
+                        data_obj.dc1v.shift();
+                        data_obj.dc1v.push(new_data.dc1v);
+                        data_obj.dc1c.shift();
+                        data_obj.dc1c.push(new_data.dc1c);
+                        data_obj.dc1p.shift();
+                        data_obj.dc1p.push(new_data.dc1p);
+                        data_obj.dc2v.shift();
+                        data_obj.dc2v.push(new_data.dc2v);
+                        data_obj.dc2c.shift();
+                        data_obj.dc2c.push(new_data.dc2c);
+                        data_obj.dc2p.shift();
+                        data_obj.dc2p.push(new_data.dc2p);
+                        data_obj.btp.shift();
+                        data_obj.btp.push(new_data.btp);
+                        data_obj.btv.shift();
+                        data_obj.btv.push(new_data.btv);
+                        data_obj.btc.shift();
+                        data_obj.btc.push(new_data.btc);
+                        data_obj.btsoc.shift();
+                        data_obj.btsoc.push(new_data.btsoc);
+                        data_obj.bt_module_temp.shift();
+                        data_obj.bt_module_temp.push(new_data.bt_module1_temp_max);
+
+                        data_obj.time.shift();
+                        data_obj.time.push(moment(new_data.time, 'hhmmss'));
+
+                    } else {
+                        data_obj.utility_p.push(new_data.utility_p);
+                        data_obj.utility_c.push(new_data.utility_c);
+                        data_obj.ac2p.push(new_data.ac2p);
+                        data_obj.ac2v.push(new_data.ac2v);
+                        data_obj.ac2c.push(new_data.ac2c);
+                        data_obj.dcp.push(new_data.dctp);
+                        data_obj.dc1v.push(new_data.dc1v);
+                        data_obj.dc1c.push(new_data.dc1c);
+                        data_obj.dc1p.push(new_data.dc1p);
+                        data_obj.dc2v.push(new_data.dc2v);
+                        data_obj.dc2c.push(new_data.dc2c);
+                        data_obj.dc2p.push(new_data.dc2p);
+                        data_obj.btp.push(new_data.btp);
+                        data_obj.btv.push(new_data.btv);
+                        data_obj.btc.push(new_data.btc);
+                        data_obj.btsoc.push(new_data.btsoc);
+                        data_obj.bt_module_temp.push(new_data.bt_module1_temp_max);
+                        data_obj.time.push(moment(new_data.time, 'hhmmss'))
+                    }
+                }
+
+                // Push all the new data into our charts
+                update_charts(chart_obj, data_obj);
+                update_live_data_tables(data_obj, 'general table');
+            });
 
         });
+}
 
+/**************************************************************************************************** *****************/
+/**********************************************************************************************************************/
 
+function update_analytics_bar_charts(uid) {
+    /** This function will grab and start listeners for data that will go in our analytics bar charts */
+
+    let db = firebase.database();
+
+    // First grab the last 20 dates for our inverter history analytics with this we can figure out the solar history and charging history
+    let solar_history_data = [];
+    let analytics_dates = [];
+    let analytics_charts_obj = null;
+
+    let charging_history_data = [];
+
+    // Initialise our live analytics Firebase reference
+    let live_analytics_ref;
+
+    // Start a listener for our inverter history analytics
+    let inverter_history_analytics_ref = db.ref(`users/${uid}/analytics/inverter_history_analytics`);
+    inverter_history_analytics_ref
+        .limitToLast(20)
+        .on("value", async function (snapshot) {
+
+            // Clear all of our data and label variables
+            solar_history_data = [];
+            analytics_dates = [];
+            charging_history_data = [];
+
+            let snapshot_obj = snapshot.val();
+
+            // Loop through index of snapshot_obj and convert all of the keys (YYYY-MM-DD) to MomentJS objects and push into array
+            for (let [index] of Object.keys(snapshot_obj).entries()) {
+                analytics_dates.push(moment(Object.keys(snapshot_obj)[index], 'YYYY-MM-DD'));
+            }
+
+            // Now loop through all of the data in snapshot_obj and push all the data to solar_history_data
+            for (let date in snapshot_obj) {
+                if (snapshot_obj.hasOwnProperty(date)) {
+                    solar_history_data.push(snapshot_obj[date]['dctp']);
+                    charging_history_data.push(snapshot_obj[date]['ac2tp'])
+                }
+            }
+
+            // First grab today's analytics for solar and push it into the array.
+            let analytics_ref = db.ref("users/" + uid + "/analytics/live_analytics/dcp_t");
+            let current_solar = await analytics_ref.once("value");
+            current_solar = current_solar.val();
+            analytics_dates.push(moment());
+            solar_history_data.push(current_solar.toFixed(2));
+
+            // If we do not have a bar chart object, then we should create it
+            if (analytics_charts_obj === null) {
+                analytics_charts_obj = create_charts({
+                    'labels': analytics_dates,
+                    'solar_data': solar_history_data,
+                    'charging_data': charging_history_data,
+
+                }, 'analytics_bar_charts')
+            }
+            // If we already have an object, then we should update the bar charts
+            else {
+                update_charts({
+                    'solar_history_bar_chart': analytics_charts_obj['solar_history_bar_chart'],
+                    'charging_history_bar_chart': analytics_charts_obj['charging_history_bar_chart']
+                }, {
+                    'labels': analytics_dates,
+                    'solar_data': solar_history_data,
+                    'charging_data': charging_history_data,
+                })
+            }
+
+            // Check if there is not an existing live analytics Firebase reference
+            if (live_analytics_ref !== undefined) {
+                // Todo: Need to test this one to see if it removes all of the listeners
+                live_analytics_ref.off();
+            }
+
+            // Initialise our live analytics ref to the Firebase node that contains our system's live analytics
+            live_analytics_ref = db.ref("users/" + uid + "/analytics/live_analytics");
+
+            // Start a live analytics listener to update our solar history bar chart with today's solar data
+            live_analytics_ref.on("value", function (snapshot) {
+                let liveAnalyticsPayload = snapshot.val();
+
+                /// Check if our live analytics payload was last updated today
+                if (moment(liveAnalyticsPayload['time']).isSame(moment(), 'day')) {
+
+                    // Calculate the number of minutes between the current time and the timestamp on the analytics payload
+                    let minutesDiff = moment.duration(moment().diff(moment(liveAnalyticsPayload['time']))).asMinutes();
+
+                    // If our analytics payload is younger than 25 minutes
+                    if (minutesDiff < 25) {
+
+                        // Then update our solar history bar chart
+                        update_charts({
+                            'solar_history_bar_chart_today_update': analytics_charts_obj['solar_history_bar_chart']
+                        }, {
+                            label: moment(),
+                            data: liveAnalyticsPayload['dcp_t'].toFixed(2)
+                        });
+                    }
+                }
+            });
+        });
+}
+
+function update_live_analytics_cards(uid) {
+    /** This function updates the text inside the analytics cards in the top row **/
+
+    let db = firebase.database();
+
+    // Define our analytics listener and print info to all our top cards and update the last bar of our bar chart
+    let live_analytics_ref = db.ref("users/" + uid + "/analytics/live_analytics");
+    live_analytics_ref.on("value", function (snapshot) {
+        let liveAnalyticsPayload = snapshot.val();
+
+        $topRowCard = $('.top_row_card');
+        /// Check if our live analytics payload was last updated today
+        if (moment(liveAnalyticsPayload['time']).isSame(moment(), 'day')) {
+
+            // If it was last updated today, we will show the top row of cards
+            $topRowCard.show();
+
+            // Calculate the number of minutes between the current time and the timestamp on the analytics payload
+            let minutesDiff = moment.duration(moment().diff(moment(liveAnalyticsPayload['time']))).asMinutes();
+
+            // If our analytics payload is older than 25 minutes
+            if (minutesDiff > 25) {
+
+                // Then we should completely hide the top row
+                $topRowCard.hide();
+
+                // Then we need to display a warning to the user that the data is outdated
+                M.toast({
+                    html: 'Warning: This Delta Solar Charger is offline. The data on the page will be outdated.',
+                    displayLength: Infinity
+                });
+            }
+
+            // If our analytics payload is younger than 25 minutes
+            else {
+
+                // Dismiss any offline modals
+                M.Toast.dismissAll();
+
+                // Now update the text in all of the cards
+                document.getElementById("dctp_card").innerText = liveAnalyticsPayload['dcp_t'].toFixed(2) + "kWh";
+                document.getElementById("utility_p_export_card").innerText = liveAnalyticsPayload['utility_p_export_t'].toFixed(2) + "kWh";
+                document.getElementById("utility_p_import_card").innerText = -1 * liveAnalyticsPayload['utility_p_import_t'].toFixed(2) + "kWh";
+                document.getElementById("bt_consumed_card").innerText = liveAnalyticsPayload['btp_consumed_t'].toFixed(2) + "kWh";
+                document.getElementById("bt_charged_card").innerText = -1 * (liveAnalyticsPayload['btp_charged_t'].toFixed(2)) + "kWh";
+            }
+        }
+
+        // Our latest live analytics payload is not on the same time as today
+        else {
+            // Hide our top row
+            $topRowCard.hide();
+
+            // Send a warning to the user that the dashboard is not up to date
+            M.toast({
+                html: 'This Delta Solar Charger is offline. Please restart the unit for the data to be up to date',
+                displayLength: 10000
+            });
+        }
+
+    });
 }
 
 function initialiseUIElements(isCustomUID) {
@@ -1465,6 +1949,7 @@ function initialiseUIElements(isCustomUID) {
 }
 
 function startDashboard(uid) {
+    /** This function is called once the dashboard is ready to be started **/
 
     let isCustomUID;
 
@@ -1488,358 +1973,30 @@ function startDashboard(uid) {
     // Initialise our UI elements
     initialiseUIElements(isCustomUID);
 
-    let db = firebase.database();
-
     // Get the weather forecast for the location of the solar charger
-    update_weather(uid, db);
+    update_weather(uid);
+
+    // Create and start updating our analytics bar charts (solar generation history and daily charger breakdown)
+    update_analytics_bar_charts(uid);
+
+    // Update the text in our live analytics cards in the top row
+    update_live_analytics_cards(uid);
 
     // Start updating our pie chart that shows charger online/offline status
-    update_charger_status(uid, db);
+    update_charger_status(uid);
 
     // Start listening for the latest charging session and push that to our table
-    update_last_charging_session(uid, db);
+    update_last_charging_session(uid);
 
     // Get data to create a chart that breaks down the charging energy of each charger ID for each day
-    update_daily_charger_breakdown(uid, db);
+    update_daily_charger_breakdown(uid);
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////// EV CHARGING GRAPH ////////////////////////////////////////////////////////////////
-    // Charging_ref is the Firebase reference to the parent of all charging stautses
-    let charging_ref = db.ref("users/" + uid + "/evc_inputs/charging/");
+    // Create and start updating our EV charging graph
+    update_ev_charging_graph(uid);
 
-    // isCharging_parent_node is an object whose KEYS are all of the registered chargers
-    let isCharging_parent_node = null;
+    // Finally, update our live data charts
+    update_live_data_charts(uid);
 
-    // charging_chart_obj is the object of the ev charging chart
-    let charging_chart_obj = null;
-
-    charging_ref.once('value', async function (snapshot) {
-        isCharging_parent_node = snapshot.val();
-        let charging_data_obj = await grab_initial_charging_data(uid, db, isCharging_parent_node);
-        charging_chart_obj = create_charts(charging_data_obj, 'ev_charging_chart');
-        await start_charging_session_listeners(uid, db, charging_data_obj, charging_chart_obj, isCharging_parent_node)
-    });
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////// ANALYTICS BAR CHARTS /////////////////////////////////////////////////////
-    // Now we must update our history row of charts
-    // First grab the last 20 dates for our inverter history analytics with this we can figure out the solar history and charging history
-    let solar_history_data = [];
-    let analytics_dates = [];
-    let analytics_charts_obj = null;
-
-    let charging_history_data = [];
-
-    let inverter_history_analytics_ref = db.ref(`users/${uid}/analytics/inverter_history_analytics`);
-    inverter_history_analytics_ref.limitToLast(20).on("value", async function (snapshot) {
-        // Clear all of our data and label variables
-        solar_history_data = [];
-        analytics_dates = [];
-        charging_history_data = [];
-
-        let snapshot_obj = snapshot.val();
-        // Loop through index of snapshot_obj and convert all of the keys (YYYY-MM-DD) to MomentJS objects and push into array
-        for (let index in Object.keys(snapshot_obj)) {
-            analytics_dates.push(moment(Object.keys(snapshot_obj)[index], 'YYYY-MM-DD'));
-        }
-        // Now loop through all of the data in snapshot_obj and push all the data to solar_history_data
-        for (let date in snapshot_obj) {
-            if (snapshot_obj.hasOwnProperty(date)) {
-                solar_history_data.push(snapshot_obj[date]['dctp']);
-                charging_history_data.push(snapshot_obj[date]['ac2tp'])
-            }
-        }
-
-        // First grab today's analytics for solar and push it into the array.
-        let analytics_ref = db.ref("users/" + uid + "/analytics/live_analytics/dcp_t");
-        let current_solar = await analytics_ref.once("value");
-        current_solar = current_solar.val();
-        analytics_dates.push(moment());
-        solar_history_data.push(current_solar.toFixed(2));
-
-        // If we do not have a bar chart object, then we should create it
-        if (analytics_charts_obj === null) {
-            analytics_charts_obj = create_charts({
-                'labels': analytics_dates,
-                'solar_data': solar_history_data,
-                'charging_data': charging_history_data,
-
-            }, 'analytics_bar_charts')
-        }
-        // If we already have an object, then we should update the bar charts
-        else {
-            update_charts({
-                'solar_history_bar_chart': analytics_charts_obj['solar_history_bar_chart'],
-                'charging_history_bar_chart': analytics_charts_obj['charging_history_bar_chart']
-            }, {
-                'labels': analytics_dates,
-                'solar_data': solar_history_data,
-                'charging_data': charging_history_data,
-            })
-        }
-
-
-    });
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    let data_obj = {
-        'utility_p': [],
-        'utility_c': [],
-        'ac2p': [],
-        'ac2v': [],
-        'ac2c': [],
-        'dcp': [],
-        'dc1v': [],
-        'dc1c': [],
-        'dc1p': [],
-        'dc2v': [],
-        'dc2c': [],
-        'dc2p': [],
-        'btp': [],
-        'btv': [],
-        'btc': [],
-        'btsoc': [],
-        'bt_module_temp': [],
-        'time': []
-    };
-
-    let charging_table_data_obj = {
-        'ac2p': 0,
-        'ac2v': 0,
-        'ac2c': 0
-    };
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////// LIVE INVERTER AND BATTERY GRAPHS ///////////////////////////////////////////////////
-    // Now grab all of the historical values for today
-    let history_ref = db.ref("users/" + uid + "/history/" + date);
-    history_ref.orderByKey().limitToLast(70).once("value", function (snapshot) {
-        let data = snapshot.val();
-
-        /// Make sure there is actually data from today.
-        if (data !== null) {
-            $('.fourth_row_card').show();
-
-            // Grab the whole history
-            for (let key in data) {
-                if (data.hasOwnProperty(key)) {
-                    data_obj.utility_p.push(data[key]['utility_p']);
-                    data_obj.utility_c.push(data[key]['utility_c']);
-                    data_obj.ac2p.push(data[key]['ac2p']);
-                    data_obj.dcp.push(data[key]['dc1p'] + data[key]['dc2p']);
-                    data_obj.dc1v.push(data[key].dc1v);
-                    data_obj.dc1c.push(data[key].dc1c);
-                    data_obj.dc1p.push(data[key].dc1p);
-                    data_obj.dc2v.push(data[key].dc2v);
-                    data_obj.dc2c.push(data[key].dc2c);
-                    data_obj.dc2p.push(data[key].dc2p);
-                    data_obj.btp.push(data[key]['btp']);
-                    data_obj.btv.push(data[key].btv);
-                    data_obj.btc.push(data[key].btc);
-                    data_obj.btsoc.push(data[key].btsoc);
-                    data_obj.bt_module_temp.push(data[key].bt_module1_temp_max);
-
-                    data_obj.time.push(data[key]['time']);
-                }
-            }
-            // Cut it so that we only have the amount we want
-            data_obj.utility_p = data_obj.utility_p.slice(chart_properties['utility_p']['length'] * -1);
-            data_obj.utility_c = data_obj.utility_c.slice(chart_properties['utility_p']['length'] * -1);
-            data_obj.ac2p = data_obj.ac2p.slice(chart_properties['utility_p']['length'] * -1);
-            data_obj.dcp = data_obj.dcp.slice(chart_properties['dcp']['length'] * -1);
-            data_obj.dc1v = data_obj.dc1v.slice(chart_properties['dcp']['length'] * -1);
-            data_obj.dc1c = data_obj.dc1c.slice(chart_properties['dcp']['length'] * -1);
-            data_obj.dc1p = data_obj.dc1p.slice(chart_properties['dcp']['length'] * -1);
-            data_obj.dc2v = data_obj.dc2v.slice(chart_properties['dcp']['length'] * -1);
-            data_obj.dc2c = data_obj.dc2c.slice(chart_properties['dcp']['length'] * -1);
-            data_obj.dc2p = data_obj.dc2p.slice(chart_properties['dcp']['length'] * -1);
-            data_obj.btp = data_obj.btp.slice(chart_properties['btp']['length'] * -1);
-            data_obj.btv = data_obj.btv.slice(chart_properties['btp']['length'] * -1);
-            data_obj.btc = data_obj.btc.slice(chart_properties['btp']['length'] * -1);
-            data_obj.btsoc = data_obj.btsoc.slice(chart_properties['btp']['length'] * -1);
-            data_obj.bt_module_temp = data_obj.bt_module_temp.slice(chart_properties['btp']['length'] * -1);
-
-            data_obj.time = data_obj.time.slice(chart_properties['dcp']['length'] * -1);
-
-            data_obj.time.forEach(function (value, key, time_array) {
-                time_array[key] = moment(time_array[key], 'hhmmss');
-            });
-        }
-
-        // If there isn't any data from today, then we hide the fourth row
-        else {
-            $('.fourth_row_card').hide();
-        }
-    }).then(function () {
-        document.getElementById("index2_master_row").style.visibility = 'initial';
-        document.getElementById("loading_id").style.display = 'none';
-
-        $("#index2_master_row").addClass("load");
-
-        // Now create the charts
-        let chart_obj = create_charts(data_obj, 'live_charts');
-
-        // Start listening to any NEW ADDITIONS and only grab the newest addition - THEN push to chart/tables
-        history_ref.orderByKey().limitToLast(1).on("child_added", async function (snapshot) {
-            // new_data is the newest secondly data that has come in
-            let new_data = snapshot.val();
-            let new_time = moment(new_data.time, 'hhmmss');
-
-            $('.fourth_row_card').show();
-
-            // If there is no data, then we just add to array
-            if (data_obj.time.length === 0) {
-                data_obj.utility_p.push(new_data.utility_p);
-                data_obj.utility_c.push(new_data.utility_c);
-                data_obj.ac2p.push(new_data.ac2p);
-                data_obj.ac2v.push(new_data.ac2v);
-                data_obj.ac2c.push(new_data.ac2c);
-                data_obj.dcp.push(new_data.dctp);
-                data_obj.dc1v.push(new_data.dc1v);
-                data_obj.dc1c.push(new_data.dc1c);
-                data_obj.dc1p.push(new_data.dc1p);
-                data_obj.dc2v.push(new_data.dc2v);
-                data_obj.dc2c.push(new_data.dc2c);
-                data_obj.dc2p.push(new_data.dc2p);
-                data_obj.btp.push(new_data.btp);
-                data_obj.btv.push(new_data.btv);
-                data_obj.btc.push(new_data.btc);
-                data_obj.btsoc.push(new_data.btsoc);
-                data_obj.bt_module_temp.push(new_data.bt_module1_temp_max);
-
-                data_obj.time.push(moment(new_data.time, 'hhmmss'));
-            }
-
-            // Check if the incoming data is more up to date than our most up to date value
-            if (data_obj.time[data_obj.time.length - 1].isBefore(new_time)) {
-                // Shift the data over if we are past our time threshold
-                if (data_obj.utility_p.length >= chart_properties.utility_p.length) {
-                    data_obj.utility_p.shift();
-                    data_obj.utility_p.push(new_data.utility_p);
-                    data_obj.utility_c.shift();
-                    data_obj.utility_c.push(new_data.utility_c);
-                    data_obj.ac2p.shift();
-                    data_obj.ac2p.push(new_data.ac2p);
-                    data_obj.ac2v.shift();
-                    data_obj.ac2v.push(new_data.ac2v);
-                    data_obj.ac2c.shift();
-                    data_obj.ac2c.push(new_data.ac2c);
-                    data_obj.dcp.shift();
-                    data_obj.dcp.push(new_data.dctp);
-                    data_obj.dc1v.shift();
-                    data_obj.dc1v.push(new_data.dc1v);
-                    data_obj.dc1c.shift();
-                    data_obj.dc1c.push(new_data.dc1c);
-                    data_obj.dc1p.shift();
-                    data_obj.dc1p.push(new_data.dc1p);
-                    data_obj.dc2v.shift();
-                    data_obj.dc2v.push(new_data.dc2v);
-                    data_obj.dc2c.shift();
-                    data_obj.dc2c.push(new_data.dc2c);
-                    data_obj.dc2p.shift();
-                    data_obj.dc2p.push(new_data.dc2p);
-                    data_obj.btp.shift();
-                    data_obj.btp.push(new_data.btp);
-                    data_obj.btv.shift();
-                    data_obj.btv.push(new_data.btv);
-                    data_obj.btc.shift();
-                    data_obj.btc.push(new_data.btc);
-                    data_obj.btsoc.shift();
-                    data_obj.btsoc.push(new_data.btsoc);
-                    data_obj.bt_module_temp.shift();
-                    data_obj.bt_module_temp.push(new_data.bt_module1_temp_max);
-
-                    data_obj.time.shift();
-                    data_obj.time.push(moment(new_data.time, 'hhmmss'));
-
-                } else {
-                    data_obj.utility_p.push(new_data.utility_p);
-                    data_obj.utility_c.push(new_data.utility_c);
-                    data_obj.ac2p.push(new_data.ac2p);
-                    data_obj.ac2v.push(new_data.ac2v);
-                    data_obj.ac2c.push(new_data.ac2c);
-                    data_obj.dcp.push(new_data.dctp);
-                    data_obj.dc1v.push(new_data.dc1v);
-                    data_obj.dc1c.push(new_data.dc1c);
-                    data_obj.dc1p.push(new_data.dc1p);
-                    data_obj.dc2v.push(new_data.dc2v);
-                    data_obj.dc2c.push(new_data.dc2c);
-                    data_obj.dc2p.push(new_data.dc2p);
-                    data_obj.btp.push(new_data.btp);
-                    data_obj.btv.push(new_data.btv);
-                    data_obj.btc.push(new_data.btc);
-                    data_obj.btsoc.push(new_data.btsoc);
-                    data_obj.bt_module_temp.push(new_data.bt_module1_temp_max);
-                    data_obj.time.push(moment(new_data.time, 'hhmmss'))
-                }
-            }
-
-            // Push all the new data into our charts
-            update_charts(chart_obj, data_obj);
-            update_live_data_tables(data_obj, 'general table');
-        });
-
-        // Define our analytics listener and print info to all our top cards and update the last bar of our bar chart
-        let analytics_ref = db.ref("users/" + uid + "/analytics/live_analytics");
-        analytics_ref.on("value", function (snapshot) {
-            let liveAnalyticsPayload = snapshot.val();
-
-            /// Check if our live analytics payload was last updated today
-            if (moment(liveAnalyticsPayload['time']).isSame(moment(), 'day')) {
-
-                $('.top_row_card').show();
-
-                let minutesDiff = moment.duration(moment().diff(moment(liveAnalyticsPayload['time']))).asMinutes();
-
-                // If our analytics payload is older than 25 minutes
-                if (minutesDiff > 25) {
-
-                    // Then we need to display a warning to the user that the data is outdated
-                    M.toast({
-                        html: 'Warning: Delta Solar Charger is offline. The data on the page will be outdated',
-                        displayLength: 10000
-                    });
-                }
-
-                // If our analytics payload is younger than 25 minutes
-                else {
-                    // Then we just update all of our analytics cards as usual
-                    document.getElementById("dctp_card").innerText = liveAnalyticsPayload['dcp_t'].toFixed(2) + "kWh";
-
-                    update_charts({
-                        'solar_history_bar_chart_today_update': analytics_charts_obj['solar_history_bar_chart']
-                    }, {
-                        label: moment(),
-                        data: liveAnalyticsPayload['dcp_t'].toFixed(2)
-                    });
-
-                    document.getElementById("utility_p_export_card").innerText = liveAnalyticsPayload['utility_p_export_t'].toFixed(2) + "kWh";
-                    document.getElementById("utility_p_import_card").innerText = -1 * liveAnalyticsPayload['utility_p_import_t'].toFixed(2) + "kWh";
-                    document.getElementById("bt_consumed_card").innerText = liveAnalyticsPayload['btp_consumed_t'].toFixed(2) + "kWh";
-                    document.getElementById("bt_charged_card").innerText = -1 * (liveAnalyticsPayload['btp_charged_t'].toFixed(2)) + "kWh";
-                }
-            }
-
-            // Our latest live analytics payload is not on the same time as today
-            else {
-                // Hide our top row
-                $('.top_row_card').hide();
-
-                // Send a warning to the user that the dashboard is not up to date
-                M.toast({
-                    html: 'This Delta Solar Charger is offline. Please restart the unit for the data to be up to date',
-                    displayLength: 10000
-                });
-            }
-
-        });
-    });
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 }
 
 function checkIfLoggedIn() {
@@ -1849,6 +2006,7 @@ function checkIfLoggedIn() {
 
     firebase.auth().onAuthStateChanged(function (user) {
         if (user) {
+
             // This will update our global date variable
             generate_date();
 
@@ -1860,54 +2018,6 @@ function checkIfLoggedIn() {
         }
     });
 
-}
-
-function update_live_data_tables(data_obj, purpose) {
-    /// This function takes in a data object and updates the tables on the dashbaord
-
-    if (purpose === "evc_table") {
-
-        let evc_output = "";
-
-        evc_output += "<tr><td>" + "AC2 Power" + "</td><td>" + data_obj.ac2p + "W" + "</td>";
-        evc_output += "<tr><td>" + "AC2 Voltage" + "</td><td>" + data_obj.ac2v + "V" + "</td>";
-        evc_output += "<tr><td>" + "AC2 Current" + "</td><td>" + data_obj.ac2c + "A" + "</td>";
-
-        document.getElementById("evc_table_body").innerHTML = evc_output;
-    } else {
-        let ac1_output = "";
-        let dcp_output = "";
-        let btp_output = "";
-        ac1_output += "<tr><td>" + "Utility AC Current" + "</td><td>" + data_obj.utility_c[data_obj.utility_c.length - 1] + "A" + "</td>";
-        ac1_output += "<tr><td>" + "Utility AC Power" + "</td><td>" + data_obj.utility_p[data_obj.utility_p.length - 1] + "W" + "</td>";
-
-        // document.getElementById("utility_reveal_table").innerHTML = ac1_output;
-        let $utility_reveal_table = $("#utility_reveal_table");
-        $utility_reveal_table.empty();
-        $utility_reveal_table.append(ac1_output);
-
-        dcp_output += "<tr><td>" + "DC Total Power" + "</td><td>" + data_obj.dcp[data_obj.dcp.length - 1] + "W" + "</td>";
-        dcp_output += "<tr><td>" + "DC1 Voltage" + "</td><td>" + data_obj.dc1v[data_obj.dc1v.length - 1] + "V" + "</td>";
-        dcp_output += "<tr><td>" + "DC1 Current" + "</td><td>" + data_obj.dc1c[data_obj.dc1c.length - 1] + "A" + "</td>";
-        dcp_output += "<tr><td>" + "DC1 Power" + "</td><td>" + data_obj.dc1p[data_obj.dc1p.length - 1] + "W" + "</td>";
-        dcp_output += "<tr><td>" + "DC2 Voltage" + "</td><td>" + data_obj.dc2v[data_obj.dc2v.length - 1] + "V" + "</td>";
-        dcp_output += "<tr><td>" + "DC2 Current" + "</td><td>" + data_obj.dc2c[data_obj.dc2c.length - 1] + "A" + "</td>";
-        dcp_output += "<tr><td>" + "DC2 Power" + "</td><td>" + data_obj.dc2p[data_obj.dc2p.length - 1] + "W" + "</td>";
-
-        // document.getElementById("dcp_reveal_table").innerHTML = dcp_output;
-        let $dcp_reveal_table = $("#dcp_reveal_table");
-        $dcp_reveal_table.empty();
-        $dcp_reveal_table.append(dcp_output);
-
-        btp_output += "<tr><td>" + "Battery Power" + "</td><td>" + data_obj.btp[data_obj.btp.length - 1] + "W" + "</td>";
-        btp_output += "<tr><td>" + "Battery Voltage" + "</td><td>" + data_obj.btv[data_obj.btv.length - 1] + "V" + "</td>";
-        btp_output += "<tr><td>" + "Battery Current" + "</td><td>" + data_obj.btc[data_obj.btc.length - 1] + "A" + "</td>";
-        btp_output += "<tr><td>" + "Battery SOC" + "</td><td>" + data_obj.btsoc[data_obj.btsoc.length - 1] + "%" + "</td>";
-        btp_output += "<tr><td>" + "Battery Temperature" + "</td><td>" + data_obj.bt_module_temp[data_obj.bt_module_temp.length - 1] + "C" + "</td>";
-        document.getElementById("btp_reveal_table").innerHTML = btp_output;
-        document.getElementById('btsoc_card').innerText = data_obj.btsoc[data_obj.btsoc.length - 1] + '%';
-
-    }
 }
 
 function filterData(chart) {
