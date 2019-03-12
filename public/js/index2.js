@@ -1474,7 +1474,6 @@ function update_live_data_tables(data_obj, purpose) {
         ac1_output += "<tr><td>" + "Utility AC Current" + "</td><td>" + data_obj.utility_c[data_obj.utility_c.length - 1] + "A" + "</td>";
         ac1_output += "<tr><td>" + "Utility AC Power" + "</td><td>" + data_obj.utility_p[data_obj.utility_p.length - 1] + "W" + "</td>";
 
-        // document.getElementById("utility_reveal_table").innerHTML = ac1_output;
         let $utility_reveal_table = $("#utility_reveal_table");
         $utility_reveal_table.empty();
         $utility_reveal_table.append(ac1_output);
@@ -1487,7 +1486,6 @@ function update_live_data_tables(data_obj, purpose) {
         dcp_output += "<tr><td>" + "DC2 Current" + "</td><td>" + data_obj.dc2c[data_obj.dc2c.length - 1] + "A" + "</td>";
         dcp_output += "<tr><td>" + "DC2 Power" + "</td><td>" + data_obj.dc2p[data_obj.dc2p.length - 1] + "W" + "</td>";
 
-        // document.getElementById("dcp_reveal_table").innerHTML = dcp_output;
         let $dcp_reveal_table = $("#dcp_reveal_table");
         $dcp_reveal_table.empty();
         $dcp_reveal_table.append(dcp_output);
@@ -1497,8 +1495,16 @@ function update_live_data_tables(data_obj, purpose) {
         btp_output += "<tr><td>" + "Battery Current" + "</td><td>" + data_obj.btc[data_obj.btc.length - 1] + "A" + "</td>";
         btp_output += "<tr><td>" + "Battery SOC" + "</td><td>" + data_obj.btsoc[data_obj.btsoc.length - 1] + "%" + "</td>";
         btp_output += "<tr><td>" + "Battery Temperature" + "</td><td>" + data_obj.bt_module_temp[data_obj.bt_module_temp.length - 1] + "C" + "</td>";
-        document.getElementById("btp_reveal_table").innerHTML = btp_output;
-        document.getElementById('btsoc_card').innerText = data_obj.btsoc[data_obj.btsoc.length - 1] + '%';
+
+        // document.getElementById("btp_reveal_table").innerHTML = btp_output;
+        let $btp_reveal_table = $("#btp_reveal_table");
+        $btp_reveal_table.empty();
+        $btp_reveal_table.append(btp_output);
+
+        // document.getElementById('btsoc_card').innerText = data_obj.btsoc[data_obj.btsoc.length - 1] + '%';
+        let $btsoc_card = $("#btsoc_card");
+        $btsoc_card.empty();
+        $btsoc_card.append(data_obj.btsoc[data_obj.btsoc.length - 1] + '%');
 
     }
 }
@@ -1828,7 +1834,7 @@ function update_live_analytics_cards(uid) {
     live_analytics_ref.on("value", function (snapshot) {
         let liveAnalyticsPayload = snapshot.val();
 
-        $topRowCard = $('.top_row_card');
+        let $topRowCard = $('.top_row_card');
         /// Check if our live analytics payload was last updated today
         if (moment(liveAnalyticsPayload['time']).isSame(moment(), 'day')) {
 
@@ -1838,8 +1844,8 @@ function update_live_analytics_cards(uid) {
             // Calculate the number of minutes between the current time and the timestamp on the analytics payload
             let minutesDiff = moment.duration(moment().diff(moment(liveAnalyticsPayload['time']))).asMinutes();
 
-            // If our analytics payload is older than 25 minutes
-            if (minutesDiff > 25) {
+            // If our analytics payload is older than 30 minutes
+            if (minutesDiff > 30) {
 
                 // Then we should completely hide the top row
                 $topRowCard.hide();
