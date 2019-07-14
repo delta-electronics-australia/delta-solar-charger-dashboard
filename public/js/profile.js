@@ -30,7 +30,7 @@ function load_map(uid) {
             console.log('button clicked!');
 
             // Todo: put this location into Firebase
-            db.ref(`users/${uid}/system_location`).update({
+            firebase.database().ref(`users/${uid}/system_location`).update({
                 'lat': myMarker.position.lat(),
                 'lng': myMarker.position.lng()
             }).then(function () {
@@ -396,7 +396,7 @@ function start_profile_page(uid) {
 
     grabAccountTypeInformation(uid);
 
-    grabCameraInformation(uid);
+    // grabCameraInformation(uid);
 }
 
 
