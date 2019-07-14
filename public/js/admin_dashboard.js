@@ -18,7 +18,7 @@ async function checkSystemStatus(adminUIDObject, linkedUIDsObject) {
     let currentTime = moment();
 
     // Check if our latest admin history node has data
-    if (latestHistoryNode !== null) {
+    if (latestHistoryNode.val() !== null) {
         let latestPayloadTime = moment(`${generate_date()} ${latestHistoryNode.val()[Object.keys(latestHistoryNode.val())[0]]['time']}`, 'YYYY-MM-DD HHmmss');
 
         let minutesDifference = moment.duration(currentTime.diff(latestPayloadTime));
