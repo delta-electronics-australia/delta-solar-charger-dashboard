@@ -110,20 +110,26 @@ function clear_temp_logs(uid) {
 
     let directory = `./logs/${uid}/temp_logs`;
 
-    // Read the temp_logs directory of our uid
-    fs.readdir(directory, (err, files) => {
-        if (err) throw err;
+    if (fs.existsSync(directory)) {
+        // Read the temp_logs directory of our uid
+        fs.readdir(directory, (err, files) => {
+            if (err) throw err;
 
-        // Loop through all of the files
-        for (const file of files) {
-            console.log(`Deleting ${file}`);
+            // Loop through all of the files
+            for (const file of files) {
+                console.log(`Deleting ${file}`);
 
-            // Delete them
-            fs.unlink(path.join(directory, file), err => {
-                if (err) throw err;
-            })
-        }
-    })
+                // Delete them
+                fs.unlink(path.join(directory, file), err => {
+                    if (err) throw err;
+                })
+            }
+        })
+    }
+    else {
+        console.log(`${directory} does not exist for ${uid}, bye!`)
+    }
+
 }
 
 async function update_analytics(path, db) {
@@ -222,9 +228,9 @@ async function update_analytics(path, db) {
                     // Now upload the analytics to Firebase
                     db.ref(`users/${uid}/analytics/charging_history_analytics/${chargerID}/${charge_session_date}/${charge_session_time}`)
                         .update({
-                                duration_seconds: duration,
-                                energy: energy
-                            }
+                            duration_seconds: duration,
+                            energy: energy
+                        }
                         )
                 })
         }
